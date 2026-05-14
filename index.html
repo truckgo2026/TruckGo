@@ -1279,11 +1279,11 @@ if("serviceWorker" in navigator){
       user_role: userData?.role ? role : "לא הוזן",
       user_status: userData?.status || "לא הוזן",
       login_time: new Date().toLocaleString('he-IL'),
-      event_type: isNew ? "🆕 הרשמה חדשה" : "🔑 כניסה"
+      event_type: "הרשמה חדשה"
     }).then(() => {
-      console.log("✅ מייל נשלח בהצלחה");
+      console.log("מייל נשלח בהצלחה");
     }).catch((err) => {
-      console.warn("❌ שגיאה בשליחת מייל:", err);
+      console.warn("שגיאה בשליחת מייל:", err);
     });
   };
 </script>
@@ -1334,12 +1334,8 @@ window.fbLogin = async function() {
       const data = snap.data();
       const nameEl = document.getElementById('p-name-v');
       if (nameEl && data.name) nameEl.textContent = data.name;
-      // שליחת התראת מייל
-      window.sendLoginNotification(currentUser, data, false);
       go(data.role === 'brk' ? 's-broker' : 's-driver');
     } else {
-      // שליחת התראת מייל גם למשתמש חדש
-      window.sendLoginNotification(currentUser, null, false);
       go('s-driver');
     }
     toast('כניסה בוצעה בהצלחה!');
