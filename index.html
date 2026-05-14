@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -1288,7 +1289,7 @@ if("serviceWorker" in navigator){
 <!--  FIREBASE  -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, applyActionCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
@@ -1495,28 +1496,9 @@ window.resendVerificationEmail = async function() {
   }
 };
 
-// טיפול בקישור אימות מייל
-(async () => {
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get('mode');
-  const oobCode = params.get('oobCode');
-  if (mode === 'verifyEmail' && oobCode) {
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4ff;font-family:Arial,sans-serif;direction:rtl;"><div id="verify-box" style="text-align:center;padding:40px 28px;max-width:380px;"><div style="font-size:18px;color:#64748b;">בודק אימות...</div></div></div>';
-    try {
-      await applyActionCode(auth, oobCode);
-      document.getElementById('verify-box').innerHTML = '<div style="font-size:64px;margin-bottom:16px;">✅</div><div style="font-size:22px;font-weight:900;color:#1d4ed8;margin-bottom:8px;">האימות הצליח!</div><div style="font-size:15px;color:#64748b;margin-bottom:32px;">המייל שלך אומת בהצלחה</div><button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">כניסה לאפליקציה</button>';
-    } catch(e) {
-      document.getElementById('verify-box').innerHTML = '<div style="font-size:64px;margin-bottom:16px;">⚠️</div><div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px;">הקישור פג תוקף</div><div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב מתוך האפליקציה</div><button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">חזרה לאפליקציה</button>';
-    }
-        return;
-  }
-})();
-
 //  AUTO LOGIN CHECK 
-const isVerifyMode = new URLSearchParams(window.location.search).get('mode') === 'verifyEmail';
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
-  if (isVerifyMode) return; // אל תפעל כשזה קישור אימות
   if (user) {
     currentUser = user;
     try { await user.reload(); currentUser = auth.currentUser; } catch(e) {}
