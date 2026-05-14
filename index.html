@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -268,6 +269,7 @@ textarea.fi{resize:vertical;}
 @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
 .spin{animation:spin 2s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes loading-bar{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
 .ov-t{font-size:24px;font-weight:900;color:#fff;margin-bottom:8px;}
 .ov-s{font-size:14px;color:rgba(255,255,255,0.85);margin-bottom:26px;white-space:pre-line;line-height:1.5;}
 .ov-btn{padding:14px 32px;background:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;font-family:'Heebo',sans-serif;cursor:pointer;}
@@ -294,6 +296,13 @@ textarea.fi{resize:vertical;}
 </head>
 <body>
 <div class="phone">
+  <!-- מסך טעינה ראשוני - מונע הבזק -->
+  <div id="init-loader" style="position:absolute;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+    <div style="font-size:32px;font-weight:900;color:var(--accent);">Truck<span style="color:var(--text)">Go</span></div>
+    <div style="width:40px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;background:var(--accent);animation:loading-bar 1.2s ease-in-out infinite;border-radius:2px;"></div>
+    </div>
+  </div>
 
 <!--  S1: LOGIN  -->
 <div class="scr on" id="s-login">
@@ -633,7 +642,7 @@ textarea.fi{resize:vertical;}
 
   <!-- WAIT OVERLAY -->
   <div class="ov ov-wait" id="drv-wait">
-    <div class="ov-i spin">⏳</div>
+    <div class="ov-i spin"></div>
     <div class="ov-t">ממתין לאישור עמיל</div>
     <div class="ov-s" id="drv-wait-s">הטווח נשלח לעמיל...</div>
   </div>
@@ -677,9 +686,7 @@ textarea.fi{resize:vertical;}
   <div id="b-pend" style="padding:12px 16px 0;">
     <div class="card" id="bord0">
       <div class="cm" onclick="toggleCard('bord0')">
-        <div class="ci am">⏳</div>
-        <div class="cinfo"><div class="ct">חיפה → תל אביב</div><div class="cm2">1,200 ק"ג • ממתין למוביל</div></div>
-        <div class="cr"><div class="cp">₪1,800</div><div class="badge bam">ממתין</div><div class="chev"></div></div>
+        
       </div>
       <div class="cd">
         <div class="dg">
@@ -699,13 +706,12 @@ textarea.fi{resize:vertical;}
     <div class="card" id="bcnt0">
       <div class="cm" onclick="toggleCard('bcnt0')">
         <div class="ci am"></div>
-        <div class="cinfo"><div class="ct">אשדוד → ירושלים</div><div class="cm2">נהג הציע מחיר נגדי</div></div>
-        <div class="cr"><div class="cp" style="color:var(--amber)">₪1,600</div><div class="badge bam">הצעה נגדית</div><div class="chev"></div></div>
+        
       </div>
       <div class="cd">
         <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
           <div style="font-size:12px;color:var(--amber);font-weight:700;margin-bottom:4px;">הצעת הנהג</div>
-          <div style="font-size:13px;">מלאכי כהן מציע <strong>₪1,600</strong><br>המחיר המקורי שלך: ₪1,440</div>
+        
         </div>
         <div class="brow">
           <button class="btn bgr" onclick="bApprove()"> אשר הצעה</button>
@@ -873,7 +879,7 @@ textarea.fi{resize:vertical;}
   <div class="sumrow" id="pay-summary">
     <div class="scard"><div class="sv" id="pay-released" style="color:var(--green)">₪0</div><div class="sl">שוחרר</div></div>
     <div class="scard"><div class="sv" id="pay-escrow" style="color:var(--amber)">₪0</div><div class="sl">נעול</div></div>
-    <div class="scard"><div class="sv" id="pay-pending" style="color:var(--muted)">₪0</div><div class="sl">ממתין ⏳</div></div>
+    <div class="scard"><div class="sv" id="pay-pending" style="color:var(--muted)">₪0</div><div class="sl">ממתין</div></div>
   </div>
 
   <!-- הסבר Escrow -->
@@ -884,7 +890,7 @@ textarea.fi{resize:vertical;}
 
   <!-- רשימת הובלות ותשלומים -->
   <div style="padding:0 16px;" id="pay-list">
-    <div style="text-align:center;color:var(--muted);padding:40px 0;font-size:14px;">⏳ טוען הובלות...</div>
+    <div style="text-align:center;color:var(--muted);padding:40px 0;font-size:14px;">טוען הובלות...</div>
   </div>
 
   <div class="sp"></div>
@@ -979,6 +985,9 @@ function go(id){
   const el=document.getElementById(id);
   el.classList.add('on');
   el.scrollTop=0;
+  // הסתר מסך טעינה ראשוני
+  const loader = document.getElementById('init-loader');
+  if (loader) loader.style.display = 'none';
   // טען נתונים דינמיים
   if (id === 's-payments') {
     if (typeof loadPaymentsScreen === 'function') loadPaymentsScreen();
@@ -1323,7 +1332,7 @@ window.fbLogin = async function() {
   if (!password) { toast('הכנס סיסמה'); return; }
 
   const btn = document.getElementById('login-btn');
-  btn.textContent = '⏳ מתחבר...';
+  btn.textContent = 'מתחבר...';
   btn.disabled = true;
 
   try {
@@ -1397,7 +1406,7 @@ window.fbRegister = async function() {
   }
 
   const btn = document.getElementById('reg-btn');
-  btn.textContent = '⏳ יוצר חשבון...';
+  btn.textContent = 'יוצר חשבון...';
   btn.disabled = true;
 
   try {
@@ -1465,7 +1474,7 @@ window.fbLogout = async function() {
 //  VERIFY EMAIL HELPERS 
 window.checkEmailVerified = async function() {
   const btn = document.getElementById('verify-check-btn');
-  btn.textContent = '⏳ בודק...';
+  btn.textContent = 'בודק...';
   btn.disabled = true;
   try {
     await currentUser.reload();
@@ -1503,15 +1512,34 @@ auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
   if (user) {
     currentUser = user;
-    if (!user.emailVerified) {
-      document.getElementById('verify-email').textContent = user.email || '';
+    // רענן תמיד כדי לקבל מצב עדכני
+    try { await user.reload(); currentUser = auth.currentUser; } catch(e) {}
+    if (!currentUser.emailVerified) {
+      document.getElementById('verify-email').textContent = currentUser.email || '';
       go('s-verify');
+      // בדוק כל 3 שניות אם המשתמש אישר
+      const verifyInterval = setInterval(async () => {
+        try {
+          await auth.currentUser.reload();
+          if (auth.currentUser && auth.currentUser.emailVerified) {
+            clearInterval(verifyInterval);
+            currentUser = auth.currentUser;
+            const snap = await getDoc(doc(db, 'users', currentUser.uid));
+            if (snap.exists()) {
+              const d = snap.data();
+              loadProfile(d, currentUser);
+              go(d.role === 'brk' ? 's-broker' : 's-driver');
+              toast('ברוך הבא ל-TruckGo!');
+            }
+          }
+        } catch(e) { clearInterval(verifyInterval); }
+      }, 3000);
       return;
     }
-    const snap = await getDoc(doc(db, 'users', user.uid));
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
     if (snap.exists()) {
       const d = snap.data();
-      loadProfile(d, user);
+      loadProfile(d, currentUser);
       go(d.role === 'brk' ? 's-broker' : 's-driver');
     }
   }
@@ -1581,7 +1609,7 @@ function setEl(id, val) {
 // 'cancelled'  — בוטל
 
 const ESCROW_LABEL = {
-  pending:   { txt:'ממתין לנהג',     cls:'bam', icon:'⏳' },
+  pending:   { txt:'ממתין לנהג',     cls:'bam', icon:'' },
   accepted:  { txt:'כסף נעול',    cls:'bam', icon:'' },
   delivered: { txt:'ממתין לאישורך', cls:'bp2', icon:'' },
   confirmed: { txt:'שוחרר',       cls:'bg',  icon:'' },
@@ -1600,7 +1628,7 @@ window.loadPaymentsScreen = async function() {
   document.getElementById('pay-role-label').textContent = role === 'drv' ? 'יתרה זמינה לנהג' : 'תקציב נעול / שוחרר';
 
   const list = document.getElementById('pay-list');
-  list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">⏳ טוען...</div>';
+  list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">טוען...</div>';
 
   try {
     let q;
