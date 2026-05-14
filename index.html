@@ -1259,6 +1259,27 @@ if("serviceWorker" in navigator){
 }
 </script>
 
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  emailjs.init("D15NWQQI3UcYMF9w3");
+
+  window.sendLoginNotification = function(user, userData) {
+    emailjs.send("service_kgiu5os", "template_l767g99", {
+      user_email: user.email || "לא הוזן",
+      user_name: userData?.name || user.displayName || "לא הוזן",
+      user_uid: user.uid,
+      user_phone: userData?.phone || user.phoneNumber || "לא הוזן",
+      login_time: new Date().toLocaleString('he-IL'),
+      user_provider: user.providerData?.[0]?.providerId || "email"
+    }).then(() => {
+      console.log("✅ מייל נשלח בהצלחה");
+    }).catch((err) => {
+      console.warn("❌ שגיאה בשליחת מייל:", err);
+    });
+  };
+</script>
+
 <!--  FIREBASE  -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1305,8 +1326,12 @@ window.fbLogin = async function() {
       const data = snap.data();
       const nameEl = document.getElementById('p-name-v');
       if (nameEl && data.name) nameEl.textContent = data.name;
+      // שליחת התראת מייל
+      window.sendLoginNotification(currentUser, data);
       go(data.role === 'brk' ? 's-broker' : 's-driver');
     } else {
+      // שליחת התראת מייל גם למשתמש חדש
+      window.sendLoginNotification(currentUser, null);
       go('s-driver');
     }
     toast('כניסה בוצעה בהצלחה!');
