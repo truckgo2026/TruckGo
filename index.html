@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -1352,6 +1353,12 @@ let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
       `;
       document.getElementById('init-loader').style.display = 'flex';
     }
+  } else {
+    // אין קוד אימות - הסתר loader אחרי שה-auth מוכן (מקסימום 3 שניות)
+    setTimeout(() => {
+      const loader = document.getElementById('init-loader');
+      if (loader) loader.style.display = 'none';
+    }, 3000);
   }
 })();
 let selectedRole = 'drv';
@@ -1543,6 +1550,11 @@ window.resendVerificationEmail = async function() {
 //  AUTO LOGIN CHECK 
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
+  // הסתר loader תמיד
+  const loader = document.getElementById('init-loader');
+  if (loader && !window.location.search.includes('mode=verifyEmail')) {
+    loader.style.display = 'none';
+  }
   if (user) {
     currentUser = user;
     // רענן תמיד כדי לקבל מצב עדכני
@@ -1575,6 +1587,8 @@ auth.onAuthStateChanged(async (user) => {
       loadProfile(d, currentUser);
       go(d.role === 'brk' ? 's-broker' : 's-driver');
     }
+  } else {
+    go('s-login');
   }
 });
 
