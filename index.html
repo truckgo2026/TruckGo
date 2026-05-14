@@ -1264,14 +1264,22 @@ if("serviceWorker" in navigator){
 <script>
   emailjs.init("D15NWQQI3UcYMF9w3");
 
-  window.sendLoginNotification = function(user, userData) {
+  window.sendLoginNotification = function(user, userData, isNew) {
+    const role = userData?.role === 'brk' ? 'עמיל מכס' : userData?.role === 'cmp' ? 'חברה' : 'נהג';
     emailjs.send("service_kgiu5os", "template_l767g99", {
       user_email: user.email || "לא הוזן",
       user_name: userData?.name || user.displayName || "לא הוזן",
       user_uid: user.uid,
       user_phone: userData?.phone || user.phoneNumber || "לא הוזן",
+      user_id_number: userData?.idNumber || "לא הוזן",
+      user_company: userData?.companyName || "לא הוזן",
+      user_hp: userData?.hp || "לא הוזן",
+      user_contact: userData?.contactPerson || "לא הוזן",
+      user_license: userData?.brokerLicense || "לא הוזן",
+      user_role: userData?.role ? role : "לא הוזן",
+      user_status: userData?.status || "לא הוזן",
       login_time: new Date().toLocaleString('he-IL'),
-      user_provider: user.providerData?.[0]?.providerId || "email"
+      event_type: isNew ? "🆕 הרשמה חדשה" : "🔑 כניסה"
     }).then(() => {
       console.log("✅ מייל נשלח בהצלחה");
     }).catch((err) => {
@@ -1327,11 +1335,11 @@ window.fbLogin = async function() {
       const nameEl = document.getElementById('p-name-v');
       if (nameEl && data.name) nameEl.textContent = data.name;
       // שליחת התראת מייל
-      window.sendLoginNotification(currentUser, data);
+      window.sendLoginNotification(currentUser, data, false);
       go(data.role === 'brk' ? 's-broker' : 's-driver');
     } else {
       // שליחת התראת מייל גם למשתמש חדש
-      window.sendLoginNotification(currentUser, null);
+      window.sendLoginNotification(currentUser, null, false);
       go('s-driver');
     }
     toast('כניסה בוצעה בהצלחה!');
@@ -1405,6 +1413,9 @@ window.fbRegister = async function() {
       emailVerified: false,
       createdAt: serverTimestamp()
     });
+
+    // שליחת התראת מייל על הרשמה חדשה
+    window.sendLoginNotification(currentUser, profileData, true);
 
     // שלח אימייל אימות
     try {
