@@ -297,7 +297,7 @@ textarea.fi{resize:vertical;}
 <body>
 <div class="phone">
   <!-- מסך טעינה ראשוני - מונע הבזק -->
-  <div id="init-loader" style="position:absolute;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+  <div id="init-loader" style="position:absolute;inset:0;background:var(--bg);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
     <div style="font-size:32px;font-weight:900;color:var(--accent);">Truck<span style="color:var(--text)">Go</span></div>
     <div style="width:40px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
       <div style="height:100%;background:var(--accent);animation:loading-bar 1.2s ease-in-out infinite;border-radius:2px;"></div>
@@ -1328,10 +1328,11 @@ let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
   const mode = params.get('mode');
   const oobCode = params.get('oobCode');
   if (mode === 'verifyEmail' && oobCode) {
+    const loader = document.getElementById('init-loader');
+    loader.style.display = 'flex';
     try {
       await applyActionCode(auth, oobCode);
-      // הצג מסך הצלחה
-      document.getElementById('init-loader').innerHTML = `
+      loader.innerHTML = `
         <div style="text-align:center;padding:40px 28px;">
           <div style="font-size:64px;margin-bottom:16px;">✅</div>
           <div style="font-size:22px;font-weight:900;color:#1d4ed8;margin-bottom:8px;">האימות הצליח!</div>
@@ -1339,26 +1340,16 @@ let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
           <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">כניסה לאפליקציה →</button>
         </div>
       `;
-      document.getElementById('init-loader').style.display = 'flex';
-      document.getElementById('init-loader').style.alignItems = 'center';
-      document.getElementById('init-loader').style.justifyContent = 'center';
     } catch(e) {
-      document.getElementById('init-loader').innerHTML = `
+      loader.innerHTML = `
         <div style="text-align:center;padding:40px 28px;">
           <div style="font-size:64px;margin-bottom:16px;">⚠️</div>
           <div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px;">הקישור פג תוקף</div>
-          <div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב אימות מתוך האפליקציה</div>
+          <div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב מתוך האפליקציה</div>
           <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">חזרה לאפליקציה</button>
         </div>
       `;
-      document.getElementById('init-loader').style.display = 'flex';
     }
-  } else {
-    // אין קוד אימות - הסתר loader אחרי שה-auth מוכן (מקסימום 3 שניות)
-    setTimeout(() => {
-      const loader = document.getElementById('init-loader');
-      if (loader) loader.style.display = 'none';
-    }, 3000);
   }
 })();
 let selectedRole = 'drv';
