@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -1524,8 +1523,10 @@ window.resendVerificationEmail = async function() {
 })();
 
 //  AUTO LOGIN CHECK 
+const isVerifyMode = new URLSearchParams(window.location.search).get('mode') === 'verifyEmail';
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
+  if (isVerifyMode) return; // אל תפעל כשזה קישור אימות
   if (user) {
     currentUser = user;
     try { await user.reload(); currentUser = auth.currentUser; } catch(e) {}
