@@ -1501,24 +1501,14 @@ window.resendVerificationEmail = async function() {
   const mode = params.get('mode');
   const oobCode = params.get('oobCode');
   if (mode === 'verifyEmail' && oobCode) {
-    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4ff;font-family:Arial,sans-serif;"><div id="verify-box" style="text-align:center;padding:40px 28px;max-width:380px;"><div style="font-size:48px;margin-bottom:16px;">...</div><div style="font-size:18px;color:#64748b;">בודק אימות...</div></div></div>`;
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4ff;font-family:Arial,sans-serif;direction:rtl;"><div id="verify-box" style="text-align:center;padding:40px 28px;max-width:380px;"><div style="font-size:18px;color:#64748b;">בודק אימות...</div></div></div>';
     try {
       await applyActionCode(auth, oobCode);
-      document.getElementById('verify-box').innerHTML = \`
-        <div style="font-size:64px;margin-bottom:16px;">✅</div>
-        <div style="font-size:22px;font-weight:900;color:#1d4ed8;margin-bottom:8px;">האימות הצליח!</div>
-        <div style="font-size:15px;color:#64748b;margin-bottom:32px;">המייל שלך אומת בהצלחה</div>
-        <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">כניסה לאפליקציה →</button>
-      \`;
+      document.getElementById('verify-box').innerHTML = '<div style="font-size:64px;margin-bottom:16px;">✅</div><div style="font-size:22px;font-weight:900;color:#1d4ed8;margin-bottom:8px;">האימות הצליח!</div><div style="font-size:15px;color:#64748b;margin-bottom:32px;">המייל שלך אומת בהצלחה</div><button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">כניסה לאפליקציה</button>';
     } catch(e) {
-      document.getElementById('verify-box').innerHTML = \`
-        <div style="font-size:64px;margin-bottom:16px;">⚠️</div>
-        <div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px;">הקישור פג תוקף</div>
-        <div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב מתוך האפליקציה</div>
-        <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">חזרה לאפליקציה</button>
-      \`;
+      document.getElementById('verify-box').innerHTML = '<div style="font-size:64px;margin-bottom:16px;">⚠️</div><div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px;">הקישור פג תוקף</div><div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב מתוך האפליקציה</div><button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">חזרה לאפליקציה</button>';
     }
-    return;
+        return;
   }
 })();
 
