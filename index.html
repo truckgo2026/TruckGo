@@ -269,7 +269,6 @@ textarea.fi{resize:vertical;}
 @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
 .spin{animation:spin 2s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes loading-bar{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
 .ov-t{font-size:24px;font-weight:900;color:#fff;margin-bottom:8px;}
 .ov-s{font-size:14px;color:rgba(255,255,255,0.85);margin-bottom:26px;white-space:pre-line;line-height:1.5;}
 .ov-btn{padding:14px 32px;background:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;font-family:'Heebo',sans-serif;cursor:pointer;}
@@ -296,13 +295,6 @@ textarea.fi{resize:vertical;}
 </head>
 <body>
 <div class="phone">
-  <!-- מסך טעינה ראשוני - מונע הבזק -->
-  <div id="init-loader" style="position:absolute;inset:0;background:var(--bg);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
-    <div style="font-size:32px;font-weight:900;color:var(--accent);">Truck<span style="color:var(--text)">Go</span></div>
-    <div style="width:40px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-      <div style="height:100%;background:var(--accent);animation:loading-bar 1.2s ease-in-out infinite;border-radius:2px;"></div>
-    </div>
-  </div>
 
 <!--  S1: LOGIN  -->
 <div class="scr on" id="s-login">
@@ -985,9 +977,6 @@ function go(id){
   const el=document.getElementById(id);
   el.classList.add('on');
   el.scrollTop=0;
-  // הסתר מסך טעינה ראשוני
-  const loader = document.getElementById('init-loader');
-  if (loader) loader.style.display = 'none';
   // טען נתונים דינמיים
   if (id === 's-payments') {
     if (typeof loadPaymentsScreen === 'function') loadPaymentsScreen();
@@ -1321,37 +1310,6 @@ const db = getFirestore(app);
 
 let currentUser = null;
 let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
-
-// טיפול בקישור אימות מייל
-(async () => {
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get('mode');
-  const oobCode = params.get('oobCode');
-  if (mode === 'verifyEmail' && oobCode) {
-    const loader = document.getElementById('init-loader');
-    loader.style.display = 'flex';
-    try {
-      await applyActionCode(auth, oobCode);
-      loader.innerHTML = `
-        <div style="text-align:center;padding:40px 28px;">
-          <div style="font-size:64px;margin-bottom:16px;">✅</div>
-          <div style="font-size:22px;font-weight:900;color:#1d4ed8;margin-bottom:8px;">האימות הצליח!</div>
-          <div style="font-size:15px;color:#64748b;margin-bottom:32px;">המייל שלך אומת בהצלחה</div>
-          <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">כניסה לאפליקציה →</button>
-        </div>
-      `;
-    } catch(e) {
-      loader.innerHTML = `
-        <div style="text-align:center;padding:40px 28px;">
-          <div style="font-size:64px;margin-bottom:16px;">⚠️</div>
-          <div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px;">הקישור פג תוקף</div>
-          <div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב מתוך האפליקציה</div>
-          <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">חזרה לאפליקציה</button>
-        </div>
-      `;
-    }
-  }
-})();
 let selectedRole = 'drv';
 window.selectedRole = 'drv';
 
@@ -1538,22 +1496,42 @@ window.resendVerificationEmail = async function() {
   }
 };
 
+// טיפול בקישור אימות מייל
+(async () => {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  const oobCode = params.get('oobCode');
+  if (mode === 'verifyEmail' && oobCode) {
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4ff;font-family:Arial,sans-serif;"><div id="verify-box" style="text-align:center;padding:40px 28px;max-width:380px;"><div style="font-size:48px;margin-bottom:16px;">...</div><div style="font-size:18px;color:#64748b;">בודק אימות...</div></div></div>`;
+    try {
+      await applyActionCode(auth, oobCode);
+      document.getElementById('verify-box').innerHTML = \`
+        <div style="font-size:64px;margin-bottom:16px;">✅</div>
+        <div style="font-size:22px;font-weight:900;color:#1d4ed8;margin-bottom:8px;">האימות הצליח!</div>
+        <div style="font-size:15px;color:#64748b;margin-bottom:32px;">המייל שלך אומת בהצלחה</div>
+        <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">כניסה לאפליקציה →</button>
+      \`;
+    } catch(e) {
+      document.getElementById('verify-box').innerHTML = \`
+        <div style="font-size:64px;margin-bottom:16px;">⚠️</div>
+        <div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:8px;">הקישור פג תוקף</div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:32px;">נסה לשלוח שוב מתוך האפליקציה</div>
+        <button onclick="window.location.href=window.location.origin+window.location.pathname" style="background:#1d4ed8;color:#fff;border:none;padding:14px 32px;border-radius:30px;font-size:16px;font-weight:700;cursor:pointer;width:100%;">חזרה לאפליקציה</button>
+      \`;
+    }
+    return;
+  }
+})();
+
 //  AUTO LOGIN CHECK 
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
-  // הסתר loader תמיד
-  const loader = document.getElementById('init-loader');
-  if (loader && !window.location.search.includes('mode=verifyEmail')) {
-    loader.style.display = 'none';
-  }
   if (user) {
     currentUser = user;
-    // רענן תמיד כדי לקבל מצב עדכני
     try { await user.reload(); currentUser = auth.currentUser; } catch(e) {}
     if (!currentUser.emailVerified) {
       document.getElementById('verify-email').textContent = currentUser.email || '';
       go('s-verify');
-      // בדוק כל 3 שניות אם המשתמש אישר
       const verifyInterval = setInterval(async () => {
         try {
           await auth.currentUser.reload();
@@ -1578,8 +1556,6 @@ auth.onAuthStateChanged(async (user) => {
       loadProfile(d, currentUser);
       go(d.role === 'brk' ? 's-broker' : 's-driver');
     }
-  } else {
-    go('s-login');
   }
 });
 
