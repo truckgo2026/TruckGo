@@ -25,7 +25,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .phone{width:100%;height:100vh;height:100dvh;background:var(--bg);border-radius:0;overflow:hidden;position:relative;display:flex;flex-direction:column;}@media(min-width:480px){body{background:#1e3a8a;display:flex;align-items:center;justify-content:center;padding:20px;}.phone{width:390px;height:844px;border-radius:44px;box-shadow:0 40px 80px rgba(0,0,0,0.5),0 0 0 10px #0f2060;}}
 
 /* SCREENS */
-.scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .22s;background:var(--bg);scrollbar-width:none;}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .22s;background:var(--bg);scrollbar-width:none;padding-bottom:70px;}
 .scr::-webkit-scrollbar{display:none;}
 .scr.on{opacity:1;pointer-events:all;}
 
@@ -37,7 +37,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .tb-title{font-size:17px;font-weight:700;}
 
 /* BOTTOM NAV */
-.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;position:sticky;bottom:0;z-index:40;}
+.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);position:absolute;bottom:0;left:0;right:0;z-index:40;}
 .ni{flex:1;text-align:center;cursor:pointer;padding:4px 0;}
 .ni .ni-i{font-size:20px;}
 .ni .ni-l{font-size:11px;color:var(--muted);margin-top:3px;}
@@ -709,9 +709,9 @@ textarea.fi{resize:vertical;}
     <!-- מיקום -->
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">מיקום</div>
     <div class="fcard">
-      <div class="fg"><div class="fl">עיר / כתובת מוצא</div><input class="fi" type="text" placeholder="לדוגמא: נמל חיפה, חיפה" value="נמל חיפה, חיפה"></div>
-      <div class="fg"><div class="fl">עיר / כתובת יעד</div><input class="fi" type="text" placeholder="לדוגמא: רחוב הברזל 12, תל אביב" value="רחוב הברזל 12, תל אביב"></div>
-      <div class="fg"><div class="fl">תאריך משלוח</div><input class="fi" type="date" value="2026-05-10"></div>
+      <div class="fg"><div class="fl">עיר / כתובת מוצא</div><input class="fi" type="text" id="no-origin" placeholder="עיר / כתובת מוצא"></div>
+      <div class="fg"><div class="fl">עיר / כתובת יעד</div><input class="fi" type="text" id="no-dest" placeholder="עיר / כתובת יעד"></div>
+      <div class="fg"><div class="fl">תאריך משלוח</div><input class="fi" id="no-date" type="date"></div>
     </div>
 
     <!-- פרטי מטען -->
@@ -719,6 +719,9 @@ textarea.fi{resize:vertical;}
     <div class="fcard">
       <div class="frow">
         <div class="fg"><div class="fl">משקל (ק"ג)</div><input class="fi" type="number" id="no-weight" placeholder="0"></div>
+        <div class="fg"><div class="fl">כמות (יחידות)</div><input class="fi" type="number" id="no-qty" placeholder="0"></div>
+      </div>
+      <div class="frow">
         <div class="fg"><div class="fl">נפח (מ"ק)</div><input class="fi" type="number" id="no-volume" placeholder="0"></div>
       </div>
       <div class="fg">
@@ -797,7 +800,7 @@ textarea.fi{resize:vertical;}
     <!-- מחיר -->
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:14px 0 10px;">תמחור</div>
     <div class="fcard">
-      <div class="fg" style="margin-bottom:0;"><div class="fl">מחיר מוצע (₪)</div><input class="fi" type="number" placeholder="0" value="1800" style="margin-bottom:0;"></div>
+      <div class="fg" style="margin-bottom:0;"><div class="fl">מחיר מוצע (₪)</div><input class="fi" id="no-price" type="number" placeholder="0" style="margin-bottom:0;"></div>
     </div>
 
     <button class="fbt" style="margin-top:16px;" onclick="submitOrder()">פרסם הובלה</button>
@@ -983,31 +986,47 @@ function showForgotOtp(){
 let cargoType='bulk';
 function selectCargo(type){
   cargoType=type;
+  const isBulk=type==='bulk';
   const bulk=document.getElementById('opt-bulk');
   const cont=document.getElementById('opt-cont');
   const sz=document.getElementById('cont-size');
-  if(type==='bulk'){
-    bulk.style.cssText='flex:1;padding:12px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    cont.style.cssText='flex:1;padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    sz.style.display='none';
-  } else {
-    cont.style.cssText='flex:1;padding:12px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    bulk.style.cssText='flex:1;padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    sz.style.display='block';
-  }
+  const extras=document.getElementById('bulk-extras');
+  bulk.style.cssText='flex:1;padding:12px 8px;border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;background:'+(isBulk?'var(--glow)':'var(--surface)')+';border:2px solid '+(isBulk?'var(--accent)':'var(--border)')+';';
+  cont.style.cssText='flex:1;padding:12px 8px;border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;background:'+(isBulk?'var(--surface)':'var(--glow)')+';border:2px solid '+(isBulk?'var(--border)':'var(--accent)')+';';
+  sz.style.display=isBulk?'none':'block';
+  if(extras) extras.style.display=isBulk?'block':'none';
 }
-let contSize=20;
+let contSize='20';
 function selectSize(s){
   contSize=s;
-  const s20=document.getElementById('sz-20');
-  const s40=document.getElementById('sz-40');
-  if(s===20){
-    s20.style.cssText='flex:1;padding:14px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    s40.style.cssText='flex:1;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-  } else {
-    s40.style.cssText='flex:1;padding:14px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    s20.style.cssText='flex:1;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-  }
+  ['20','40','40HC','40OT'].forEach(function(n){
+    const el=document.getElementById('sz-'+n.toLowerCase());
+    if(!el)return;
+    el.style.background=n===s?'var(--glow)':'var(--surface)';
+    el.style.borderColor=n===s?'var(--accent)':'var(--border)';
+  });
+}
+let isRamp=false;
+function selectRamp(v){
+  isRamp=v;
+  const no=document.getElementById('ramp-no');
+  const yes=document.getElementById('ramp-yes');
+  if(!no||!yes)return;
+  no.style.background=!v?'var(--glow)':'var(--surface)';
+  no.style.borderColor=!v?'var(--accent)':'var(--border)';
+  yes.style.background=v?'var(--glow)':'var(--surface)';
+  yes.style.borderColor=v?'var(--accent)':'var(--border)';
+}
+let isPorters=false;
+function selectPorters(v){
+  isPorters=v;
+  const no=document.getElementById('port-no');
+  const yes=document.getElementById('port-yes');
+  if(!no||!yes)return;
+  no.style.background=!v?'var(--glow)':'var(--surface)';
+  no.style.borderColor=!v?'var(--accent)':'var(--border)';
+  yes.style.background=v?'var(--glow)':'var(--surface)';
+  yes.style.borderColor=v?'var(--accent)':'var(--border)';
 }
 let isHaz=false;
 function selectHaz(v){
@@ -1728,6 +1747,8 @@ window.fbSaveOrder = async function(data) {
   const userData = snap.exists() ? snap.data() : {};
   const orderData = {
     ...(data || {}),
+    qty: data?.qty || '',
+    volume: data?.volume || '',
     brokerId: currentUser.uid,
     brokerName: userData.name || currentUser.email,
     brokerEmail: currentUser.email,
@@ -1756,7 +1777,7 @@ window.loadBrokerOrders = async function() {
         const card = document.createElement('div');
         card.className = 'card brk-dyn-card';
         const dt = o.date ? new Date(o.date).toLocaleDateString('he-IL') : '';
-        card.innerHTML = `<div class="cm"><div class="ci"></div><div class="cinfo"><div class="ct">${o.origin||''} → ${o.destination||''}</div><div class="cm2">${o.weight||''}ק"ג${o.volume?' • '+o.volume+'מ"ק':''} • ${o.desc||''}</div></div><div class="cr"><div class="cp">₪${o.price||'0'}</div></div></div><div style="padding:0 14px 14px;font-size:12px;color:var(--muted);">${dt}${o.needsRamp?' • רמפית':''}${o.needsPorters?' • סבלים':''}${o.isHazardous?' • חומ"ס':''}</div>`;
+        card.innerHTML = `<div class="cm"><div class="ci"></div><div class="cinfo"><div class="ct">${o.origin||''} → ${o.destination||''}</div><div class="cm2">${o.weight||''}ק"ג${o.qty?' • '+o.qty+' יח':'''}${o.volume?' • '+o.volume+'מ"ק':''} • ${o.desc||''}</div></div><div class="cr"><div class="cp">₪${o.price||'0'}</div></div></div><div style="padding:0 14px 14px;font-size:12px;color:var(--muted);">${dt}${o.needsRamp?' • רמפית':''}${o.needsPorters?' • סבלים':''}${o.isHazardous?' • חומ"ס':''}</div>`;
         pend.appendChild(card);
       }
     });
