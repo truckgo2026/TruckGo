@@ -37,7 +37,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .tb-title{font-size:17px;font-weight:700;}
 
 /* BOTTOM NAV */
-.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;}
+.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;position:sticky;bottom:0;z-index:40;}
 .ni{flex:1;text-align:center;cursor:pointer;padding:4px 0;}
 .ni .ni-i{font-size:20px;}
 .ni .ni-l{font-size:11px;color:var(--muted);margin-top:3px;}
@@ -317,7 +317,7 @@ textarea.fi{resize:vertical;}
 <!--  S-FORGOT: שכחתי סיסמה  -->
 <div class="scr" id="s-forgot">
   <div class="a-hero" style="padding:40px 28px 30px;">
-    <div class="a-logo">שכחתי סיסמה</div>
+    <div class="a-logo">Truck<b>Go</b></div>
     <div class="a-tag">נשלח לינק איפוס לאימייל שלך</div>
   </div>
   <div class="a-body">
@@ -325,7 +325,7 @@ textarea.fi{resize:vertical;}
       הכנס את האימייל שנרשמת איתו ונשלח אליך לינק לאיפוס הסיסמה.
     </div>
     <div class="fl">אימייל</div>
-    <input class="fi" type="email" placeholder="user@example.com">
+    <input class="fi" id="forgot-email-input" type="email" placeholder="user@example.com">
     <button class="ab" onclick="showForgotOtp()"> שלח לינק איפוס</button>
     <div class="al"><a onclick="go('s-login')">← חזרה לכניסה</a></div>
   </div>
@@ -498,88 +498,30 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
-  <div class="ajob">
+  <div class="ajob" id="drv-active-job" style="display:none;">
     <div class="ajh">
       <div class="ajht" style="display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> הובלה פעילה</div>
-      <div class="badge bg" style="font-size:11px;">בדרך לאיסוף</div>
+      <div class="badge bg" id="drv-job-status" style="font-size:11px;">בדרך לאיסוף</div>
     </div>
     <div class="ajb">
       <div class="rrow">
-        <div class="rp"><div class="rl">מוצא</div><div class="rc2">חיפה</div></div>
+        <div class="rp"><div class="rl">מוצא</div><div class="rc2" id="drv-job-origin">—</div></div>
         <div class="rarr">→</div>
-        <div class="rp"><div class="rl">יעד</div><div class="rc2">תל אביב</div></div>
+        <div class="rp"><div class="rl">יעד</div><div class="rc2" id="drv-job-dest">—</div></div>
       </div>
-      <div class="chips"><div class="chip">1,200 ק"ג</div><div class="chip">95 ק"מ</div><div class="chip">₪1,800</div></div>
+      <div class="chips"><div class="chip" id="drv-job-weight">—</div><div class="chip" id="drv-job-price">—</div></div>
       <div class="brow">
-        <button class="btn bp" onclick="toast(' מנווט לחיפה...')"> נווט</button>
-        <button class="btn bgr" onclick="showOv('drv-succ',' הובלה הושלמה!','הכסף יועבר תוך 24 שעות')"> הושלם</button>
-        <button class="btn bgh" onclick="toast(' דיווח נשלח')"></button>
+        <button class="btn bp" onclick="toast('מנווט...')">נווט</button>
+        <button class="btn bgr" onclick="showOv('drv-succ','הובלה הושלמה!','הכסף יועבר תוך 24 שעות')">הושלם</button>
+        <button class="btn bgh" onclick="toast('דיווח נשלח')"></button>
       </div>
     </div>
   </div>
 
   <div class="sec">
     <div class="sec-t">הצעות פתוחות</div>
-    <div class="card" id="dof0">
-      <div class="cm" onclick="toggleCard('dof0')">
-        <div class="ci"></div>
-        <div class="cinfo"><div class="ct">נתניה → באר שבע</div><div class="cm2">2,400 ק"ג • ציוד בנייה</div></div>
-        <div class="cr"><div class="cp">₪2,200</div><div class="chev"></div></div>
-      </div>
-      <div class="cd">
-        <div class="dg">
-          <div class="dc"><div class="dcl">משקל</div><div class="dcv">2,400 ק"ג</div></div>
-          <div class="dc"><div class="dcl">מרחק</div><div class="dcv">150 ק"מ</div></div>
-          <div class="dc"><div class="dcl">תאריך</div><div class="dcv">09/05/2026</div></div>
-          <div class="dc"><div class="dcl">עמיל</div><div class="dcv">אלי מזרחי</div></div>
-        </div>
-        <div class="brow">
-          <button class="btn bp" onclick="openTS('dof0',2200,false)"> קבל</button>
-          <button class="btn bam2" onclick="openCounter('dof0',2200)"> הצע נגד</button>
-          <button class="btn bred" onclick="rmCard('dof0',' נדחה')"> דחה</button>
-        </div>
-      </div>
-    </div>
-    <div class="card" id="dof1">
-      <div class="cm" onclick="toggleCard('dof1')">
-        <div class="ci"></div>
-        <div class="cinfo"><div class="ct">אשדוד → ירושלים</div><div class="cm2">800 ק"ג • מזון קפוא</div></div>
-        <div class="cr"><div class="cp">₪1,440</div><div class="chev"></div></div>
-      </div>
-      <div class="cd">
-        <div class="dg">
-          <div class="dc"><div class="dcl">משקל</div><div class="dcv">800 ק"ג</div></div>
-          <div class="dc"><div class="dcl">מרחק</div><div class="dcv">67 ק"מ</div></div>
-          <div class="dc"><div class="dcl">תאריך</div><div class="dcv">10/05/2026</div></div>
-          <div class="dc"><div class="dcl">עמיל</div><div class="dcv">מירה כהן</div></div>
-        </div>
-        <div class="brow">
-          <button class="btn bp" onclick="openTS('dof1',1440,false)"> קבל</button>
-          <button class="btn bam2" onclick="openCounter('dof1',1440)"> הצע נגד</button>
-          <button class="btn bred" onclick="rmCard('dof1',' נדחה')"> דחה</button>
-        </div>
-      </div>
-    </div>
-    <div class="card" id="dof2">
-      <div class="cm" onclick="toggleCard('dof2')">
-        <div class="ci"></div>
-        <div class="cinfo"><div class="ct">רמת גן → חדרה</div><div class="cm2">1,100 ק"ג • אלקטרוניקה</div></div>
-        <div class="cr"><div class="cp">₪1,350</div><div class="chev"></div></div>
-      </div>
-      <div class="cd">
-        <div class="dg">
-          <div class="dc"><div class="dcl">משקל</div><div class="dcv">1,100 ק"ג</div></div>
-          <div class="dc"><div class="dcl">מרחק</div><div class="dcv">60 ק"מ</div></div>
-          <div class="dc"><div class="dcl">תאריך</div><div class="dcv">11/05/2026</div></div>
-          <div class="dc"><div class="dcl">עמיל</div><div class="dcv">נועה גולן</div></div>
-        </div>
-        <div class="brow">
-          <button class="btn bp" onclick="openTS('dof2',1350,false)"> קבל</button>
-          <button class="btn bam2" onclick="openCounter('dof2',1350)"> הצע נגד</button>
-          <button class="btn bred" onclick="rmCard('dof2',' נדחה')"> דחה</button>
-        </div>
-      </div>
-    </div>
+    <div id="drv-offers-list"></div>
+    <div id="drv-offers-empty" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:15px;">אין הצעות פתוחות כרגע</div>
   </div>
   <div class="sp"></div>
   <div class="bnav">
@@ -675,9 +617,8 @@ textarea.fi{resize:vertical;}
   </div>
 
   <div id="b-pend" style="padding:12px 16px 0;">
-    <div class="card" id="bord0">
+    <div class="card" id="bord0" style="display:none;">
       <div class="cm" onclick="toggleCard('bord0')">
-        
       </div>
       <div class="cd">
         <div class="dg">
@@ -694,10 +635,9 @@ textarea.fi{resize:vertical;}
     </div>
 
     <!-- COUNTER FROM DRIVER -->
-    <div class="card" id="bcnt0">
+    <div class="card" id="bcnt0" style="display:none;">
       <div class="cm" onclick="toggleCard('bcnt0')">
         <div class="ci am"></div>
-        
       </div>
       <div class="cd">
         <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
@@ -713,13 +653,12 @@ textarea.fi{resize:vertical;}
   </div>
 
   <div id="b-act" style="display:none;padding:12px 16px 0;">
-    <div class="card"><div class="cm"><div class="ci g"></div><div class="cinfo"><div class="ct">נתניה → באר שבע</div><div class="cm2">בדרך • מלאכי כהן • 06:00-09:00</div></div><div class="cr"><div class="cp">₪2,200</div><div class="badge bg">פעיל</div></div></div></div>
-    <div class="card"><div class="cm"><div class="ci g"></div><div class="cinfo"><div class="ct">רמת גן → חדרה</div><div class="cm2">בדרך • יוסי פרץ • 09:00-12:00</div></div><div class="cr"><div class="cp">₪1,350</div><div class="badge bg">פעיל</div></div></div></div>
+    <div id="b-act-empty" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:15px;">אין הובלות פעילות</div>
   </div>
 
   <div id="b-done" style="display:none;padding:12px 16px 0;">
-    <div class="card"><div class="cm"><div class="ci g"></div><div class="cinfo"><div class="ct">תל אביב → חיפה</div><div class="cm2">05/05/2026 • 950 ק"ג</div></div><div class="cr"><div class="cp" style="color:var(--green)">₪1,600</div><div class="badge bg">הושלם</div></div></div></div>
-    <div class="card"><div class="cm"><div class="ci g"></div><div class="cinfo"><div class="ct">ירושלים → ת"א</div><div class="cm2">03/05/2026 • 750 ק"ג</div></div><div class="cr"><div class="cp" style="color:var(--green)">₪1,200</div><div class="badge bg">הושלם</div></div></div></div>
+    <div id="b-done-list"></div>
+    <div id="b-done-empty" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:15px;">אין הובלות שהושלמו</div>
   </div>
 
   <div class="sp"></div>
@@ -779,12 +718,12 @@ textarea.fi{resize:vertical;}
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:14px 0 10px;">פרטי מטען</div>
     <div class="fcard">
       <div class="frow">
-        <div class="fg"><div class="fl">משקל (ק"ג)</div><input class="fi" type="number" placeholder="0" value="1200"></div>
-        <div class="fg"><div class="fl">כמות (יחידות)</div><input class="fi" type="number" placeholder="0" value="24"></div>
+        <div class="fg"><div class="fl">משקל (ק"ג)</div><input class="fi" type="number" id="no-weight" placeholder="0"></div>
+        <div class="fg"><div class="fl">נפח (מ"ק)</div><input class="fi" type="number" id="no-volume" placeholder="0"></div>
       </div>
       <div class="fg">
         <div class="fl">תיאור טובין</div>
-        <input class="fi" type="text" placeholder="לדוגמא: ציוד רפואי, אלקטרוניקה..." value="ציוד רפואי — מכשירי ניטור">
+        <input class="fi" id="no-desc" type="text" placeholder="לדוגמא: ציוד רפואי, אלקטרוניקה...">
       </div>
 
       <!-- סוג מטען -->
@@ -793,7 +732,7 @@ textarea.fi{resize:vertical;}
         <div style="display:flex;gap:10px;margin-bottom:4px;">
           <div id="opt-bulk" onclick="selectCargo('bulk')" style="flex:1;padding:12px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
             
-            <div style="font-size:12px;font-weight:700;">חלקי / פריקי</div>
+            <div style="font-size:12px;font-weight:700;">חלקי</div>
           </div>
           <div id="opt-cont" onclick="selectCargo('cont')" style="flex:1;padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
             <div style="font-size:20px;margin-bottom:4px;"></div>
@@ -803,23 +742,47 @@ textarea.fi{resize:vertical;}
         <!-- Container size picker — shown only for מכולה -->
         <div id="cont-size" style="display:none;margin-top:10px;">
           <div class="fl">גודל מכולה</div>
-          <div style="display:flex;gap:10px;">
-            <div id="sz-20" onclick="selectSize(20)" style="flex:1;padding:14px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-              <div style="font-size:22px;margin-bottom:4px;"></div>
-              <div style="font-size:14px;font-weight:800;">20 פיט</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div id="sz-20" onclick="selectSize('20')" style="padding:12px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:13px;font-weight:800;">20'</div>
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">עד ~21 טון</div>
             </div>
-            <div id="sz-40" onclick="selectSize(40)" style="flex:1;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-              <div style="font-size:22px;margin-bottom:4px;"></div>
-              <div style="font-size:14px;font-weight:800;">40 פיט</div>
+            <div id="sz-40" onclick="selectSize('40')" style="padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:13px;font-weight:800;">40'</div>
               <div style="font-size:11px;color:var(--muted);margin-top:2px;">עד ~26 טון</div>
+            </div>
+            <div id="sz-40hc" onclick="selectSize('40HC')" style="padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:13px;font-weight:800;">40HC</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;">High Cube</div>
+            </div>
+            <div id="sz-40ot" onclick="selectSize('40OT')" style="padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:13px;font-weight:800;">40 Open Top</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;">פתוח לגובה</div>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- רמפית + סבלים (רק בחלקי) -->
+      <div id="bulk-extras" style="display:block;">
+        <div class="fg">
+          <div class="fl">האם נדרשת רמפית?</div>
+          <div style="display:flex;gap:10px;">
+            <div id="ramp-no" onclick="selectRamp(false)" style="flex:1;padding:11px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">לא</div>
+            <div id="ramp-yes" onclick="selectRamp(true)" style="flex:1;padding:11px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">כן</div>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl">האם נדרשים סבלים?</div>
+          <div style="display:flex;gap:10px;">
+            <div id="port-no" onclick="selectPorters(false)" style="flex:1;padding:11px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">לא</div>
+            <div id="port-yes" onclick="selectPorters(true)" style="flex:1;padding:11px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">כן</div>
+          </div>
+        </div>
+      </div>
+
       <!-- חומר מסוכן -->
-      <div class="fg" style="margin-bottom:0;">
+      <div id="haz-section" class="fg" style="margin-bottom:0;">
         <div class="fl">חומר מסוכן?</div>
         <div style="display:flex;gap:10px;">
           <div id="haz-no" onclick="selectHaz(false)" style="flex:1;padding:11px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;"> לא</div>
@@ -979,6 +942,9 @@ function go(id){
   // טען נתונים דינמיים
   if (id === 's-payments') {
     if (typeof loadPaymentsScreen === 'function') loadPaymentsScreen();
+  }
+  if (id === 's-broker') {
+    if (typeof loadBrokerOrders === 'function') loadBrokerOrders();
   }
 }
 function otpContinue(){
@@ -1438,17 +1404,30 @@ window.fbRegister = async function() {
 
 //  FORGOT PASSWORD 
 window.showForgotOtp = async function() {
-  const emailInput = document.querySelector('#s-forgot input[type="email"]') ||
-                     document.querySelector('#s-forgot input[type="tel"]');
+  const emailInput = document.getElementById('forgot-email-input');
   const email = emailInput ? emailInput.value.trim() : '';
-  if (!email) { toast('הכנס אימייל'); return; }
+  if (!email) { showFgToast('הכנס אימייל'); return; }
+  const btn = document.querySelector('#s-forgot .ab');
+  if(btn){ btn.textContent = '⏳ שולח...'; btn.disabled = true; }
   try {
     await sendPasswordResetEmail(auth, email);
     showOv('forgot-succ');
   } catch(e) {
-    toast('לא נמצא חשבון עם אימייל זה');
+    const msg = e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email'
+      ? 'לא נמצא חשבון עם האימייל הזה'
+      : 'שגיאה: ' + (e.message || 'נסה שוב');
+    showFgToast(msg);
+  } finally {
+    if(btn){ btn.textContent = ' שלח לינק איפוס'; btn.disabled = false; }
   }
 };
+
+function showFgToast(msg){
+  const t = document.getElementById('fg-toast');
+  if(!t) return;
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
 
 //  LOGOUT 
 window.fbLogout = async function() {
@@ -1740,6 +1719,60 @@ window.brokerConfirmReceipt = async function(shipId) {
     toast('תשלום שוחרר לנהג בהצלחה!');
     loadPaymentsScreen();
   } catch(e) { toast('שגיאה, נסה שוב'); }
+};
+
+// ── SAVE ORDER TO FIRESTORE ──────────────────────
+window.fbSaveOrder = async function(data) {
+  if (!currentUser) throw new Error('לא מחובר');
+  const snap = await getDoc(doc(db, 'users', currentUser.uid));
+  const userData = snap.exists() ? snap.data() : {};
+  const orderData = {
+    ...(data || {}),
+    brokerId: currentUser.uid,
+    brokerName: userData.name || currentUser.email,
+    brokerEmail: currentUser.email,
+    status: 'pending',
+    createdAt: serverTimestamp()
+  };
+  const ordRef = doc(collection(db, 'orders'));
+  await setDoc(ordRef, orderData);
+};
+
+// ── LOAD BROKER ORDERS FROM FIRESTORE ────────────
+window.loadBrokerOrders = async function() {
+  if (!currentUser) return;
+  try {
+
+    const q = query(collection(db,'orders'), where('brokerId','==',currentUser.uid));
+    const qSnap = await getDocs(q);
+    const pend = document.getElementById('b-pend');
+    if (!pend) return;
+    document.querySelectorAll('.brk-dyn-card').forEach(e=>e.remove());
+    let hasPend = false;
+    qSnap.forEach(d => {
+      const o = d.data();
+      if (o.status === 'pending') {
+        hasPend = true;
+        const card = document.createElement('div');
+        card.className = 'card brk-dyn-card';
+        const dt = o.date ? new Date(o.date).toLocaleDateString('he-IL') : '';
+        card.innerHTML = `<div class="cm"><div class="ci"></div><div class="cinfo"><div class="ct">${o.origin||''} → ${o.destination||''}</div><div class="cm2">${o.weight||''}ק"ג${o.volume?' • '+o.volume+'מ"ק':''} • ${o.desc||''}</div></div><div class="cr"><div class="cp">₪${o.price||'0'}</div></div></div><div style="padding:0 14px 14px;font-size:12px;color:var(--muted);">${dt}${o.needsRamp?' • רמפית':''}${o.needsPorters?' • סבלים':''}${o.isHazardous?' • חומ"ס':''}</div>`;
+        pend.appendChild(card);
+      }
+    });
+    let emptyEl = document.getElementById('b-pend-empty');
+    if (!hasPend) {
+      if (!emptyEl) {
+        emptyEl = document.createElement('div');
+        emptyEl.id = 'b-pend-empty';
+        emptyEl.style = 'text-align:center;padding:40px 20px;color:var(--muted);font-size:15px;';
+        emptyEl.textContent = 'אין הזמנות ממתינות';
+        pend.appendChild(emptyEl);
+      }
+    } else if (emptyEl) {
+      emptyEl.remove();
+    }
+  } catch(e) { console.log('loadBrokerOrders err', e); }
 };
 </script>
 </div>
