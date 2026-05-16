@@ -317,7 +317,7 @@ textarea.fi{resize:vertical;}
 <!--  S-FORGOT: שכחתי סיסמה  -->
 <div class="scr" id="s-forgot">
   <div class="a-hero" style="padding:40px 28px 30px;">
-    <div class="a-logo">Truck<b>Go</b></div>
+    <div class="a-logo" style="position:relative;z-index:2;font-size:42px;">Truck<b>Go</b></div>
     <div class="a-tag">נשלח לינק איפוס לאימייל שלך</div>
   </div>
   <div class="a-body">
@@ -336,7 +336,7 @@ textarea.fi{resize:vertical;}
     <div class="ov-s">לינק לאיפוס סיסמה נשלח לאימייל שלך.\nבדוק את תיבת הדואר שלך</div>
     <button class="ov-btn" onclick="closeOv('forgot-succ');go('s-login')">חזור לכניסה</button>
   </div>
-  <div class="toast" id="fg-toast"></div>
+  <div class="toast" id="fg-toast">  <div class="toast" id="login-toast"></div>
 </div>
 
 <!--  S2: REGISTER  -->
@@ -1301,31 +1301,40 @@ window.selectedRole = 'drv';
 window.fbLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email) { toast('הכנס אימייל'); return; }
-  if (!password) { toast('הכנס סיסמה'); return; }
+  function loginToast(msg){
+    const t=document.getElementById('login-toast');
+    if(t){t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+  }
+  if (!email) { loginToast('הכנס אימייל'); return; }
+  if (!password) { loginToast('הכנס סיסמה'); return; }
 
   const btn = document.getElementById('login-btn');
-  btn.textContent = 'מתחבר...';
+  btn.textContent = '⏳ מתחבר...';
   btn.disabled = true;
 
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
     currentUser = result.user;
+    if (!currentUser.emailVerified) {
+      document.getElementById('verify-email').textContent = currentUser.email || '';
+      go('s-verify');
+      btn.textContent = 'כניסה לאפליקציה →';
+      btn.disabled = false;
+      return;
+    }
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
     if (snap.exists()) {
       const data = snap.data();
-      const nameEl = document.getElementById('p-name-v');
-      if (nameEl && data.name) nameEl.textContent = data.name;
+      loadProfile(data, currentUser);
       go(data.role === 'brk' ? 's-broker' : 's-driver');
     } else {
       go('s-driver');
     }
-    toast('כניסה בוצעה בהצלחה!');
   } catch(e) {
     const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-      ? ' אימייל או סיסמה שגויים'
+      ? 'אימייל או סיסמה שגויים'
       : 'שגיאה: ' + (e.message || 'נסה שוב');
-    toast(msg);
+    loginToast(msg);
   } finally {
     btn.textContent = 'כניסה לאפליקציה →';
     btn.disabled = false;
@@ -1429,7 +1438,7 @@ window.showForgotOtp = async function() {
   const btn = document.querySelector('#s-forgot .ab');
   if(btn){ btn.textContent = '⏳ שולח...'; btn.disabled = true; }
   try {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email, { url: 'https://truckgo.co.il' });
     showOv('forgot-succ');
   } catch(e) {
     const msg = e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email'
