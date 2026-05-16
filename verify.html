@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>TruckGo – אימות מייל</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <style>
+    :root {
+      --bg:#f0f4ff; --surface:#ffffff; --border:#d0d9f0;
+      --accent:#1d4ed8; --accent-l:#3b82f6;
+      --green:#16a34a; --green-bg:#dcfce7; --green-b:#86efac;
+      --red:#dc2626; --red-bg:#fee2e2; --red-b:#fca5a5;
+      --text:#0f172a; --muted:#64748b;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Heebo',sans-serif;
+      background:var(--bg);
+      min-height:100vh;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:20px;
+    }
+    .top-bar{
+      position:fixed;top:0;left:0;right:0;height:56px;
+      background:var(--accent);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 8px rgba(29,78,216,.25);z-index:10;
+    }
+    .logo{font-size:22px;font-weight:900;color:#fff;letter-spacing:-1px;}
+    .logo span{color:#93c5fd;}
+    .card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:20px;padding:44px 32px 36px;
+      width:100%;max-width:380px;text-align:center;
+      box-shadow:0 4px 24px rgba(29,78,216,.10);
+      margin-top:72px;
+    }
+    .icon-wrap{
+      width:76px;height:76px;border-radius:50%;
+      margin:0 auto 22px;display:flex;align-items:center;justify-content:center;font-size:34px;
+    }
+    .icon-wrap.loading{background:#eff6ff;border:2px solid var(--border);}
+    .icon-wrap.success{background:var(--green-bg);border:2px solid var(--green-b);}
+    .icon-wrap.error  {background:var(--red-bg);border:2px solid var(--red-b);}
+    .spinner{
+      width:32px;height:32px;
+      border:3px solid #bfdbfe;border-top-color:var(--accent);
+      border-radius:50%;animation:spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+    h1{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;}
+    p{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:28px;}
+    .btn{
+      display:block;width:100%;padding:14px;
+      background:var(--accent);color:#fff;
+      font-family:'Heebo',sans-serif;font-size:16px;font-weight:700;
+      border:none;border-radius:12px;cursor:pointer;text-decoration:none;
+      transition:background .15s,transform .1s;
+    }
+    .btn:hover{background:#1e40af;}
+    .btn:active{transform:scale(.98);}
+    .state{display:none;}
+    .state.active{display:block;}
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Truck<span>Go</span></div>
+</div>
+
+<div class="card">
+
+  <div id="st-loading" class="state active">
+    <div class="icon-wrap loading"><div class="spinner"></div></div>
+    <h1>מאמת את כתובת המייל…</h1>
+    <p>רגע אחד, אנחנו מאמתים את הפרטים שלך</p>
+  </div>
+
+  <div id="st-success" class="state">
+    <div class="icon-wrap success">✅</div>
+    <h1>המייל אומת בהצלחה!</h1>
+    <p>ברוך הבא ל-TruckGo!<br/>לחץ להיכנס לאפליקציה.</p>
+    <a class="btn" href="https://truckgo.co.il">כניסה לאפליקציה</a>
+  </div>
+
+  <div id="st-error" class="state">
+    <div class="icon-wrap error">❌</div>
+    <h1>הקישור לא תקין</h1>
+    <p id="err-msg">הקישור פג תוקף או כבר שומש.<br/>ניתן לשלוח קישור חדש מתוך האפליקציה.</p>
+    <a class="btn" href="https://truckgo.co.il">חזרה לאפליקציה</a>
+  </div>
+
+</div>
+
+<script>
+  firebase.initializeApp({
+    apiKey:            "AIzaSyBstQoQeTedaK2dLI5KZn35zudIOomYuMY",
+    authDomain:        "truckgo-6bf17.firebaseapp.com",
+    projectId:         "truckgo-6bf17",
+    storageBucket:     "truckgo-6bf17.firebasestorage.app",
+    messagingSenderId: "763417873532",
+    appId:             "1:763417873532:web:e6fd6f11a8e051a6e04df9"
+  });
+
+  function show(s) {
+    ['loading','success','error'].forEach(function(n){
+      document.getElementById('st-'+n).classList.toggle('active', n===s);
+    });
+  }
+
+  var params  = new URLSearchParams(window.location.search);
+  var mode    = params.get('mode');
+  var oobCode = params.get('oobCode');
+
+  if (mode === 'verifyEmail' && oobCode) {
+    firebase.auth().applyActionCode(oobCode)
+      .then(function(){ show('success'); })
+      .catch(function(err){
+        document.getElementById('err-msg').textContent =
+          err.code === 'auth/invalid-action-code'
+            ? 'הקישור פג תוקף או כבר שומש. שלח קישור חדש מתוך האפליקציה.'
+            : 'אירעה שגיאה. נסה שוב או צור קשר עם התמיכה.';
+        show('error');
+      });
+  } else {
+    document.getElementById('err-msg').textContent =
+      'הקישור אינו תקין. נסה להיכנס לאפליקציה ישירות.';
+    show('error');
+  }
+</script>
+</body>
+</html>
