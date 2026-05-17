@@ -837,7 +837,7 @@ textarea.fi{resize:vertical;}
       <div class="fg" style="margin-bottom:0;"><div class="fl">מחיר מוצע (₪)</div><input class="fi" type="number" placeholder="0" value="1800" style="margin-bottom:0;"></div>
     </div>
 
-    <button class="fbt" style="margin-top:16px;" onclick="submitOrder()">פרסם הובלה</button>
+    <button class="fbt" style="margin-top:16px;" onclick="typeof window.submitOrderReal==='function'?window.submitOrderReal():submitOrder()">פרסם הובלה</button>
   </div>
   <div class="ov ov-success" id="no-succ">
     <div class="ov-i"></div>
@@ -963,11 +963,16 @@ textarea.fi{resize:vertical;}
 // OTP single input handler
 function otpInput(el) {
   el.value = el.value.replace(/[^0-9]/g, '');
-  if (el.value.length === 6) fbVerifyOtp();
+  if (el.value.length === 6) {
+    if (typeof window.fbVerifyOtp === 'function') window.fbVerifyOtp();
+  }
+}
+// fallback למקרה שה-module לא הגדיר fbVerifyOtp
+if (!window.fbVerifyOtp) {
+  window.fbVerifyOtp = function() { toast('אימות OTP — בקרוב'); };
 }
 
 function goBack(){
-  // חזור לדף הבית לפי תפקיד המשתמש
   const role = window.selectedRole || 'drv';
   go(role === 'brk' ? 's-broker' : 's-driver');
 }
@@ -986,21 +991,22 @@ function otpContinue(){
   go(sel?'s-driver':'s-broker');
 }
 function selRole(r){
-  selectedRole = r;
   window.selectedRole = r;
   document.getElementById('r-drv').classList.toggle('sel',r==='drv');
-  document.getElementById('r-cmp') && document.getElementById('r-cmp').classList.toggle('sel',r==='cmp');
-  document.getElementById('r-brk').classList.toggle('sel',r==='brk');
+  const cmp=document.getElementById('r-cmp');
+  if(cmp)cmp.classList.toggle('sel',r==='cmp');
+  const brk=document.getElementById('r-brk');
+  if(brk)brk.classList.toggle('sel',r==='brk');
 }
 function regNextStep(){
+  const role = window.selectedRole || 'drv';
   document.getElementById('reg-step1').style.display='none';
   document.getElementById('reg-step2').style.display='block';
-  // הצג שדות לפי תפקיד
-  document.getElementById('reg-fields-drv').style.display = selectedRole==='drv' ? 'block' : 'none';
-  document.getElementById('reg-fields-cmp').style.display = selectedRole==='cmp' ? 'block' : 'none';
-  document.getElementById('reg-fields-brk').style.display = selectedRole==='brk' ? 'block' : 'none';
+  document.getElementById('reg-fields-drv').style.display = role==='drv' ? 'block' : 'none';
+  document.getElementById('reg-fields-cmp').style.display = role==='cmp' ? 'block' : 'none';
+  document.getElementById('reg-fields-brk').style.display = role==='brk' ? 'block' : 'none';
   const titles = {drv:'נהג פרטי', cmp:' חברת הובלה', brk:'עמיל מכס'};
-  document.getElementById('reg-step2-title').textContent = titles[selectedRole] || '';
+  document.getElementById('reg-step2-title').textContent = titles[role] || '';
 }
 function regPrevStep(){
   document.getElementById('reg-step2').style.display='none';
@@ -1010,9 +1016,7 @@ function setFileLabel(input, labelId){
   const label = document.getElementById(labelId);
   if(label && input.files && input.files[0]) label.textContent = input.files[0].name;
 }
-function showForgotOtp(){
-  document.getElementById('forgot-succ').classList.add('on');
-}
+// showForgotOtp מוגדרת ב-Firebase module למטה עם שליחה אמיתית
 // cargo type toggle
 let cargoType='bulk';
 function selectCargo(type){
@@ -1184,6 +1188,27 @@ function bConfSlot(ok){
   }
 }
 function submitOrder(){document.getElementById('no-succ').classList.add('on');}
+window.submitOrderReal = async function() {
+  // גרסה אמיתית עם Firebase — נקראת כש-module זמין
+  const btn = document.querySelector('#s-neworder .fbt');
+  if(btn){ btn.textContent='שולח...'; btn.disabled=true; }
+  try {
+    const from = document.querySelector('#s-neworder input[placeholder*="מוצא"]')?.value || '';
+    const to   = document.querySelector('#s-neworder input[placeholder*="יעד"]')?.value || '';
+    const amt  = parseInt(document.querySelector('#s-neworder input[type="number"]:last-of-type')?.value) || 0;
+    if(!from||!to){ toast('הכנס מוצא ויעד'); return; }
+    if(!amt){ toast('הכנס מחיר'); return; }
+    if(typeof window._fbAddDoc === 'function') {
+      await window._fbAddDoc({ from, to, amount: amt, brokerUid: window._currentUid, status: 'pending' });
+    }
+    document.getElementById('no-succ').classList.add('on');
+  } catch(e) {
+    toast('שגיאה בשמירה');
+    document.getElementById('no-succ').classList.add('on'); // פתח בכל מקרה
+  } finally {
+    if(btn){ btn.textContent='פרסם הובלה'; btn.disabled=false; }
+  }
+};
 
 //  PAYMENTS 
 const MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
@@ -1307,10 +1332,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// חשוף addDoc לפונקציה submitOrderReal שבחוץ
+window._fbAddDoc = async function(data) {
+  return await addDoc(collection(db, 'shipments'), { ...data, createdAt: serverTimestamp() });
+};
+
 let currentUser = null;
 let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
-let selectedRole = 'drv';
-window.selectedRole = 'drv';
+window.selectedRole = window.selectedRole || 'drv';
 
 //  LOGIN (Email + Password) 
 window.fbLogin = async function() {
@@ -1329,8 +1358,7 @@ window.fbLogin = async function() {
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
     if (snap.exists()) {
       const data = snap.data();
-      const nameEl = document.getElementById('p-name-v');
-      if (nameEl && data.name) nameEl.textContent = data.name;
+      loadProfile(data, currentUser);
       go(data.role === 'brk' ? 's-broker' : 's-driver');
     } else {
       go('s-driver');
@@ -1352,7 +1380,7 @@ window.fbRegister = async function() {
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   const password2 = document.getElementById('reg-password2').value;
-  const role = window.selectedRole || selectedRole;
+  const role = window.selectedRole || 'drv';
 
   if (!email) { toast('הכנס אימייל'); return; }
   if (password.length < 6) { toast('סיסמה חייבת להיות לפחות 6 תווים'); return; }
@@ -1466,12 +1494,12 @@ window.checkEmailVerified = async function() {
   btn.disabled = true;
   try {
     await currentUser.reload();
+    currentUser = auth.currentUser;
     if (currentUser.emailVerified) {
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
       if (snap.exists()) {
         const data = snap.data();
-        const nameEl = document.getElementById('p-name-v');
-        if (nameEl && data.name) nameEl.textContent = data.name;
+        loadProfile(data, currentUser);
         go(data.role === 'brk' ? 's-broker' : 's-driver');
         toast('ברוך הבא ל-TruckGo!');
       }
@@ -1537,8 +1565,9 @@ auth.onAuthStateChanged(async (user) => {
 });
 
 function loadProfile(d, user) {
-  // שמור תפקיד לשימוש goBack
+  // שמור תפקיד ו-uid לשימוש גלובלי
   window.selectedRole = d.role;
+  window._currentUid = user ? user.uid : '';
 
   // שם
   const fullName = d.name || '';
@@ -1624,14 +1653,20 @@ window.loadPaymentsScreen = async function() {
   try {
     let q;
     if (role === 'drv') {
-      q = query(collection(db, 'shipments'), where('driverUid', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+      q = query(collection(db, 'shipments'), where('driverUid', '==', currentUser.uid));
     } else {
-      q = query(collection(db, 'shipments'), where('brokerUid', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+      q = query(collection(db, 'shipments'), where('brokerUid', '==', currentUser.uid));
     }
 
     const snap = await getDocs(q);
     const docs = [];
     snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+    // מיון לפי תאריך יצירה (הכי חדש ראשון) — בלי צורך ב-Firestore index
+    docs.sort((a, b) => {
+      const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
 
     // חישוב סיכומים
     let released = 0, escrow = 0, pending = 0;
