@@ -1440,7 +1440,7 @@ window.fbRegister = async function() {
 
     // שלח אימייל אימות
     try {
-      await sendEmailVerification(currentUser, { url: window.location.href });
+      await sendEmailVerification(currentUser, { url: 'https://truckgo.co.il', handleCodeInApp: false });
       console.log(' אימייל אימות נשלח!');
     } catch(verifyErr) {
       console.error(' שגיאה בשליחת אימייל:', verifyErr.code, verifyErr.message);
@@ -1471,7 +1471,7 @@ window.showForgotOtp = async function() {
   const email = emailInput ? emailInput.value.trim() : '';
   if (!email) { toast('הכנס אימייל'); return; }
   try {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email, { url: 'https://truckgo.co.il', handleCodeInApp: false });
     showOv('forgot-succ');
   } catch(e) {
     toast('לא נמצא חשבון עם אימייל זה');
@@ -1516,7 +1516,7 @@ window.checkEmailVerified = async function() {
 
 window.resendVerificationEmail = async function() {
   try {
-    await sendEmailVerification(currentUser, { url: window.location.href });
+    await sendEmailVerification(currentUser, { url: 'https://truckgo.co.il', handleCodeInApp: false });
     toast('אימייל נשלח שוב!');
   } catch(e) {
     toast('נסה שוב בעוד כמה שניות');
