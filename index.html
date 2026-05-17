@@ -483,7 +483,7 @@ textarea.fi{resize:vertical;}
     <div class="logo">Truck<b>Go</b></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div class="ot on" id="drv-ot" onclick="toggleDrvOnline()"><div class="od"></div><span id="drv-ol">מחובר</span></div>
-      <div class="ic" onclick="toast(' 3 הצעות חדשות')"></div>
+      <div class="ic" id="drv-bell" onclick="clearNotifBadge();toast(' עדכונים נקראו')" style="position:relative;"></div>
     </div>
   </div>
 
@@ -985,6 +985,10 @@ function go(id){
   if (id === 's-payments') {
     if (typeof loadPaymentsScreen === 'function') loadPaymentsScreen();
   }
+  // נקה badge כשנכנסים לדף הנהג
+  if (id === 's-driver') {
+    if (typeof clearNotifBadge === 'function') clearNotifBadge();
+  }
 }
 function otpContinue(){
   const sel=document.getElementById('r-drv').classList.contains('sel');
@@ -1199,7 +1203,14 @@ window.submitOrderReal = async function() {
     if(!from||!to){ toast('הכנס מוצא ויעד'); return; }
     if(!amt){ toast('הכנס מחיר'); return; }
     if(typeof window._fbAddDoc === 'function') {
-      await window._fbAddDoc({ from, to, amount: amt, brokerUid: window._currentUid, status: 'pending' });
+      await window._fbAddDoc({
+        from,
+        to,
+        amount: amt,
+        brokerUid: window._currentUid,
+        brokerName: document.getElementById('p-name-v')?.textContent || '',
+        status: 'pending'
+      });
     }
     document.getElementById('no-succ').classList.add('on');
   } catch(e) {
@@ -1314,7 +1325,7 @@ if("serviceWorker" in navigator){
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
 // אין צורך להסתיר - האבטחה מתבצעת דרך Firebase Rules + הגבלת דומיין
@@ -1340,6 +1351,260 @@ window._fbAddDoc = async function(data) {
 let currentUser = null;
 let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
 window.selectedRole = window.selectedRole || 'drv';
+
+// ─────────────────────────────────────────────
+// REAL-TIME LISTENERS
+// ─────────────────────────────────────────────
+let _unsubDriverOrders = null;
+let _unsubBrokerOrders = null;
+let _unsubPayments = null;
+let _lastKnownOrderIds = new Set();  // למניעת התראה כפולה בטעינה ראשונה
+
+// ────── PUSH NOTIFICATIONS HELPER ──────
+async function requestPushPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+function showPushNotification(title, body, tag) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, {
+      body,
+      tag: tag || 'truckgo',
+      icon: 'icon.png',
+      badge: 'icon.png',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      silent: false,
+    });
+  } catch(e) { console.warn('Notification error', e); }
+}
+
+// ────── BADGE on notification bell ──────
+let _notifCount = 0;
+function addNotifBadge(n) {
+  _notifCount += n;
+  document.querySelectorAll('.ic').forEach(el => {
+    if (el.textContent === '' || el.textContent === '' || el.querySelector('svg')) return;
+    // פעמון
+  });
+  // עדכן פעמון בדף נהג
+  const bell = document.querySelector('#s-driver .ic');
+  if (bell) {
+    bell.style.position = 'relative';
+    let badge = bell.querySelector('.notif-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'notif-badge';
+      badge.style.cssText = 'position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;pointer-events:none;border:2px solid var(--surface);';
+      bell.appendChild(badge);
+    }
+    badge.textContent = _notifCount > 9 ? '9+' : _notifCount;
+    badge.style.display = _notifCount > 0 ? 'flex' : 'none';
+  }
+}
+function clearNotifBadge() {
+  _notifCount = 0;
+  document.querySelectorAll('.notif-badge').forEach(b => b.style.display = 'none');
+}
+
+// ────── START REAL-TIME LISTENER FOR DRIVERS ──────
+function startDriverRealtime(uid) {
+  if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
+
+  // האזן לכל הזמנות עם status=pending — הזמנות פתוחות לכל נהג
+  const q = query(collection(db, 'shipments'), where('status', '==', 'pending'));
+
+  let firstLoad = true;
+  _unsubDriverOrders = onSnapshot(q, (snapshot) => {
+    const changes = snapshot.docChanges();
+    let newCount = 0;
+
+    changes.forEach(change => {
+      if (change.type === 'added') {
+        const d = change.doc.data();
+        // דלג על שינויים מהטעינה הראשונה (כבר קיימים)
+        if (firstLoad) { _lastKnownOrderIds.add(change.doc.id); return; }
+
+        // הזמנה חדשה שהגיעה לאחר הטעינה!
+        const from = d.from || '—';
+        const to   = d.to   || '—';
+        const amt  = d.amount || 0;
+        newCount++;
+
+        // הוסף כרטיס להזמנות פתוחות בדף הנהג בזמן אמת
+        injectNewOrderCard(change.doc.id, d);
+
+        // Push Notification
+        showPushNotification(
+          '🚛 הזמנה חדשה!',
+          `${from} → ${to}  •  ₪${amt.toLocaleString()}`,
+          'new-order-' + change.doc.id
+        );
+
+        // Toast אם בדף הנהג
+        const active = document.querySelector('.scr.on');
+        if (active && active.id === 's-driver') {
+          toast(`🚛 הזמנה חדשה: ${from} → ${to}  ₪${amt.toLocaleString()}`);
+        }
+      }
+    });
+
+    if (firstLoad) { firstLoad = false; return; }
+    if (newCount > 0) addNotifBadge(newCount);
+  }, (err) => { console.error('Driver listener error', err); });
+}
+
+// הוסף כרטיס הזמנה חדשה בראש הרשימה
+function injectNewOrderCard(docId, d) {
+  const container = document.getElementById('s-driver')?.querySelector('.sec:last-of-type');
+  if (!container) return;
+
+  // בדוק שלא קיים כבר
+  if (document.getElementById('dof-' + docId)) return;
+
+  const from = d.from || '—';
+  const to   = d.to   || '—';
+  const amt  = d.amount || 0;
+  const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : new Date().toLocaleDateString('he-IL');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'dof-' + docId;
+  card.style.cssText = 'animation:slideIn .4s ease; border-color: var(--accent-light);';
+  card.innerHTML = `
+    <style>@keyframes slideIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}</style>
+    <div class="cm" onclick="toggleCard('dof-${docId}')">
+      <div class="ci" style="position:relative;">🚛<span style="position:absolute;top:-4px;right:-4px;background:var(--red);border-radius:50%;width:10px;height:10px;border:2px solid white;"></span></div>
+      <div class="cinfo">
+        <div class="ct">${from} → ${to}</div>
+        <div class="cm2">חדש! • ${date}</div>
+      </div>
+      <div class="cr">
+        <div class="cp">₪${amt.toLocaleString()}</div>
+        <div class="badge bb">חדש</div>
+        <div class="chev">▼</div>
+      </div>
+    </div>
+    <div class="cd">
+      <div class="dg">
+        <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${from}</div></div>
+        <div class="dc"><div class="dcl">יעד</div><div class="dcv">${to}</div></div>
+        <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${date}</div></div>
+        <div class="dc"><div class="dcl">סכום</div><div class="dcv">₪${amt.toLocaleString()}</div></div>
+      </div>
+      <div class="brow">
+        <button class="btn bp" onclick="acceptOrderRealtime('dof-${docId}','${docId}',${amt})"> קבל</button>
+        <button class="btn bred" onclick="rmCard('dof-${docId}',' נדחה')"> דחה</button>
+      </div>
+    </div>
+  `;
+
+  // הוסף לראש הרשימה
+  const firstCard = container.querySelector('.card');
+  if (firstCard) container.insertBefore(card, firstCard);
+  else container.appendChild(card);
+}
+
+// קבלת הזמנה אמיתית מ-Firestore
+window.acceptOrderRealtime = async function(cardId, docId, amt) {
+  if (!currentUser) { toast('נדרשת כניסה'); return; }
+  try {
+    await updateDoc(doc(db, 'shipments', docId), {
+      status: 'accepted',
+      driverUid: currentUser.uid,
+      driverName: document.getElementById('p-name-v')?.textContent || '',
+      acceptedAt: serverTimestamp(),
+    });
+    rmCard(cardId, '✅ ההזמנה התקבלה!');
+    // הפעל בחירת slot
+    openTS(cardId, amt, false);
+  } catch(e) {
+    console.error(e);
+    toast('שגיאה, נסה שוב');
+  }
+};
+
+// ────── START REAL-TIME LISTENER FOR BROKER (עדכוני סטטוס) ──────
+function startBrokerRealtime(uid) {
+  if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
+
+  const q = query(collection(db, 'shipments'), where('brokerUid', '==', uid));
+  let firstLoad = true;
+
+  _unsubBrokerOrders = onSnapshot(q, (snapshot) => {
+    const changes = snapshot.docChanges();
+
+    changes.forEach(change => {
+      if (firstLoad) return;
+
+      const d = change.doc.data();
+      const from = d.from || '—';
+      const to   = d.to   || '—';
+
+      if (change.type === 'modified') {
+        // עדכון סטטוס — הגב בזמן אמת
+        if (d.status === 'accepted') {
+          showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${d.driverName || 'נהג'}`, 'accept-' + change.doc.id);
+          const active = document.querySelector('.scr.on');
+          if (active && active.id === 's-broker') toast(`✅ נהג קיבל: ${from} → ${to}`);
+          addNotifBadge(1);
+          // רענן רשימת broker
+          refreshBrokerLists();
+        }
+        if (d.status === 'delivered') {
+          showPushNotification('📦 נהג אישר מסירה!', `${from} → ${to}  — אשר קבלה לשחרור תשלום`, 'delivered-' + change.doc.id);
+          const active = document.querySelector('.scr.on');
+          if (active && active.id === 's-broker') toast(`📦 מסירה אושרה: ${from} → ${to}`);
+          addNotifBadge(1);
+          refreshBrokerLists();
+        }
+      }
+    });
+
+    if (firstLoad) { firstLoad = false; }
+  }, err => console.error('Broker listener error', err));
+}
+
+// ────── PAYMENTS REAL-TIME ──────
+function startPaymentsRealtime(uid, role) {
+  if (_unsubPayments) { _unsubPayments(); _unsubPayments = null; }
+
+  const field = role === 'drv' ? 'driverUid' : 'brokerUid';
+  const q = query(collection(db, 'shipments'), where(field, '==', uid));
+
+  _unsubPayments = onSnapshot(q, () => {
+    // אם מסך תשלומים פתוח — רענן אוטומטית
+    const active = document.querySelector('.scr.on');
+    if (active && active.id === 's-payments') {
+      window.loadPaymentsScreen();
+    }
+  }, err => console.error('Payments listener error', err));
+}
+
+function refreshBrokerLists() {
+  // רענן את הסטטיסטיקות ורשימות ה-broker
+  const active = document.querySelector('.scr.on');
+  if (active && active.id === 's-broker') {
+    // flash visual update
+    const hb = active.querySelector('.hb');
+    if (hb) { hb.style.transition='opacity .2s'; hb.style.opacity='.7'; setTimeout(()=>hb.style.opacity='1',300); }
+  }
+}
+
+// ────── STOP ALL LISTENERS ──────
+function stopAllListeners() {
+  if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
+  if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
+  if (_unsubPayments) { _unsubPayments(); _unsubPayments = null; }
+}
+// ─────────────────────────────────────────────
+// END REAL-TIME LISTENERS
+// ─────────────────────────────────────────────
 
 //  LOGIN (Email + Password) 
 window.fbLogin = async function() {
@@ -1481,6 +1746,8 @@ window.showForgotOtp = async function() {
 //  LOGOUT 
 window.fbLogout = async function() {
   if (!confirm('להתנתק?')) return;
+  stopAllListeners();
+  clearNotifBadge();
   await signOut(auth);
   currentUser = null;
   go('s-login');
@@ -1670,6 +1937,23 @@ function loadProfile(d, user) {
   // שמור תפקיד ו-uid לשימוש גלובלי
   window.selectedRole = d.role;
   window._currentUid = user ? user.uid : '';
+
+  // ────── הפעל real-time listeners ──────
+  if (user) {
+    // בקש הרשאת Push Notifications
+    requestPushPermission().then(granted => {
+      if (granted) console.log('Push notifications enabled');
+    });
+
+    if (d.role === 'drv') {
+      startDriverRealtime(user.uid);
+      startPaymentsRealtime(user.uid, 'drv');
+    } else if (d.role === 'brk') {
+      startBrokerRealtime(user.uid);
+      startPaymentsRealtime(user.uid, 'brk');
+    }
+  }
+  // ──────────────────────────────────────
 
   // שם
   const fullName = d.name || '';
