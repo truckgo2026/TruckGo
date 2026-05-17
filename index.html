@@ -1313,7 +1313,7 @@ if("serviceWorker" in navigator){
 <!--  FIREBASE  -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
@@ -1523,6 +1523,113 @@ window.resendVerificationEmail = async function() {
   }
 };
 
+//  HANDLE FIREBASE EMAIL ACTION LINKS 
+// כשמשתמש לוחץ על קישור מייל (איפוס סיסמה / אימות) — Firebase מפנה לכאן עם פרמטרים
+(async function handleEmailAction() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  const oobCode = params.get('oobCode');
+  if (!mode || !oobCode) return; // אין פרמטרים — טעינה רגילה
+
+  if (mode === 'resetPassword') {
+    // איפוס סיסמה — הצג מסך איפוס
+    try {
+      await verifyPasswordResetCode(auth, oobCode);
+      // הקוד תקין — הצג מסך הזנת סיסמה חדשה
+      showResetPasswordScreen(oobCode);
+    } catch(e) {
+      showActionError('הקישור פג תוקף או כבר שומש. בקש קישור חדש.');
+    }
+
+  } else if (mode === 'verifyEmail') {
+    // אימות מייל
+    try {
+      await applyActionCode(auth, oobCode);
+      // אימות הצליח — רענן משתמש אם מחובר
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+        const snap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (snap.exists()) {
+          loadProfile(snap.data(), auth.currentUser);
+          go(snap.data().role === 'brk' ? 's-broker' : 's-driver');
+        } else { go('s-login'); }
+      } else { go('s-login'); }
+      setTimeout(() => toast('✅ המייל אומת בהצלחה! ברוך הבא ל-TruckGo'), 600);
+    } catch(e) {
+      showActionError('הקישור לאימות המייל פג תוקף. בקש שליחה מחדש.');
+    }
+
+  } else if (mode === 'recoverEmail') {
+    try {
+      await applyActionCode(auth, oobCode);
+      go('s-login');
+      setTimeout(() => toast('📧 האימייל שוחזר בהצלחה'), 600);
+    } catch(e) {
+      showActionError('שגיאה בשחזור האימייל.');
+    }
+  }
+
+  // נקה פרמטרים מה-URL כדי שלא יפריעו
+  window.history.replaceState({}, document.title, window.location.pathname);
+})();
+
+// מסך איפוס סיסמה דינמי
+function showResetPasswordScreen(oobCode) {
+  // הסתר את מסך ההתחברות והצג overlay איפוס
+  go('s-login');
+  const overlay = document.createElement('div');
+  overlay.id = 'reset-pw-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;font-family:Heebo,sans-serif;';
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:360px;">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+        <div style="font-size:22px;font-weight:900;color:var(--accent);">הגדרת סיסמה חדשה</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px;">הכנס סיסמה חדשה לחשבונך</div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">סיסמה חדשה</div>
+      <input id="rp-pw1" type="password" placeholder="לפחות 6 תווים"
+        style="width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:15px 16px;font-size:16px;font-family:Heebo,sans-serif;margin-bottom:12px;outline:none;">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">אימות סיסמה</div>
+      <input id="rp-pw2" type="password" placeholder="הכנס שוב"
+        style="width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:15px 16px;font-size:16px;font-family:Heebo,sans-serif;margin-bottom:20px;outline:none;">
+      <button id="rp-btn" onclick="window._doResetPassword('${oobCode}')"
+        style="width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:Heebo,sans-serif;cursor:pointer;">
+        שמור סיסמה חדשה →
+      </button>
+      <div id="rp-err" style="color:var(--red);font-size:13px;text-align:center;margin-top:10px;display:none;"></div>
+    </div>
+  `;
+  document.querySelector('.phone').appendChild(overlay);
+}
+
+window._doResetPassword = async function(oobCode) {
+  const pw1 = document.getElementById('rp-pw1').value;
+  const pw2 = document.getElementById('rp-pw2').value;
+  const err = document.getElementById('rp-err');
+  const btn = document.getElementById('rp-btn');
+  if (pw1.length < 6) { err.textContent='סיסמה חייבת להיות לפחות 6 תווים'; err.style.display='block'; return; }
+  if (pw1 !== pw2) { err.textContent='הסיסמאות אינן תואמות'; err.style.display='block'; return; }
+  btn.textContent='שומר...'; btn.disabled=true;
+  try {
+    await confirmPasswordReset(auth, oobCode, pw1);
+    document.getElementById('reset-pw-overlay').remove();
+    go('s-login');
+    setTimeout(() => toast('✅ הסיסמה אופסה! כנס עם הסיסמה החדשה'), 400);
+  } catch(e) {
+    err.textContent = e.code === 'auth/expired-action-code'
+      ? 'הקישור פג תוקף — בקש קישור חדש'
+      : 'שגיאה בשמירת הסיסמה, נסה שוב';
+    err.style.display='block';
+    btn.textContent='שמור סיסמה חדשה →'; btn.disabled=false;
+  }
+};
+
+function showActionError(msg) {
+  go('s-login');
+  setTimeout(() => toast('❌ ' + msg), 500);
+}
+
 //  AUTO LOGIN CHECK 
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
@@ -1555,11 +1662,6 @@ auth.onAuthStateChanged(async (user) => {
       const d = snap.data();
       loadProfile(d, currentUser);
       go(d.role === 'brk' ? 's-broker' : 's-driver');
-      // הצג הודעה אם הגיע דרך קישור אימות
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('mode') === 'verifyEmail') {
-        setTimeout(() => toast('המייל אומת בהצלחה! ברוך הבא ל-TruckGo'), 500);
-      }
     }
   }
 });
