@@ -1036,7 +1036,12 @@ function updCnt(){
 function sendCnt(){
   if(!cntVal||parseInt(cntVal)<=0){toast('הכנס סכום תקין');return;}
   closeSheet('cnt-sh');
-  openTS(cntCard,parseInt(cntVal),true);
+  // שמור pendingAccept עם docId שנשמר ב-cntCard
+  // cntCard הוא 'dof-DOCID', נחלץ את docId
+  const docId = cntCard.startsWith('dof-') ? cntCard.slice(4) : '';
+  const amt = parseInt(cntVal);
+  window._pendingAccept = { cardId: cntCard, docId, amt };
+  openTS(cntCard, amt, true);
 }
 
 //  TIMESLOTS 
@@ -1070,13 +1075,10 @@ function confirmTS(){
   closeSheet('ts-sh');
   const s=SLOTS[selSlotIdx];
   const slotStr = s.n + ' (' + s.h + ')';
-  
-  // שמור ב-Firestore רק אם קבלה אמיתית (לא הצעה נגדית)
-  if(typeof window.acceptOrderConfirmSlot === 'function'){
-    window.acceptOrderConfirmSlot(tsCard, tsPrice, tsIsCnt, slotStr);
+  if(typeof window.doAcceptWithSlot === 'function'){
+    window.doAcceptWithSlot(tsCard, tsPrice, tsIsCnt, slotStr);
   } else {
-    // fallback: הצג toast
-    toast(' ממתין לאישור עמיל...');
+    toast('שגיאה: Firebase לא מוכן');
   }
 }
 
@@ -1472,46 +1474,44 @@ function injectNewOrderCard(docId, d) {
 }
 
 
-// קבלת הזמנה אמיתית מ-Firestore
+// שלב 1: לחץ "קבל" → רק פתח בחירת slot, אל תגע ב-Firestore עדיין
 window.acceptOrderRealtime = async function(cardId, docId, amt) {
   if (!currentUser) { toast('נדרשת כניסה'); return; }
-  try {
-    await updateDoc(doc(db, 'shipments', docId), {
-      status: 'accepted',
-      driverUid: currentUser.uid,
-      driverName: document.getElementById('p-name-v')?.textContent || '',
-      acceptedAt: serverTimestamp(),
-    });
-    toast('✅ ההזמנה התקבלה! בחר טווח זמינות');
-    // פתח בחירת slot — שמור את docId לשימוש ב-confirmSlot
-    window._pendingDocId = docId;
-    openTS(cardId, amt, false);
-  } catch(e) {
-    console.error(e);
-    toast('שגיאה, נסה שוב');
-  }
+  // שמור את הפרטים גלובלית לשימוש ב-doAcceptWithSlot
+  window._pendingAccept = { cardId, docId, amt };
+  openTS(cardId, amt, false);
 };
 
-// אחרי בחירת slot — עדכן Firestore עם הטווח שנבחר
-window.acceptOrderConfirmSlot = async function(cardId, price, isCnt, slotStr) {
-  const docId = window._pendingDocId;
-  if (!docId) {
+// שלב 2: בחר slot → עכשיו שמור ב-Firestore עם status='accepted' + slot ביחד
+window.doAcceptWithSlot = async function(cardId, price, isCnt, slotStr) {
+  const pending = window._pendingAccept;
+  if (!pending || !pending.docId) {
     toast('שגיאה: לא נמצאה הזמנה');
     return;
   }
+  const { docId } = pending;
+  window._pendingAccept = null;
+
   try {
+    const driverName = document.getElementById('p-name-v')?.textContent || '';
     await updateDoc(doc(db, 'shipments', docId), {
+      status: 'accepted',
+      driverUid: currentUser.uid,
+      driverName,
+      acceptedAt: serverTimestamp(),
       slot: slotStr,
       counterOffer: isCnt ? price : null,
     });
-    rmCard(cardId, '');
-    toast('✅ הטווח נשלח לעמיל! ממתין לאישורו');
-    window._pendingDocId = null;
+    // הכרטיס יוסר אוטומטית ע"י onSnapshot כי status השתנה מ-pending
+    toast('✅ נשלח לעמיל! ממתין לאישורו');
   } catch(e) {
-    console.error(e);
-    toast('שגיאה בשמירת הטווח');
+    console.error('doAcceptWithSlot error:', e);
+    toast('שגיאה בשמירה, נסה שוב');
   }
 };
+
+// הצעה נגדית: שמור קבלה עם מחיר שונה + slot
+window.acceptOrderConfirmSlot = window.doAcceptWithSlot;
 
 // ────── START REAL-TIME LISTENER FOR BROKER (עדכוני סטטוס) ──────
 function startBrokerRealtime(uid) {
