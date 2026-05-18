@@ -515,7 +515,6 @@ textarea.fi{resize:vertical;}
       </div>
     </div>
   </div>
-  </div>
   <div class="sp"></div>
   <div class="bnav">
     <div class="ni on" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
@@ -661,20 +660,21 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
+
   <!-- ═══ מודל הצעות נגדיות ═══ -->
   <div class="so" id="counter-offers-modal" onclick="if(event.target===this)this.classList.remove('on')">
-    <div class="sh" style="max-height:80%;">
+    <div class="sh" style="max-height:82%;overflow-y:auto;">
       <div class="shandle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div class="stitle" style="margin-bottom:0;">💬 הצעות נגדיות</div>
-        <button onclick="document.getElementById('counter-offers-modal').classList.remove('on')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;">סגור ✕</button>
+        <button onclick="document.getElementById('counter-offers-modal').classList.remove('on')"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">סגור ✕</button>
       </div>
-      <div class="ssub">בחר נהג לאישור ההובלה</div>
+      <div class="ssub">בחר נהג לאישור — המחיר יתעדכן אוטומטית</div>
       <input type="hidden" id="com-shipment-id">
-      <div id="com-list" style="overflow-y:auto;max-height:50vh;"></div>
+      <div id="com-list"></div>
     </div>
   </div>
-
   <!-- SUCCESS -->
   <div class="ov ov-success" id="brk-succ">
     <div class="ov-i"></div>
@@ -1051,7 +1051,7 @@ function updCnt(){
 function sendCnt(){
   if(!cntVal||parseInt(cntVal)<=0){toast('הכנס סכום תקין');return;}
   closeSheet('cnt-sh');
-  // שמור docId מה-card id (פורמט: dof-DOCID)
+  // שמור פרטי הצעה נגדית - docId מתוך cardId "dof-DOCID"
   const docId = cntCard.startsWith('dof-') ? cntCard.slice(4) : '';
   window._pendingCounter = { cardId: cntCard, docId, proposedAmt: parseInt(cntVal) };
   openTS(cntCard, parseInt(cntVal), true);
@@ -1089,69 +1089,77 @@ function confirmTS(){
   const s=SLOTS[selSlotIdx];
   const slotStr = s.n + ' (' + s.h + ')';
   if(tsIsCnt) {
-    window._doCounterOfferFirebase(slotStr);
+    _doCounterOfferFirebase(slotStr);
   } else {
-    window._doAcceptFirebase(slotStr);
+    _doAcceptFirebase(slotStr);
   }
 }
 
-// ── קבלת הזמנה רגילה + slot ──────────────────────────
-window._doAcceptFirebase = async function(slotStr) {
-  const pending = window._pendingAccept;
-  if (!pending) { toast('שגיאה: לא נמצאה הזמנה'); return; }
-  const { cardId, docId, amt } = pending;
+// ── קבלה רגילה: כתוב ל-Firestore ────────────────────
+async function _doAcceptFirebase(slotStr) {
+  const p = window._pendingAccept;
+  if(!p) { toast('שגיאה פנימית'); return; }
   window._pendingAccept = null;
   const waitEl = document.getElementById('drv-wait');
-  if(waitEl){ document.getElementById('drv-wait-s').textContent = slotStr + '\nשולח לעמיל המכס...'; waitEl.classList.add('on'); }
+  const waitS  = document.getElementById('drv-wait-s');
+  if(waitEl){ waitS.textContent = slotStr + '\nשולח...'; waitEl.classList.add('on'); }
   try {
-    await updateDoc(doc(db,'shipments',docId),{
+    await updateDoc(doc(db,'shipments',p.docId), {
       status: 'accepted',
       driverUid: currentUser.uid,
-      driverName: document.getElementById('p-name-v')?.textContent||'',
-      driverPhone: window._currentPhone||'',
-      acceptedAt: serverTimestamp(),
+      driverName: document.getElementById('p-name-v')?.textContent || '',
+      driverPhone: window._currentPhone || '',
+      finalAmount: p.amt,
       slot: slotStr,
-      finalAmount: amt,
+      acceptedAt: serverTimestamp(),
     });
     if(waitEl) waitEl.classList.remove('on');
-    showOv('drv-succ','✅ ההזמנה אושרה!','טווח: '+slotStr+'\n₪'+amt.toLocaleString());
-  } catch(e){ console.error(e); if(waitEl) waitEl.classList.remove('on'); toast('שגיאה, נסה שוב'); }
-};
+    showOv('drv-succ','✅ נשלח לעמיל!','טווח: '+slotStr+'\n₪'+p.amt.toLocaleString()+'\nממתין לאישור עמיל המכס');
+  } catch(e) {
+    console.error('_doAcceptFirebase error:', e);
+    if(waitEl) waitEl.classList.remove('on');
+    toast('שגיאה: ' + (e.message || 'נסה שוב'));
+  }
+}
 
-// ── הצעה נגדית + slot → Firebase ─────────────────────
-window._doCounterOfferFirebase = async function(slotStr) {
-  const pending = window._pendingCounter;
-  if (!pending) { toast('שגיאה: לא נמצאה הזמנה'); return; }
-  const { cardId, docId, proposedAmt } = pending;
+// ── הצעה נגדית: כתוב ל-Firestore ─────────────────────
+async function _doCounterOfferFirebase(slotStr) {
+  const p = window._pendingCounter;
+  if(!p) { toast('שגיאה פנימית'); return; }
   window._pendingCounter = null;
   const waitEl = document.getElementById('drv-wait');
-  if(waitEl){ document.getElementById('drv-wait-s').textContent = 'שולח הצעה ₪'+proposedAmt.toLocaleString()+'...'; waitEl.classList.add('on'); }
+  const waitS  = document.getElementById('drv-wait-s');
+  if(waitEl){ waitS.textContent = 'שולח הצעה ₪'+p.proposedAmt.toLocaleString()+'...'; waitEl.classList.add('on'); }
   try {
-    const driverName = document.getElementById('p-name-v')?.textContent||'';
-    // 1. שמור הצעה ב-sub-collection
-    await addDoc(collection(db,'shipments',docId,'counterOffers'),{
-      driverUid: currentUser.uid,
+    const driverName = document.getElementById('p-name-v')?.textContent || '';
+    // 1. הוסף ל-sub-collection counterOffers
+    await addDoc(collection(db,'shipments',p.docId,'counterOffers'), {
+      driverUid:      currentUser.uid,
       driverName,
-      driverPhone: window._currentPhone||'',
-      proposedAmount: proposedAmt,
-      slot: slotStr,
-      status: 'pending',
-      createdAt: serverTimestamp(),
+      driverPhone:    window._currentPhone || '',
+      proposedAmount: p.proposedAmt,
+      slot:           slotStr,
+      status:         'pending',
+      createdAt:      serverTimestamp(),
     });
     // 2. עדכן shipment ראשי
-    await updateDoc(doc(db,'shipments',docId),{
-      status: 'offer_sent',
-      hasCounterOffers: true,
-      counterOffersCount: increment(1),
-      lastCounterAmount: proposedAmt,
-      lastCounterDriverUid: currentUser.uid,
+    await updateDoc(doc(db,'shipments',p.docId), {
+      status:                'offer_sent',
+      hasCounterOffers:      true,
+      counterOffersCount:    increment(1),
+      lastCounterAmount:     p.proposedAmt,
+      lastCounterDriverUid:  currentUser.uid,
       lastCounterDriverName: driverName,
-      lastCounterAt: serverTimestamp(),
+      lastCounterAt:         serverTimestamp(),
     });
     if(waitEl) waitEl.classList.remove('on');
-    showOv('drv-succ','💬 הצעה נשלחה!','הצעת ₪'+proposedAmt.toLocaleString()+'\nטווח: '+slotStr+'\nעמיל המכס יקבל התראה');
-  } catch(e){ console.error(e); if(waitEl) waitEl.classList.remove('on'); toast('שגיאה, נסה שוב'); }
-};
+    showOv('drv-succ','💬 הצעה נשלחה!','הצעת ₪'+p.proposedAmt.toLocaleString()+'\nטווח: '+slotStr+'\nעמיל המכס יקבל התראה');
+  } catch(e) {
+    console.error('_doCounterOfferFirebase error:', e);
+    if(waitEl) waitEl.classList.remove('on');
+    toast('שגיאה: ' + (e.message || 'נסה שוב'));
+  }
+}
 
 //  BROKER 
 function bTab(el,name){
@@ -1170,11 +1178,7 @@ function bApprove(){
 }
 function bConfSlot(ok){
   document.getElementById('bc-conf').classList.remove('on');
-  if(ok){
-    window._doBrokerConfirmOffer(true);
-  } else {
-    window._doBrokerConfirmOffer(false);
-  }
+  // legacy - not used with Firebase flow
 }
 function submitOrder(){document.getElementById('no-succ').classList.add('on');}
 window.submitOrderReal = async function() {
@@ -1414,22 +1418,25 @@ function clearNotifBadge() {
 function startDriverRealtime(uid) {
   if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
 
-  // ללא orderBy — מונע שגיאת composite index, מיון בצד הלקוח
+  // ללא orderBy - מיון בצד הלקוח, נמנע שגיאת composite index
   const q = query(collection(db, 'shipments'), where('status', '==', 'pending'));
 
   _unsubDriverOrders = onSnapshot(q, (snapshot) => {
     const container = document.getElementById('drv-offers-list');
     if (!container) return;
 
-    // מיון בצד הלקוח — הכי חדש ראשון
+    // מיון בצד הלקוח: הכי חדש ראשון
     const docs = [...snapshot.docs].sort((a,b) => {
       const ta = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
       const tb = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
       return tb - ta;
     });
-
     if (docs.length === 0) {
-      container.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">🚛</div><div>אין הזמנות פתוחות כרגע</div></div>`;
+      container.innerHTML = `
+        <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
+          <div style="font-size:32px;margin-bottom:8px;">🚛</div>
+          <div>אין הזמנות פתוחות כרגע</div>
+        </div>`;
       const cnt = document.getElementById('drv-offers-count');
       if (cnt) cnt.textContent = '';
       return;
@@ -1451,7 +1458,7 @@ function startDriverRealtime(uid) {
       return `
         <div class="card" id="dof-${id}">
           <div class="cm" onclick="toggleCard('dof-${id}')">
-            <div class="ci">📦</div>
+            <div class="ci"></div>
             <div class="cinfo">
               <div class="ct">${from} → ${to}</div>
               <div class="cm2">${weight} • ${desc}</div>
@@ -1460,28 +1467,30 @@ function startDriverRealtime(uid) {
           </div>
           <div class="cd">
             <div class="dg">
-              <div class="dc"><div class="dcl">📍 מוצא</div><div class="dcv">${from}</div></div>
-              <div class="dc"><div class="dcl">🏁 יעד</div><div class="dcv">${to}</div></div>
-              <div class="dc"><div class="dcl">⚖️ משקל</div><div class="dcv">${weight}</div></div>
-              <div class="dc"><div class="dcl">📅 תאריך</div><div class="dcv">${date}</div></div>
-              <div class="dc"><div class="dcl">📦 תיאור</div><div class="dcv">${desc}</div></div>
-              <div class="dc"><div class="dcl">🏛️ עמיל</div><div class="dcv">${brokerName}</div></div>
+              <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${from}</div></div>
+              <div class="dc"><div class="dcl">יעד</div><div class="dcv">${to}</div></div>
+              <div class="dc"><div class="dcl">משקל</div><div class="dcv">${weight}</div></div>
+              <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${date}</div></div>
+              <div class="dc"><div class="dcl">תיאור</div><div class="dcv">${desc}</div></div>
+              <div class="dc"><div class="dcl">עמיל</div><div class="dcv">${brokerName}</div></div>
             </div>
             <div class="brow">
-              <button class="btn bp" onclick="acceptOrderRealtime('dof-${id}','${id}',${amt})">✅ קבל</button>
-              <button class="btn bam2" onclick="openCounter('dof-${id}',${amt})">💬 הצע נגד</button>
-              <button class="btn bred" onclick="rmCard('dof-${id}','❌ נדחה')">✕ דחה</button>
+              <button class="btn bp" onclick="acceptOrderRealtime('dof-${id}','${id}',${amt})"> קבל</button>
+              <button class="btn bam2" onclick="openCounter('dof-${id}',${amt})"> הצע נגד</button>
+              <button class="btn bred" onclick="rmCard('dof-${id}',' נדחה')"> דחה</button>
             </div>
           </div>
         </div>`;
     }).join('');
 
     // הודע על הזמנות חדשות (לא בטעינה ראשונה)
-    const isFirst = snapshot.metadata.fromCache === false && snapshot.docs.length > 0;
     snapshot.docChanges().forEach(change => {
       if (change.type === 'added' && !snapshot.metadata.hasPendingWrites) {
         const d = change.doc.data();
-        showPushNotification('🚛 הזמנה חדשה!', `${d.from||'—'} → ${d.to||'—'} • ₪${(d.amount||0).toLocaleString()}`, 'new-'+change.doc.id);
+        const from = d.from || '—';
+        const to   = d.to   || '—';
+        const amt  = d.amount || 0;
+        showPushNotification('🚛 הזמנה חדשה!', `${from} → ${to}  •  ₪${amt.toLocaleString()}`, 'new-order-' + change.doc.id);
         addNotifBadge(1);
       }
     });
@@ -1497,7 +1506,7 @@ function injectNewOrderCard(docId, d) {
 // קבלת הזמנה אמיתית מ-Firestore
 window.acceptOrderRealtime = async function(cardId, docId, amt) {
   if (!currentUser) { toast('נדרשת כניסה'); return; }
-  // שמור פרטים ופתח בחירת slot — הכתיבה ל-Firebase תהיה ב-confirmTS
+  // שמור pending ופתח בחירת slot - כתיבה ל-Firebase תהיה ב-confirmTS
   window._pendingAccept = { cardId, docId, amt };
   openTS(cardId, amt, false);
 };
@@ -1506,7 +1515,7 @@ window.acceptOrderRealtime = async function(cardId, docId, amt) {
 function startBrokerRealtime(uid) {
   if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
 
-  // query פשוט — מיון בצד הלקוח, ללא composite index
+  // ללא orderBy - מיון בצד הלקוח
   const q = query(collection(db, 'shipments'), where('brokerUid', '==', uid));
 
   _unsubBrokerOrders = onSnapshot(q, (snapshot) => {
@@ -1518,39 +1527,26 @@ function startBrokerRealtime(uid) {
         return tb - ta;
       });
 
-    // ── סינון לפי סטטוס ──────────────────────────────
-    const pending   = all.filter(d => d.status === 'pending');
-    const withOffer = all.filter(d => d.status === 'offer_sent');
-    const active    = all.filter(d => d.status === 'accepted' || d.status === 'in_transit');
-    const delivered = all.filter(d => d.status === 'delivered');
+    const pending   = all.filter(d => d.status === 'pending' || d.status === 'offer_sent');
+    const active    = all.filter(d => d.status === 'accepted' || d.status === 'in_transit' || d.status === 'delivered');
     const done      = all.filter(d => d.status === 'confirmed' || d.status === 'cancelled');
 
-    // ── עדכן סטטיסטיקות ─────────────────────────────
-    const hb = document.querySelector('#s-broker .stats');
-    if (hb) {
-      const sis = hb.querySelectorAll('.si-v');
-      if(sis[0]) sis[0].textContent = active.length + delivered.length;
-      if(sis[1]) sis[1].textContent = pending.length + withOffer.length;
-      if(sis[2]) sis[2].textContent = done.filter(d=>d.status==='confirmed').length;
-    }
-
-    // ── רשימת ממתינות (pending + offer_sent) ─────────
+    // עדכן רשימת ממתינות
     const pendList = document.getElementById('b-pend-list');
     if (pendList) {
-      const combined = [...pending, ...withOffer];
-      if (combined.length === 0) {
+      if (pending.length === 0) {
         pendList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">📦</div><div>אין הזמנות ממתינות</div></div>`;
       } else {
-        pendList.innerHTML = combined.map(d => {
+        pendList.innerHTML = pending.map(d => {
           const hasOffer = d.status === 'offer_sent';
-          const offerBadge = hasOffer
-            ? `<div class="badge" style="background:var(--surface2);color:var(--accent);border:1px solid var(--accent-light);margin-top:4px;">💬 ${d.counterOffersCount||1} הצעות</div>`
+          const badge = hasOffer
+            ? `<div class="badge" style="background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">💬 ${d.counterOffersCount||1} הצעות</div>`
             : `<div class="badge bb">ממתין</div>`;
-          const offerInfo = hasOffer ? `
-            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
-              <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;">הצעה אחרונה</div>
-              <div style="font-size:16px;font-weight:900;color:var(--accent);">₪${(d.lastCounterAmount||0).toLocaleString()}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px;">מאת: ${d.lastCounterDriverName||'נהג'}</div>
+          const offerBox = hasOffer ? `
+            <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+              <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;">הצעה אחרונה</div>
+              <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${(d.lastCounterAmount||0).toLocaleString()}</div>
+              <div style="font-size:12px;color:var(--muted);">מ: ${d.lastCounterDriverName||'נהג'}</div>
             </div>` : '';
           return `
           <div class="card" id="bord-${d.id}">
@@ -1560,11 +1556,7 @@ function startBrokerRealtime(uid) {
                 <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
                 <div class="cm2">${d.weight?d.weight.toLocaleString()+' ק"ג •':''} ${d.desc||''}</div>
               </div>
-              <div class="cr">
-                <div class="cp">₪${(d.amount||0).toLocaleString()}</div>
-                ${offerBadge}
-                <div class="chev">▼</div>
-              </div>
+              <div class="cr"><div class="cp">₪${(d.amount||0).toLocaleString()}</div>${badge}<div class="chev">▼</div></div>
             </div>
             <div class="cd">
               <div class="dg">
@@ -1573,10 +1565,10 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${d.date||'—'}</div></div>
                 <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?d.weight.toLocaleString()+' ק"ג':'—'}</div></div>
               </div>
-              ${offerInfo}
+              ${offerBox}
               <div class="brow">
-                ${hasOffer ? `<button class="btn bp" onclick="openCounterOffers('${d.id}')">👁 צפה בהצעות</button>` : ''}
-                <button class="btn bred" onclick="cancelOrder('${d.id}')">✕ בטל</button>
+                ${hasOffer?`<button class="btn bp" onclick="openCounterOffers('${d.id}')">👁 צפה בהצעות (${d.counterOffersCount||1})</button>`:''}
+                <button class="btn bred" onclick="cancelOrder('${d.id}')"> בטל</button>
               </div>
             </div>
           </div>`;
@@ -1584,14 +1576,13 @@ function startBrokerRealtime(uid) {
       }
     }
 
-    // ── רשימת פעילות ─────────────────────────────────
+    // עדכן רשימת פעילות
     const actList = document.getElementById('b-act-list');
     if (actList) {
-      const allActive = [...active, ...delivered];
-      if (allActive.length === 0) {
+      if (active.length === 0) {
         actList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">🚛</div><div>אין הובלות פעילות</div></div>`;
       } else {
-        actList.innerHTML = allActive.map(d => {
+        actList.innerHTML = active.map(d => {
           const isDelivered = d.status === 'delivered';
           const finalAmt = d.finalAmount || d.amount || 0;
           return `
@@ -1600,11 +1591,11 @@ function startBrokerRealtime(uid) {
               <div class="ci ${isDelivered?'am':'g'}">${isDelivered?'📦':'🚛'}</div>
               <div class="cinfo">
                 <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
-                <div class="cm2">${isDelivered?'ממתין לאישורך':'בדרך'} • ${d.driverName||'נהג'}</div>
+                <div class="cm2">${isDelivered?'📦 ממתין לאישורך':'🚛 בדרך'} • ${d.driverName||'נהג'}</div>
               </div>
               <div class="cr">
                 <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
-                <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'📦 נמסר':'פעיל'}</div>
+                <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
                 <div class="chev">▼</div>
               </div>
             </div>
@@ -1612,17 +1603,15 @@ function startBrokerRealtime(uid) {
               <div class="dg">
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${d.driverName||'—'}</div></div>
                 <div class="dc"><div class="dcl">טלפון</div><div class="dcv">${d.driverPhone||'—'}</div></div>
-                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${d.from||'—'}</div></div>
-                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${d.to||'—'}</div></div>
-                ${d.slot?`<div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${d.slot}</div></div>`:''}
+                <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${d.slot||'—'}</div></div>
                 <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
               </div>
               ${isDelivered ? `
-              <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
-                🔒 הנהג אישר מסירה. לחץ לאשר ולשחרר תשלום.
+              <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
+                🔒 הנהג אישר מסירה — אשר קבלה לשחרור תשלום
               </div>
               <div class="brow">
-                <button class="btn bgr" onclick="brokerConfirmReceiptInline('${d.id}')">✅ אשר קבלה ושחרר תשלום</button>
+                <button class="btn bgr" onclick="brokerConfirmReceipt('${d.id}')">✅ אשר קבלה ושחרר תשלום</button>
               </div>` : ''}
             </div>
           </div>`;
@@ -1630,52 +1619,43 @@ function startBrokerRealtime(uid) {
       }
     }
 
-    // ── רשימת הושלמות ─────────────────────────────────
+    // עדכן רשימת הושלמות
     const doneList = document.getElementById('b-done-list');
     if (doneList) {
       if (done.length === 0) {
         doneList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">✅</div><div>אין היסטוריה עדיין</div></div>`;
       } else {
-        doneList.innerHTML = done.map(d => {
-          const isCancelled = d.status === 'cancelled';
-          const finalAmt = d.finalAmount || d.amount || 0;
-          return `
+        doneList.innerHTML = done.map(d => `
           <div class="card">
             <div class="cm">
-              <div class="ci ${isCancelled?'r':'g'}">${isCancelled?'❌':'✅'}</div>
-              <div class="cinfo">
-                <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
-                <div class="cm2">${d.date||''} • ${d.driverName||'—'}</div>
-              </div>
-              <div class="cr">
-                <div class="cp" style="color:${isCancelled?'var(--muted)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
-                <div class="badge ${isCancelled?'br':'bg'}">${isCancelled?'בוטל':'הושלם'}</div>
-              </div>
+              <div class="ci g"></div>
+              <div class="cinfo"><div class="ct">${d.from||'—'} → ${d.to||'—'}</div><div class="cm2">${d.date||''} • ${d.weight?d.weight.toLocaleString()+' ק"ג':''}</div></div>
+              <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div></div>
             </div>
-          </div>`;
-        }).join('');
+          </div>`).join('');
       }
     }
 
-    // ── התראות Push על שינויים ────────────────────────
+    // התראות על שינויים
     snapshot.docChanges().forEach(change => {
       if (change.type !== 'modified' || snapshot.metadata.hasPendingWrites) return;
       const d = change.doc.data();
-      const from = d.from || '—', to = d.to || '—';
+      const from = d.from || '—';
+      const to   = d.to   || '—';
       if (d.status === 'accepted') {
-        showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to} • ${d.driverName||'נהג'} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'acc-'+change.doc.id);
+        showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${d.driverName || 'נהג'} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
         addNotifBadge(1);
-        toast('✅ '+( d.driverName||'נהג')+' קיבל את ההזמנה!');
+        toast('✅ ' + (d.driverName||'נהג') + ' קיבל את ההזמנה!');
       }
       if (d.status === 'offer_sent') {
-        showPushNotification('💬 הצעה נגדית!', `${from} → ${to} • ${d.lastCounterDriverName||'נהג'} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-'+change.doc.id);
+        showPushNotification('💬 הצעה נגדית!', `${from} → ${to}  •  ${d.lastCounterDriverName||'נהג'} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-' + change.doc.id);
         addNotifBadge(1);
         toast('💬 הצעה נגדית: ₪'+(d.lastCounterAmount||0).toLocaleString()+' מ-'+(d.lastCounterDriverName||'נהג'));
       }
       if (d.status === 'delivered') {
-        showPushNotification('📦 נהג אישר מסירה!', `${from} → ${to} — אשר קבלה לשחרור תשלום`, 'del-'+change.doc.id);
+        showPushNotification('📦 נהג אישר מסירה!', `${from} → ${to}  — אשר קבלה לשחרור תשלום`, 'delivered-' + change.doc.id);
         addNotifBadge(1);
-        toast('📦 '+( d.driverName||'נהג')+' אישר מסירה — אשר קבלה!');
+        toast('📦 ' + (d.driverName||'נהג') + ' אישר מסירה — לחץ לאשר קבלה!');
       }
     });
   }, err => console.error('Broker listener error', err));
@@ -1690,107 +1670,6 @@ window.cancelOrder = async function(docId) {
     console.error(e);
     toast('שגיאה בביטול');
   }
-};
-
-// ── עמיל: צפה בהצעות נגדיות ─────────────────────────
-window.openCounterOffers = async function(shipmentId) {
-  // פתח את המודל
-  const modal = document.getElementById('counter-offers-modal');
-  if (!modal) return;
-  document.getElementById('com-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">טוען הצעות...</div>';
-  document.getElementById('com-shipment-id').value = shipmentId;
-  modal.classList.add('on');
-
-  try {
-    const snap = await getDocs(
-      query(collection(db,'shipments',shipmentId,'counterOffers'), orderBy('createdAt','desc'))
-    );
-    if (snap.empty) {
-      document.getElementById('com-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">אין הצעות עדיין</div>';
-      return;
-    }
-    // קבל מחיר מקורי
-    const shipSnap = await getDoc(doc(db,'shipments',shipmentId));
-    const origAmt = shipSnap.exists() ? (shipSnap.data().amount||0) : 0;
-
-    document.getElementById('com-list').innerHTML = snap.docs.map(d => {
-      const o = d.data();
-      const diff = o.proposedAmount - origAmt;
-      const diffColor = diff <= 0 ? 'var(--green)' : 'var(--amber)';
-      const diffStr = diff===0 ? '' : (diff<0?'▼ זול ב-':'▲ יקר ב-')+'₪'+Math.abs(diff).toLocaleString();
-      const isPending = !o.status || o.status === 'pending';
-      return `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-          <div>
-            <div style="font-weight:700;font-size:15px;">${o.driverName||'נהג'}</div>
-            ${o.driverPhone?`<div style="font-size:12px;color:var(--muted);">📱 ${o.driverPhone}</div>`:''}
-            ${o.slot?`<div style="font-size:12px;color:var(--muted);">⏰ ${o.slot}</div>`:''}
-          </div>
-          <div style="text-align:left;">
-            <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${(o.proposedAmount||0).toLocaleString()}</div>
-            ${diffStr?`<div style="font-size:11px;font-weight:700;color:${diffColor};">${diffStr}</div>`:''}
-          </div>
-        </div>
-        ${isPending ? `
-        <div style="display:flex;gap:8px;">
-          <button class="btn bgr" onclick="brokerAcceptOffer('${shipmentId}','${d.id}','${o.driverUid}','${o.driverName}','${o.driverPhone||''}',${o.proposedAmount},'${o.slot||''}')">✅ אשר נהג זה</button>
-          <button class="btn bred" onclick="brokerRejectOffer('${shipmentId}','${d.id}')">✕ דחה</button>
-        </div>` : `<div class="badge ${o.status==='accepted'?'bg':'br'}">${o.status==='accepted'?'✅ אושר':'❌ נדחה'}</div>`}
-      </div>`;
-    }).join('');
-  } catch(e) {
-    console.error(e);
-    document.getElementById('com-list').innerHTML = '<div style="color:var(--red);padding:10px">שגיאה בטעינה</div>';
-  }
-};
-
-window.brokerAcceptOffer = async function(shipmentId, offerId, driverUid, driverName, driverPhone, proposedAmount, slot) {
-  if(!confirm('לאשר את '+driverName+' על ₪'+proposedAmount.toLocaleString()+'?')) return;
-  try {
-    // 1. עדכן shipment
-    await updateDoc(doc(db,'shipments',shipmentId), {
-      status: 'accepted',
-      driverUid,
-      driverName,
-      driverPhone: driverPhone||'',
-      finalAmount: proposedAmount,
-      slot: slot||'',
-      acceptedAt: serverTimestamp(),
-    });
-    // 2. עדכן את ה-counterOffer שנבחר
-    await updateDoc(doc(db,'shipments',shipmentId,'counterOffers',offerId), { status:'accepted' });
-    // סגור מודל
-    document.getElementById('counter-offers-modal').classList.remove('on');
-    toast('✅ '+driverName+' אושר!');
-    document.getElementById('brk-succ-s').textContent = driverName+' יבצע את ההובלה!\n₪'+proposedAmount.toLocaleString();
-    document.getElementById('brk-succ').classList.add('on');
-  } catch(e) { console.error(e); toast('שגיאה, נסה שוב'); }
-};
-
-window.brokerRejectOffer = async function(shipmentId, offerId) {
-  try {
-    await updateDoc(doc(db,'shipments',shipmentId,'counterOffers',offerId), { status:'rejected' });
-    toast('הצעה נדחתה');
-    window.openCounterOffers(shipmentId); // רענן רשימה
-  } catch(e) { console.error(e); toast('שגיאה'); }
-};
-
-// אישור קבלה מתוך כרטיס פעיל (inline)
-window.brokerConfirmReceiptInline = async function(shipId) {
-  if(!confirm('לאשר קבלת המשלוח ולשחרר תשלום לנהג?')) return;
-  try {
-    await updateDoc(doc(db,'shipments',shipId), {
-      status: 'confirmed',
-      confirmedAt: serverTimestamp(),
-    });
-    toast('✅ תשלום שוחרר לנהג!');
-  } catch(e) { toast('שגיאה, נסה שוב'); }
-};
-
-// _doBrokerConfirmOffer — ישן (legacy, לא בשימוש)
-window._doBrokerConfirmOffer = function(ok) {
-  if(!ok) { toast('הצעה נדחתה'); }
 };
 
 // ────── PAYMENTS REAL-TIME ──────
@@ -2386,6 +2265,85 @@ window.brokerConfirmReceipt = async function(shipId) {
     loadPaymentsScreen();
   } catch(e) { toast('שגיאה, נסה שוב'); }
 };
+
+// ── עמיל: פתח מודל הצעות נגדיות ─────────────────────
+window.openCounterOffers = async function(shipmentId) {
+  const modal = document.getElementById('counter-offers-modal');
+  if(!modal) return;
+  document.getElementById('com-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">טוען הצעות...</div>';
+  document.getElementById('com-shipment-id').value = shipmentId;
+  modal.classList.add('on');
+  try {
+    const offersSnap = await getDocs(
+      query(collection(db,'shipments',shipmentId,'counterOffers'), orderBy('createdAt','desc'))
+    );
+    const shipSnap = await getDoc(doc(db,'shipments',shipmentId));
+    const origAmt = shipSnap.exists() ? (shipSnap.data().amount||0) : 0;
+    if(offersSnap.empty) {
+      document.getElementById('com-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין הצעות עדיין</div>';
+      return;
+    }
+    document.getElementById('com-list').innerHTML = offersSnap.docs.map(d => {
+      const o = d.data();
+      const diff = (o.proposedAmount||0) - origAmt;
+      const diffClr = diff <= 0 ? 'var(--green)' : 'var(--amber)';
+      const diffTxt = diff===0?'':(diff<0?'▼ זול ב-':'▲ יקר ב-')+'₪'+Math.abs(diff).toLocaleString();
+      const isPending = !o.status || o.status==='pending';
+      const statusBadge = !isPending ? `<div class="badge ${o.status==='accepted'?'bg':'br'}">${o.status==='accepted'?'✅ אושר':'❌ נדחה'}</div>` : '';
+      return `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;font-size:15px;">${o.driverName||'נהג'}</div>
+            ${o.driverPhone?`<div style="font-size:12px;color:var(--muted);">📱 ${o.driverPhone}</div>`:''}
+            ${o.slot?`<div style="font-size:12px;color:var(--muted);">⏰ ${o.slot}</div>`:''}
+          </div>
+          <div style="text-align:left;">
+            <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${(o.proposedAmount||0).toLocaleString()}</div>
+            ${diffTxt?`<div style="font-size:11px;font-weight:700;color:${diffClr};">${diffTxt}</div>`:''}
+          </div>
+        </div>
+        ${isPending ? `
+        <div class="brow">
+          <button class="btn bgr" onclick="brokerAcceptOffer('${shipmentId}','${d.id}','${o.driverUid||''}','${o.driverName||''}','${o.driverPhone||''}',${o.proposedAmount||0},'${o.slot||''}')">✅ אשר נהג זה</button>
+          <button class="btn bred" onclick="brokerRejectOffer('${shipmentId}','${d.id}')">✕ דחה</button>
+        </div>` : statusBadge}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('openCounterOffers:', e);
+    document.getElementById('com-list').innerHTML = `<div style="color:var(--red);padding:10px;">שגיאה: ${e.message}</div>`;
+  }
+};
+
+// ── עמיל: אשר הצעה נגדית ─────────────────────────────
+window.brokerAcceptOffer = async function(shipId, offerId, driverUid, driverName, driverPhone, proposedAmt, slot) {
+  if(!confirm('לאשר את '+driverName+' על ₪'+Number(proposedAmt).toLocaleString()+'?')) return;
+  try {
+    await updateDoc(doc(db,'shipments',shipId), {
+      status: 'accepted',
+      driverUid, driverName,
+      driverPhone: driverPhone||'',
+      finalAmount: Number(proposedAmt),
+      slot: slot||'',
+      acceptedAt: serverTimestamp(),
+    });
+    await updateDoc(doc(db,'shipments',shipId,'counterOffers',offerId), { status:'accepted' });
+    document.getElementById('counter-offers-modal').classList.remove('on');
+    document.getElementById('brk-succ-s').textContent = driverName+' יבצע את ההובלה!\n₪'+Number(proposedAmt).toLocaleString();
+    document.getElementById('brk-succ').classList.add('on');
+  } catch(e) { console.error(e); toast('שגיאה: '+e.message); }
+};
+
+// ── עמיל: דחה הצעה נגדית ─────────────────────────────
+window.brokerRejectOffer = async function(shipId, offerId) {
+  try {
+    await updateDoc(doc(db,'shipments',shipId,'counterOffers',offerId), { status:'rejected' });
+    toast('הצעה נדחתה');
+    window.openCounterOffers(shipId);
+  } catch(e) { toast('שגיאה: '+e.message); }
+};
+
 </script>
 </div>
 </body>
