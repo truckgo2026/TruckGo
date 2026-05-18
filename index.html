@@ -515,7 +515,6 @@ textarea.fi{resize:vertical;}
       </div>
     </div>
   </div>
-  </div>
   <div class="sp"></div>
   <div class="bnav">
     <div class="ni on" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
@@ -1070,13 +1069,15 @@ function confirmTS(){
   if(selSlotIdx<0)return;
   closeSheet('ts-sh');
   const s=SLOTS[selSlotIdx];
-  document.getElementById('drv-wait-s').textContent=s.i+' '+s.n+' ('+s.h+')\nממתין לאישור עמיל...';
-  document.getElementById('drv-wait').classList.add('on');
-  setTimeout(()=>{
-    document.getElementById('drv-wait').classList.remove('on');
-    showOv('drv-succ',' אושר על ידי העמיל!','טווח: '+s.i+' '+s.n+'\n'+s.h+'\nסכום: ₪'+tsPrice.toLocaleString());
-    rmCard(tsCard,'');
-  },3000);
+  const slotStr = s.n + ' (' + s.h + ')';
+  
+  // שמור ב-Firestore רק אם קבלה אמיתית (לא הצעה נגדית)
+  if(typeof window.acceptOrderConfirmSlot === 'function'){
+    window.acceptOrderConfirmSlot(tsCard, tsPrice, tsIsCnt, slotStr);
+  } else {
+    // fallback: הצג toast
+    toast(' ממתין לאישור עמיל...');
+  }
 }
 
 //  BROKER 
@@ -1156,8 +1157,7 @@ function chMonth(d){
   if(mIdx<0){mIdx=11;mYear--;}
   if(mIdx>11){mIdx=0;mYear++;}
   document.getElementById('pmn').textContent=MONTHS[mIdx]+' '+mYear;
-  const tots=[8200,9400,11000,13500,16080,0,0,0,0,0,0,0];
-  document.getElementById('pmt').textContent=tots[mIdx]?'סה"כ: ₪'+tots[mIdx].toLocaleString():'אין נתונים';
+  document.getElementById('pmt').textContent='אין נתונים';
   toast(' '+MONTHS[mIdx]+' '+mYear);
 }
 function pTab(el){
@@ -1436,9 +1436,9 @@ async function fallbackLoadDriverOrders() {
   try {
     const container = document.getElementById('drv-offers-list');
     if (!container) return;
-    const { getDocs: _getDocs, collection: _col, query: _q, where: _where } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    // משתמש ב-Firebase שכבר מיובא
     const snap = await getDocs(query(collection(db, 'shipments'), where('status', '==', 'pending')));
-    const docs = snap.docs.sort((a, b) => {
+    const docs = [...snap.docs].sort((a, b) => {
       const ta = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
       const tb = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
       return tb - ta;
@@ -1482,12 +1482,34 @@ window.acceptOrderRealtime = async function(cardId, docId, amt) {
       driverName: document.getElementById('p-name-v')?.textContent || '',
       acceptedAt: serverTimestamp(),
     });
-    rmCard(cardId, '✅ ההזמנה התקבלה!');
-    // הפעל בחירת slot
+    toast('✅ ההזמנה התקבלה! בחר טווח זמינות');
+    // פתח בחירת slot — שמור את docId לשימוש ב-confirmSlot
+    window._pendingDocId = docId;
     openTS(cardId, amt, false);
   } catch(e) {
     console.error(e);
     toast('שגיאה, נסה שוב');
+  }
+};
+
+// אחרי בחירת slot — עדכן Firestore עם הטווח שנבחר
+window.acceptOrderConfirmSlot = async function(cardId, price, isCnt, slotStr) {
+  const docId = window._pendingDocId;
+  if (!docId) {
+    toast('שגיאה: לא נמצאה הזמנה');
+    return;
+  }
+  try {
+    await updateDoc(doc(db, 'shipments', docId), {
+      slot: slotStr,
+      counterOffer: isCnt ? price : null,
+    });
+    rmCard(cardId, '');
+    toast('✅ הטווח נשלח לעמיל! ממתין לאישורו');
+    window._pendingDocId = null;
+  } catch(e) {
+    console.error(e);
+    toast('שגיאה בשמירת הטווח');
   }
 };
 
@@ -2120,10 +2142,9 @@ window.loadPaymentsScreen = async function() {
     list.innerHTML = docs.map(d => renderPaymentCard(d, role)).join('');
   } catch(e) {
     console.error(e);
-    // אם אין נתונים — הצג דמו
-    list.innerHTML = renderDemoPayments(role);
-    setEl('pay-balance', role === 'drv' ? '₪0' : '₪0');
-    setEl('pay-sub', 'אין הובלות עדיין');
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:14px;">שגיאה בטעינת הנתונים. נסה שוב.</div>';
+    setEl('pay-balance', '₪0');
+    setEl('pay-sub', 'שגיאה בטעינה');
   }
 };
 
@@ -2173,13 +2194,7 @@ function renderPaymentCard(d, role) {
   </div>`;
 }
 
-function renderDemoPayments(role) {
-  return `<div style="background:var(--surface2);border-radius:14px;padding:20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.8;">
-    <div style="font-size:32px;margin-bottom:8px;"></div>
-    <div style="font-weight:700;color:var(--text);margin-bottom:4px;">אין הובלות עדיין</div>
-    <div>${role === 'brk' ? 'צור הובלה חדשה כדי להתחיל' : 'קבל הובלה כדי לראות תשלומים'}</div>
-  </div>`;
-}
+// סוף מסך תשלומים
 
 // נהג מאשר מסירה
 window.driverConfirmDelivery = async function(shipId) {
