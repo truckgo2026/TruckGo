@@ -1095,69 +1095,20 @@ function confirmTS(){
   }
 }
 
-// ── קבלה רגילה: כתוב ל-Firestore ────────────────────
+// ── Firebase functions defined in the module below ───
+// Called from confirmTS — delegate to window.* set by Firebase module
 async function _doAcceptFirebase(slotStr) {
-  const p = window._pendingAccept;
-  if(!p) { toast('שגיאה פנימית'); return; }
-  window._pendingAccept = null;
-  const waitEl = document.getElementById('drv-wait');
-  const waitS  = document.getElementById('drv-wait-s');
-  if(waitEl){ waitS.textContent = slotStr + '\nשולח...'; waitEl.classList.add('on'); }
-  try {
-    await updateDoc(doc(db,'shipments',p.docId), {
-      status: 'accepted',
-      driverUid: currentUser.uid,
-      driverName: document.getElementById('p-name-v')?.textContent || '',
-      driverPhone: window._currentPhone || '',
-      finalAmount: p.amt,
-      slot: slotStr,
-      acceptedAt: serverTimestamp(),
-    });
-    if(waitEl) waitEl.classList.remove('on');
-    showOv('drv-succ','✅ נשלח לעמיל!','טווח: '+slotStr+'\n₪'+p.amt.toLocaleString()+'\nממתין לאישור עמיל המכס');
-  } catch(e) {
-    console.error('_doAcceptFirebase error:', e);
-    if(waitEl) waitEl.classList.remove('on');
-    toast('שגיאה: ' + (e.message || 'נסה שוב'));
+  if(typeof window._fbDoAccept === 'function') {
+    await window._fbDoAccept(slotStr);
+  } else {
+    toast('שגיאה: Firebase לא מוכן, נסה שוב');
   }
 }
-
-// ── הצעה נגדית: כתוב ל-Firestore ─────────────────────
 async function _doCounterOfferFirebase(slotStr) {
-  const p = window._pendingCounter;
-  if(!p) { toast('שגיאה פנימית'); return; }
-  window._pendingCounter = null;
-  const waitEl = document.getElementById('drv-wait');
-  const waitS  = document.getElementById('drv-wait-s');
-  if(waitEl){ waitS.textContent = 'שולח הצעה ₪'+p.proposedAmt.toLocaleString()+'...'; waitEl.classList.add('on'); }
-  try {
-    const driverName = document.getElementById('p-name-v')?.textContent || '';
-    // 1. הוסף ל-sub-collection counterOffers
-    await addDoc(collection(db,'shipments',p.docId,'counterOffers'), {
-      driverUid:      currentUser.uid,
-      driverName,
-      driverPhone:    window._currentPhone || '',
-      proposedAmount: p.proposedAmt,
-      slot:           slotStr,
-      status:         'pending',
-      createdAt:      serverTimestamp(),
-    });
-    // 2. עדכן shipment ראשי
-    await updateDoc(doc(db,'shipments',p.docId), {
-      status:                'offer_sent',
-      hasCounterOffers:      true,
-      counterOffersCount:    increment(1),
-      lastCounterAmount:     p.proposedAmt,
-      lastCounterDriverUid:  currentUser.uid,
-      lastCounterDriverName: driverName,
-      lastCounterAt:         serverTimestamp(),
-    });
-    if(waitEl) waitEl.classList.remove('on');
-    showOv('drv-succ','💬 הצעה נשלחה!','הצעת ₪'+p.proposedAmt.toLocaleString()+'\nטווח: '+slotStr+'\nעמיל המכס יקבל התראה');
-  } catch(e) {
-    console.error('_doCounterOfferFirebase error:', e);
-    if(waitEl) waitEl.classList.remove('on');
-    toast('שגיאה: ' + (e.message || 'נסה שוב'));
+  if(typeof window._fbDoCounter === 'function') {
+    await window._fbDoCounter(slotStr);
+  } else {
+    toast('שגיאה: Firebase לא מוכן, נסה שוב');
   }
 }
 
@@ -1349,6 +1300,91 @@ const db = getFirestore(app);
 window._fbAddDoc = async function(data) {
   return await addDoc(collection(db, 'shipments'), { ...data, createdAt: serverTimestamp() });
 };
+
+// ─────────────────────────────────────────────────────────
+// DRIVER FIREBASE ACTIONS — defined here inside module so
+// db, addDoc, updateDoc, doc, serverTimestamp, increment etc. are in scope
+// ─────────────────────────────────────────────────────────
+
+// קבלת הובלה רגילה + slot
+window._fbDoAccept = async function(slotStr) {
+  const p = window._pendingAccept;
+  if(!p) { toast('שגיאה פנימית — נסה שוב'); return; }
+  window._pendingAccept = null;
+
+  const waitEl = document.getElementById('drv-wait');
+  const waitS  = document.getElementById('drv-wait-s');
+  if(waitEl){ waitS.textContent = slotStr + '\nשולח לעמיל המכס...'; waitEl.classList.add('on'); }
+
+  try {
+    const driverName = document.getElementById('p-name-v')?.textContent || '';
+    await updateDoc(doc(db, 'shipments', p.docId), {
+      status:      'accepted',
+      driverUid:   currentUser.uid,
+      driverName,
+      driverPhone: window._currentPhone || '',
+      finalAmount: p.amt,
+      slot:        slotStr,
+      acceptedAt:  serverTimestamp(),
+    });
+    if(waitEl) waitEl.classList.remove('on');
+    showOv('drv-succ', '✅ נשלח לעמיל!',
+      'טווח: ' + slotStr + '\n₪' + p.amt.toLocaleString() + '\nממתין לאישור עמיל המכס');
+  } catch(e) {
+    console.error('_fbDoAccept error:', e);
+    if(waitEl) waitEl.classList.remove('on');
+    toast('שגיאה: ' + (e.message || 'נסה שוב'));
+  }
+};
+
+// הצעה נגדית + slot
+window._fbDoCounter = async function(slotStr) {
+  const p = window._pendingCounter;
+  if(!p) { toast('שגיאה פנימית — נסה שוב'); return; }
+  window._pendingCounter = null;
+
+  const waitEl = document.getElementById('drv-wait');
+  const waitS  = document.getElementById('drv-wait-s');
+  if(waitEl){ waitS.textContent = 'שולח הצעה ₪' + p.proposedAmt.toLocaleString() + '...'; waitEl.classList.add('on'); }
+
+  try {
+    const driverName = document.getElementById('p-name-v')?.textContent || '';
+
+    // 1. שמור הצעה ב-sub-collection
+    await addDoc(collection(db, 'shipments', p.docId, 'counterOffers'), {
+      driverUid:      currentUser.uid,
+      driverName,
+      driverPhone:    window._currentPhone || '',
+      proposedAmount: p.proposedAmt,
+      slot:           slotStr,
+      status:         'pending',
+      createdAt:      serverTimestamp(),
+    });
+
+    // 2. עדכן shipment ראשי
+    await updateDoc(doc(db, 'shipments', p.docId), {
+      status:                'offer_sent',
+      hasCounterOffers:      true,
+      counterOffersCount:    increment(1),
+      lastCounterAmount:     p.proposedAmt,
+      lastCounterDriverUid:  currentUser.uid,
+      lastCounterDriverName: driverName,
+      lastCounterAt:         serverTimestamp(),
+    });
+
+    if(waitEl) waitEl.classList.remove('on');
+    showOv('drv-succ', '💬 הצעה נשלחה!',
+      'הצעת ₪' + p.proposedAmt.toLocaleString() +
+      '\nטווח: ' + slotStr +
+      '\nעמיל המכס יקבל התראה');
+  } catch(e) {
+    console.error('_fbDoCounter error:', e);
+    if(waitEl) waitEl.classList.remove('on');
+    toast('שגיאה: ' + (e.message || 'נסה שוב'));
+  }
+};
+// ─────────────────────────────────────────────────────────
+
 
 let currentUser = null;
 let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
