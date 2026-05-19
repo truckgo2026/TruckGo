@@ -1613,9 +1613,14 @@ window.drvTab = function(tab) {
 // ── ההובלות שלי (real-time) ──────────────────────────
 function startMyOrdersRealtime(uid) {
   if (_unsubMyOrders) { _unsubMyOrders(); _unsubMyOrders = null; }
-  const q = query(collection(db, 'shipments'), where('driverUid', '==', uid));
-  _unsubMyOrders = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
-    const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+  if (window._unsubMyOrdersCounter) { window._unsubMyOrdersCounter(); window._unsubMyOrdersCounter = null; }
+
+  // מפת כל ה-docs שנראתה — משני ה-listeners
+  window._myOrdersMap = window._myOrdersMap || {};
+
+  function renderMyOrders() {
+    const map = window._myOrdersMap || {};
+    const all = Object.values(map)
       .sort((a, b) => {
         const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
         const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
@@ -1626,7 +1631,7 @@ function startMyOrdersRealtime(uid) {
     const active  = all.filter(d => ['accepted','delivered'].includes(d.status));
     const done    = all.filter(d => d.status === 'confirmed');
 
-    // badge אם יש ממתינות/פעילות
+    // badge
     const badge = document.getElementById('drv-mine-badge');
     const count = pending.length + active.length;
     if (badge) {
@@ -1675,7 +1680,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">${isDelivered?'📦 נמסר — ממתין לאישור קבלה':'🚛 הובלה פעילה'} • ${d.slot||''}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)}'}">₪${finalAmt.toLocaleString()}</div>
+                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
                 <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
                 <div class="chev">▼</div>
               </div>
@@ -1721,8 +1726,21 @@ function startMyOrdersRealtime(uid) {
           </div>`).join('');
       }
     }
+  }
 
-    // התראה על שינוי סטטוס
+  // Listener 1: driverUid (הובלות שאושרו / פעילות)
+  const q1 = query(collection(db, 'shipments'), where('driverUid', '==', uid));
+  _unsubMyOrders = onSnapshot(q1, { includeMetadataChanges: false }, (snapshot) => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'removed') {
+        delete window._myOrdersMap[change.doc.id];
+      } else {
+        window._myOrdersMap[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+      }
+    });
+    renderMyOrders();
+
+    // התראה על שינוי סטטוס לאושר
     snapshot.docChanges().forEach(change => {
       if (change.type === 'modified' && !snapshot.metadata.hasPendingWrites) {
         const d = change.doc.data();
@@ -1730,12 +1748,24 @@ function startMyOrdersRealtime(uid) {
           showPushNotification('✅ אושרת!', `${d.from||''} → ${d.to||''} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + change.doc.id);
           addNotifBadge(1);
           toast('✅ ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
-          // עבור לשונית ההובלות שלי אוטומטית
           drvTab('mine');
         }
       }
     });
   }, err => console.error('MyOrders listener error', err));
+
+  // Listener 2: lastCounterDriverUid (הצעות נגדיות שהנהג שלח)
+  const q2 = query(collection(db, 'shipments'), where('lastCounterDriverUid', '==', uid));
+  window._unsubMyOrdersCounter = onSnapshot(q2, { includeMetadataChanges: false }, (snapshot) => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'removed') {
+        delete window._myOrdersMap[change.doc.id];
+      } else {
+        window._myOrdersMap[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+      }
+    });
+    renderMyOrders();
+  }, err => console.error('MyOrdersCounter listener error', err));
 }
 
 function startBrokerRealtime(uid) {
@@ -1929,6 +1959,8 @@ function stopAllListeners() {
   if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
   if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
   if (_unsubMyOrders) { _unsubMyOrders(); _unsubMyOrders = null; }
+  if (window._unsubMyOrdersCounter) { window._unsubMyOrdersCounter(); window._unsubMyOrdersCounter = null; }
+  window._myOrdersMap = {};
   if (_unsubPayments) { _unsubPayments(); _unsubPayments = null; }
 }
 // ─────────────────────────────────────────────
