@@ -503,15 +503,46 @@ textarea.fi{resize:vertical;}
     <!-- יוחלף ב-JS -->
   </div>
 
-  <div class="sec">
-    <div class="sec-h">
-      <div class="sec-t">הצעות פתוחות</div>
-      <div id="drv-offers-count" style="font-size:12px;color:var(--muted);"></div>
+  <!-- TABS: הצעות פתוחות / ההובלות שלי -->
+  <div id="drv-tabs" style="display:flex;gap:0;margin:14px 16px 0;background:var(--surface2);border-radius:12px;padding:3px;">
+    <div id="drv-tab-offers" onclick="drvTab('offers')" style="flex:1;text-align:center;padding:8px 0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;transition:all .2s;">הצעות פתוחות</div>
+    <div id="drv-tab-mine" onclick="drvTab('mine')" style="flex:1;text-align:center;padding:8px 0;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .2s;">ההובלות שלי <span id="drv-mine-badge" style="display:none;background:var(--red);color:#fff;border-radius:50%;font-size:10px;padding:1px 5px;margin-right:2px;"></span></div>
+  </div>
+
+  <!-- הצעות פתוחות -->
+  <div id="drv-pane-offers">
+    <div class="sec">
+      <div class="sec-h">
+        <div class="sec-t">הצעות פתוחות</div>
+        <div id="drv-offers-count" style="font-size:12px;color:var(--muted);"></div>
+      </div>
+      <div id="drv-offers-list">
+        <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
+          <div style="font-size:32px;margin-bottom:8px;">🚛</div>
+          <div>טוען הצעות...</div>
+        </div>
+      </div>
     </div>
-    <div id="drv-offers-list">
-      <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-        <div style="font-size:32px;margin-bottom:8px;">🚛</div>
-        <div>טוען הצעות...</div>
+  </div>
+
+  <!-- ההובלות שלי -->
+  <div id="drv-pane-mine" style="display:none;">
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">ממתינות לאישור</div></div>
+      <div id="drv-mine-pending">
+        <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">אין הובלות ממתינות</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">פעילות / אושרו</div></div>
+      <div id="drv-mine-active">
+        <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">אין הובלות פעילות</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-h"><div class="sec-t">הושלמו</div></div>
+      <div id="drv-mine-done">
+        <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">אין היסטוריה עדיין</div>
       </div>
     </div>
   </div>
@@ -1395,6 +1426,7 @@ window.selectedRole = window.selectedRole || 'drv';
 // ─────────────────────────────────────────────
 let _unsubDriverOrders = null;
 let _unsubBrokerOrders = null;
+let _unsubMyOrders = null;
 let _unsubPayments = null;
 let _lastKnownOrderIds = new Set();  // למניעת התראה כפולה בטעינה ראשונה
 
@@ -1548,6 +1580,161 @@ window.acceptOrderRealtime = async function(cardId, docId, amt) {
 };
 
 // ────── START REAL-TIME LISTENER FOR BROKER (עדכוני סטטוס) ──────
+// ── מיתוג לשוניות נהג ──────────────────────────────
+window.drvTab = function(tab) {
+  const offersPane = document.getElementById('drv-pane-offers');
+  const minePane   = document.getElementById('drv-pane-mine');
+  const tabOffers  = document.getElementById('drv-tab-offers');
+  const tabMine    = document.getElementById('drv-tab-mine');
+  if (!offersPane) return;
+  if (tab === 'offers') {
+    offersPane.style.display = 'block';
+    minePane.style.display   = 'none';
+    tabOffers.style.background = 'var(--accent)';
+    tabOffers.style.color      = '#fff';
+    tabMine.style.background   = 'transparent';
+    tabMine.style.color        = 'var(--muted)';
+  } else {
+    offersPane.style.display = 'none';
+    minePane.style.display   = 'block';
+    tabOffers.style.background = 'transparent';
+    tabOffers.style.color      = 'var(--muted)';
+    tabMine.style.background   = 'var(--accent)';
+    tabMine.style.color        = '#fff';
+    // נקה badge
+    const badge = document.getElementById('drv-mine-badge');
+    if (badge) badge.style.display = 'none';
+  }
+};
+
+// ── ההובלות שלי (real-time) ──────────────────────────
+function startMyOrdersRealtime(uid) {
+  if (_unsubMyOrders) { _unsubMyOrders(); _unsubMyOrders = null; }
+  const q = query(collection(db, 'shipments'), where('driverUid', '==', uid));
+  _unsubMyOrders = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
+    const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return tb - ta;
+      });
+
+    const pending = all.filter(d => d.status === 'offer_sent');
+    const active  = all.filter(d => ['accepted','delivered'].includes(d.status));
+    const done    = all.filter(d => d.status === 'confirmed');
+
+    // badge אם יש ממתינות/פעילות
+    const badge = document.getElementById('drv-mine-badge');
+    const count = pending.length + active.length;
+    if (badge) {
+      badge.textContent = count > 9 ? '9+' : String(count);
+      badge.style.display = count > 0 ? 'inline' : 'none';
+    }
+
+    // ממתינות לאישור
+    const pendingEl = document.getElementById('drv-mine-pending');
+    if (pendingEl) {
+      if (pending.length === 0) {
+        pendingEl.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--muted);font-size:14px;">אין הובלות ממתינות לאישור</div>';
+      } else {
+        pendingEl.innerHTML = pending.map(d => `
+          <div class="card">
+            <div class="cm">
+              <div class="ci am">💬</div>
+              <div class="cinfo">
+                <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
+                <div class="cm2">ממתינה לאישור עמיל • ${d.brokerName||'—'}</div>
+              </div>
+              <div class="cr">
+                <div class="cp" style="color:var(--amber)">₪${(d.lastCounterAmount||d.amount||0).toLocaleString()}</div>
+                <div class="badge bam">ממתין</div>
+              </div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // פעילות / אושרו
+    const activeEl = document.getElementById('drv-mine-active');
+    if (activeEl) {
+      if (active.length === 0) {
+        activeEl.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--muted);font-size:14px;">אין הובלות פעילות</div>';
+      } else {
+        activeEl.innerHTML = active.map(d => {
+          const isDelivered = d.status === 'delivered';
+          const finalAmt = d.finalAmount || d.amount || 0;
+          return `
+          <div class="card">
+            <div class="cm" onclick="toggleCard('dact-${d.id}')">
+              <div class="ci ${isDelivered?'am':'g'}">${isDelivered?'📦':'🚛'}</div>
+              <div class="cinfo">
+                <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
+                <div class="cm2">${isDelivered?'📦 נמסר — ממתין לאישור קבלה':'🚛 הובלה פעילה'} • ${d.slot||''}</div>
+              </div>
+              <div class="cr">
+                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)}'}">₪${finalAmt.toLocaleString()}</div>
+                <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
+                <div class="chev">▼</div>
+              </div>
+            </div>
+            <div class="cd" id="dact-${d.id}">
+              <div class="dg">
+                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${d.from||'—'}</div></div>
+                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${d.to||'—'}</div></div>
+                <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${d.date||'—'}</div></div>
+                <div class="dc"><div class="dcl">טווח</div><div class="dcv">${d.slot||'—'}</div></div>
+                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
+                <div class="dc"><div class="dcl">עמיל</div><div class="dcv">${d.brokerName||'—'}</div></div>
+              </div>
+              ${!isDelivered ? `<div class="brow"><button class="btn bgr" onclick="driverConfirmDelivery('${d.id}')">✅ אשר מסירה</button></div>` : `
+              <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
+                ⏳ ממתין לאישור קבלה מהעמיל לשחרור תשלום
+              </div>`}
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // הושלמו
+    const doneEl = document.getElementById('drv-mine-done');
+    if (doneEl) {
+      if (done.length === 0) {
+        doneEl.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--muted);font-size:14px;">אין היסטוריה עדיין</div>';
+      } else {
+        doneEl.innerHTML = done.map(d => `
+          <div class="card">
+            <div class="cm">
+              <div class="ci g"></div>
+              <div class="cinfo">
+                <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
+                <div class="cm2">${d.date||''} • ${d.slot||''}</div>
+              </div>
+              <div class="cr">
+                <div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div>
+                <div class="badge bg">הושלם</div>
+              </div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // התראה על שינוי סטטוס
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'modified' && !snapshot.metadata.hasPendingWrites) {
+        const d = change.doc.data();
+        if (d.status === 'accepted') {
+          showPushNotification('✅ אושרת!', `${d.from||''} → ${d.to||''} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + change.doc.id);
+          addNotifBadge(1);
+          toast('✅ ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
+          // עבור לשונית ההובלות שלי אוטומטית
+          drvTab('mine');
+        }
+      }
+    });
+  }, err => console.error('MyOrders listener error', err));
+}
+
 function startBrokerRealtime(uid) {
   if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
 
@@ -1738,6 +1925,7 @@ function refreshBrokerLists() {
 function stopAllListeners() {
   if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
   if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
+  if (_unsubMyOrders) { _unsubMyOrders(); _unsubMyOrders = null; }
   if (_unsubPayments) { _unsubPayments(); _unsubPayments = null; }
 }
 // ─────────────────────────────────────────────
@@ -2086,6 +2274,7 @@ function loadProfile(d, user) {
 
     if (d.role === 'drv') {
       startDriverRealtime(user.uid);
+      startMyOrdersRealtime(user.uid);
       startPaymentsRealtime(user.uid, 'drv');
     } else if (d.role === 'brk') {
       startBrokerRealtime(user.uid);
@@ -2360,7 +2549,19 @@ window.openCounterOffers = async function(shipmentId) {
   }
 };
 
-// ── עמיל: אשר הצעה נגדית (via safe key) ──────────────
+// ── נהג: אשר מסירה ────────────────────────────────
+window.driverConfirmDelivery = async function(shipId) {
+  if (!confirm('לאשר שהמשלוח נמסר?')) return;
+  try {
+    await updateDoc(doc(db, 'shipments', shipId), {
+      status: 'delivered',
+      deliveredAt: serverTimestamp(),
+    });
+    toast('📦 מסירה אושרה! ממתין לאישור עמיל לשחרור תשלום');
+  } catch(e) { toast('שגיאה: ' + e.message); }
+};
+
+// ── נהג: אשר מסירה ────────────────────────────────
 window.brokerAcceptOfferByKey = function(key) {
   const o = window[key];
   if (!o) { toast('שגיאה: נסה לסגור ולפתוח שוב'); return; }
