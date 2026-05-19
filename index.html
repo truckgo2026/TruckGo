@@ -741,9 +741,22 @@ textarea.fi{resize:vertical;}
         <div class="fg"><div class="fl">משקל (ק"ג)</div><input id="order-weight" class="fi" type="number" placeholder="0" value=""></div>
         <div class="fg"><div class="fl">כמות (יחידות)</div><input id="order-qty" class="fi" type="number" placeholder="0" value=""></div>
       </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">נפח (מ"ק)</div><input id="order-volume" class="fi" type="number" placeholder="0" value=""></div>
+        <div class="fg"></div>
+      </div>
       <div class="fg">
         <div class="fl">תיאור טובין</div>
         <input id="order-desc" class="fi" type="text" placeholder="לדוגמא: ציוד רפואי, אלקטרוניקה..." value="">
+      </div>
+
+      <!-- שירותים נוספים -->
+      <div class="fg">
+        <div class="fl">שירותים נוספים</div>
+        <div style="display:flex;gap:10px;">
+          <div id="opt-porters" onclick="toggleExtra('porters')" style="flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">👷 נדרש סבלים</div>
+          <div id="opt-ramp" onclick="toggleExtra('ramp')" style="flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">🚚 נדרש רמפה</div>
+        </div>
       </div>
 
       <!-- סוג מטען -->
@@ -751,27 +764,33 @@ textarea.fi{resize:vertical;}
         <div class="fl">סוג מטען</div>
         <div style="display:flex;gap:10px;margin-bottom:4px;">
           <div id="opt-bulk" onclick="selectCargo('bulk')" style="flex:1;padding:12px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-            
-            <div style="font-size:12px;font-weight:700;">חלקי / פריקי</div>
+            <div style="font-size:20px;margin-bottom:4px;">📦</div>
+            <div style="font-size:12px;font-weight:700;">חלקי</div>
           </div>
           <div id="opt-cont" onclick="selectCargo('cont')" style="flex:1;padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-            <div style="font-size:20px;margin-bottom:4px;"></div>
+            <div style="font-size:20px;margin-bottom:4px;">🚢</div>
             <div style="font-size:12px;font-weight:700;">מכולה</div>
           </div>
         </div>
         <!-- Container size picker — shown only for מכולה -->
         <div id="cont-size" style="display:none;margin-top:10px;">
-          <div class="fl">גודל מכולה</div>
-          <div style="display:flex;gap:10px;">
-            <div id="sz-20" onclick="selectSize(20)" style="flex:1;padding:14px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-              <div style="font-size:22px;margin-bottom:4px;"></div>
-              <div style="font-size:14px;font-weight:800;">20 פיט</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px;">עד ~21 טון</div>
+          <div class="fl">סוג מכולה</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div id="sz-20" onclick="selectSize('20')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:12px;font-weight:800;">20 פיט</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">~21 טון</div>
             </div>
-            <div id="sz-40" onclick="selectSize(40)" style="flex:1;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-              <div style="font-size:22px;margin-bottom:4px;"></div>
-              <div style="font-size:14px;font-weight:800;">40 פיט</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:2px;">עד ~26 טון</div>
+            <div id="sz-40" onclick="selectSize('40')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:12px;font-weight:800;">40 פיט</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">~26 טון</div>
+            </div>
+            <div id="sz-40hc" onclick="selectSize('40HC')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:12px;font-weight:800;">40HC</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">High Cube</div>
+            </div>
+            <div id="sz-opentop" onclick="selectSize('OPENTOP')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:12px;font-weight:800;">Open Top</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">גג פתוח</div>
             </div>
           </div>
         </div>
@@ -997,17 +1016,31 @@ function selectCargo(type){
     sz.style.display='block';
   }
 }
-let contSize=20;
+let contSize='20';
 function selectSize(s){
   contSize=s;
-  const s20=document.getElementById('sz-20');
-  const s40=document.getElementById('sz-40');
-  if(s===20){
-    s20.style.cssText='flex:1;padding:14px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    s40.style.cssText='flex:1;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
+  ['sz-20','sz-40','sz-40hc','sz-opentop'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.style.cssText='flex:1;min-width:70px;padding:11px 4px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
+  });
+  const map = {'20':'sz-20','40':'sz-40','40HC':'sz-40hc','OPENTOP':'sz-opentop'};
+  const sel = document.getElementById(map[s]);
+  if(sel) sel.style.cssText='flex:1;min-width:70px;padding:11px 4px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
+}
+
+// שירותים נוספים
+window._extras = { porters: false, ramp: false };
+function toggleExtra(key){
+  window._extras[key] = !window._extras[key];
+  const el = document.getElementById('opt-' + key);
+  if(!el) return;
+  if(window._extras[key]){
+    el.style.cssText='flex:1;padding:11px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;';
   } else {
-    s40.style.cssText='flex:1;padding:14px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
-    s20.style.cssText='flex:1;padding:14px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;';
+    el.style.cssText='flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;';
+  }
+}
   }
 }
 let isHaz=false;
@@ -1167,12 +1200,13 @@ window.submitOrderReal = async function() {
   const btn = document.querySelector('#s-neworder .fbt');
   if(btn){ btn.textContent='שולח...'; btn.disabled=true; }
   try {
-    const from  = document.getElementById('order-from')?.value?.trim() || '';
-    const to    = document.getElementById('order-to')?.value?.trim() || '';
-    const date  = document.getElementById('order-date')?.value || '';
-    const weight= parseInt(document.getElementById('order-weight')?.value) || 0;
-    const qty   = parseInt(document.getElementById('order-qty')?.value) || 0;
-    const desc  = document.getElementById('order-desc')?.value?.trim() || '';
+    const from   = document.getElementById('order-from')?.value?.trim() || '';
+    const to     = document.getElementById('order-to')?.value?.trim() || '';
+    const date   = document.getElementById('order-date')?.value || '';
+    const weight = parseInt(document.getElementById('order-weight')?.value) || 0;
+    const qty    = parseInt(document.getElementById('order-qty')?.value) || 0;
+    const volume = parseFloat(document.getElementById('order-volume')?.value) || 0;
+    const desc   = document.getElementById('order-desc')?.value?.trim() || '';
     const amt   = parseInt(document.getElementById('order-price')?.value) || 0;
 
     if(!from)  { toast(' הכנס כתובת מוצא'); return; }
@@ -1181,21 +1215,30 @@ window.submitOrderReal = async function() {
 
     if(typeof window._fbAddDoc === 'function') {
       await window._fbAddDoc({
-        from, to, date, weight, qty, desc,
+        from, to, date, weight, qty, volume, desc,
         amount: amt,
         brokerUid: window._currentUid,
         brokerName: document.getElementById('p-name-v')?.textContent || '',
         status: 'pending',
         cargoType: window.cargoType || 'bulk',
-        contSize: window.contSize || null,
+        contSize: window.cargoType === 'cont' ? (window.contSize || '20') : null,
         isHazardous: window.isHaz || false,
+        needPorters: window._extras?.porters || false,
+        needRamp: window._extras?.ramp || false,
       });
     }
     // נקה טופס
-    ['order-from','order-to','order-date','order-weight','order-qty','order-desc','order-price'].forEach(id => {
+    ['order-from','order-to','order-date','order-weight','order-qty','order-volume','order-desc','order-price'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.value = '';
     });
+    // אפס שירותים נוספים
+    window._extras = { porters: false, ramp: false };
+    ['opt-porters','opt-ramp'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.cssText='flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;';
+    });
+    selectCargo('bulk');
     document.getElementById('no-succ').classList.add('on');
   } catch(e) {
     console.error(e);
@@ -1523,16 +1566,19 @@ function startDriverRealtime(uid) {
       const to   = d.to   || '—';
       const amt  = d.amount || 0;
       const weight = d.weight ? `${d.weight.toLocaleString()} ק"ג` : '—';
+      const volume = d.volume ? `${d.volume} מ"ק` : null;
       const desc = d.desc || d.cargoType || '—';
       const date = d.date || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—');
       const brokerName = d.brokerName || '—';
+      const contLabel = d.contSize ? ` • מכולה ${d.contSize}` : '';
+      const extras = [d.needPorters && '👷 סבלים', d.needRamp && '🚚 רמפה'].filter(Boolean).join(' • ');
       return `
         <div class="card" id="dof-${id}">
           <div class="cm" onclick="toggleCard('dof-${id}')">
             <div class="ci"></div>
             <div class="cinfo">
               <div class="ct">${from} → ${to}</div>
-              <div class="cm2">${weight} • ${desc}</div>
+              <div class="cm2">${weight}${volume ? ' • ' + volume : ''} • ${desc}${contLabel}</div>
             </div>
             <div class="cr"><div class="cp">₪${amt.toLocaleString()}</div><div class="chev">▼</div></div>
           </div>
@@ -1541,8 +1587,10 @@ function startDriverRealtime(uid) {
               <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${from}</div></div>
               <div class="dc"><div class="dcl">יעד</div><div class="dcv">${to}</div></div>
               <div class="dc"><div class="dcl">משקל</div><div class="dcv">${weight}</div></div>
+              ${volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${volume}</div></div>` : ''}
               <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${date}</div></div>
-              <div class="dc"><div class="dcl">תיאור</div><div class="dcv">${desc}</div></div>
+              <div class="dc"><div class="dcl">תיאור</div><div class="dcv">${desc}${contLabel}</div></div>
+              ${extras ? `<div class="dc"><div class="dcl">דרישות</div><div class="dcv">${extras}</div></div>` : ''}
               <div class="dc"><div class="dcl">עמיל</div><div class="dcv">${brokerName}</div></div>
             </div>
             <div class="brow">
