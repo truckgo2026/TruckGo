@@ -754,8 +754,8 @@ textarea.fi{resize:vertical;}
       <div class="fg">
         <div class="fl">שירותים נוספים</div>
         <div style="display:flex;gap:10px;">
-          <div id="opt-porters" onclick="toggleExtra('porters')" style="flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">👷 נדרש סבלים</div>
-          <div id="opt-ramp" onclick="toggleExtra('ramp')" style="flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">🚚 נדרש רמפה</div>
+          <div id="opt-porters" onclick="toggleExtra('porters')" style="flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">נדרש סבלים</div>
+          <div id="opt-ramp" onclick="toggleExtra('ramp')" style="flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;">נדרש רמפית</div>
         </div>
       </div>
 
@@ -764,11 +764,9 @@ textarea.fi{resize:vertical;}
         <div class="fl">סוג מטען</div>
         <div style="display:flex;gap:10px;margin-bottom:4px;">
           <div id="opt-bulk" onclick="selectCargo('bulk')" style="flex:1;padding:12px 8px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-            <div style="font-size:20px;margin-bottom:4px;">📦</div>
             <div style="font-size:12px;font-weight:700;">חלקי</div>
           </div>
           <div id="opt-cont" onclick="selectCargo('cont')" style="flex:1;padding:12px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-            <div style="font-size:20px;margin-bottom:4px;">🚢</div>
             <div style="font-size:12px;font-weight:700;">מכולה</div>
           </div>
         </div>
@@ -777,11 +775,11 @@ textarea.fi{resize:vertical;}
           <div class="fl">סוג מכולה</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <div id="sz-20" onclick="selectSize('20')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-              <div style="font-size:12px;font-weight:800;">20 פיט</div>
+              <div style="font-size:12px;font-weight:800;">20</div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px;">~21 טון</div>
             </div>
             <div id="sz-40" onclick="selectSize('40')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
-              <div style="font-size:12px;font-weight:800;">40 פיט</div>
+              <div style="font-size:12px;font-weight:800;">40</div>
               <div style="font-size:10px;color:var(--muted);margin-top:2px;">~26 טון</div>
             </div>
             <div id="sz-40hc" onclick="selectSize('40HC')" style="flex:1;min-width:70px;padding:11px 4px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
@@ -1560,23 +1558,29 @@ function startDriverRealtime(uid) {
     container.innerHTML = docs.map(docSnap => {
       const d = docSnap.data();
       const id = docSnap.id;
-      const from = d.from || '—';
-      const to   = d.to   || '—';
-      const amt  = d.amount || 0;
-      const weight = d.weight ? `${d.weight.toLocaleString()} ק"ג` : '—';
-      const volume = d.volume ? `${d.volume} מ"ק` : null;
-      const desc = d.desc || d.cargoType || '—';
-      const date = d.date || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—');
+      const from       = d.from || '—';
+      const to         = d.to   || '—';
+      const amt        = d.amount || 0;
+      const weight     = d.weight ? `${d.weight.toLocaleString()} ק"ג` : '—';
+      const volume     = d.volume ? `${d.volume} מ"ק` : null;
+      const qty        = d.qty    ? `${d.qty} יח'` : null;
+      const desc       = d.desc  || '—';
+      const date       = d.date  || (d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—');
       const brokerName = d.brokerName || '—';
-      const contLabel = d.contSize ? ` • מכולה ${d.contSize}` : '';
-      const extras = [d.needPorters && '👷 סבלים', d.needRamp && '🚚 רמפה'].filter(Boolean).join(' • ');
+      const cargoLabel = d.cargoType === 'cont'
+        ? ('מכולה' + (d.contSize ? ' ' + d.contSize : ''))
+        : 'חלקי';
+      const hazLabel   = d.isHazardous ? 'כן' : 'לא';
+      const portersLabel = d.needPorters ? 'כן' : 'לא';
+      const rampLabel    = d.needRamp    ? 'כן' : 'לא';
+      const summary = [weight, volume, qty].filter(Boolean).join(' • ');
       return `
         <div class="card" id="dof-${id}">
           <div class="cm" onclick="toggleCard('dof-${id}')">
             <div class="ci"></div>
             <div class="cinfo">
               <div class="ct">${from} → ${to}</div>
-              <div class="cm2">${weight}${volume ? ' • ' + volume : ''} • ${desc}${contLabel}</div>
+              <div class="cm2">${summary} • ${cargoLabel}</div>
             </div>
             <div class="cr"><div class="cp">₪${amt.toLocaleString()}</div><div class="chev">▼</div></div>
           </div>
@@ -1584,17 +1588,21 @@ function startDriverRealtime(uid) {
             <div class="dg">
               <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${from}</div></div>
               <div class="dc"><div class="dcl">יעד</div><div class="dcv">${to}</div></div>
+              <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${date}</div></div>
               <div class="dc"><div class="dcl">משקל</div><div class="dcv">${weight}</div></div>
               ${volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${volume}</div></div>` : ''}
-              <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${date}</div></div>
-              <div class="dc"><div class="dcl">תיאור</div><div class="dcv">${desc}${contLabel}</div></div>
-              ${extras ? `<div class="dc"><div class="dcl">דרישות</div><div class="dcv">${extras}</div></div>` : ''}
-              <div class="dc"><div class="dcl">עמיל</div><div class="dcv">${brokerName}</div></div>
+              ${qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qty}</div></div>` : ''}
+              <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
+              <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${desc}</div></div>
+              <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel}</div></div>
+              <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
+              <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
+              <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${brokerName}</div></div>
             </div>
             <div class="brow">
-              <button class="btn bp" onclick="acceptOrderRealtime('dof-${id}','${id}',${amt})"> קבל</button>
-              <button class="btn bam2" onclick="openCounter('dof-${id}',${amt})"> הצע נגד</button>
-              <button class="btn bred" onclick="rmCard('dof-${id}',' נדחה')"> דחה</button>
+              <button class="btn bp" onclick="acceptOrderRealtime('dof-${id}','${id}',${amt})">קבל הזמנה</button>
+              <button class="btn bam2" onclick="openCounter('dof-${id}',${amt})">הצע נגד</button>
+              <button class="btn bred" onclick="rmCard('dof-${id}',' נדחה')">דחה</button>
             </div>
           </div>
         </div>`;
