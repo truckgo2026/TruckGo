@@ -802,7 +802,7 @@ textarea.fi{resize:vertical;}
           <div id="haz-yes" onclick="selectHaz(true)" style="flex:1;padding:11px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;"> כן</div>
         </div>
         <div id="haz-detail" style="display:none;margin-top:10px;">
-          <input class="fi" type="text" placeholder="מספר UN / סיווג חומר מסוכן" style="margin-bottom:0;">
+          <input id="order-haz-code" class="fi" type="text" placeholder="מספר UN / סיווג חומר מסוכן" style="margin-bottom:0;">
         </div>
       </div>
     </div>
@@ -1219,6 +1219,7 @@ window.submitOrderReal = async function() {
         cargoType: window.cargoType || 'bulk',
         contSize: window.cargoType === 'cont' ? (window.contSize || '20') : null,
         isHazardous: window.isHaz || false,
+        hazCode: window.isHaz ? (document.getElementById('order-haz-code')?.value?.trim() || '') : '',
         needPorters: window._extras?.porters || false,
         needRamp: window._extras?.ramp || false,
       });
@@ -1389,13 +1390,13 @@ window._fbDoAccept = async function(slotStr) {
   try {
     const driverName = document.getElementById('p-name-v')?.textContent || '';
     await updateDoc(doc(db, 'shipments', p.docId), {
-      status:      'accepted',
+      status:      'pending_approval',
       driverUid:   currentUser.uid,
       driverName,
       driverPhone: window._currentPhone || '',
-      finalAmount: p.amt,
+      proposedAmount: p.amt,
       slot:        slotStr,
-      acceptedAt:  serverTimestamp(),
+      requestedAt: serverTimestamp(),
     });
     if(waitEl) waitEl.classList.remove('on');
     showOv('drv-succ', '✅ נשלח לעמיל!',
@@ -1571,6 +1572,7 @@ function startDriverRealtime(uid) {
         ? ('מכולה' + (d.contSize ? ' ' + d.contSize : ''))
         : 'חלקי';
       const hazLabel   = d.isHazardous ? 'כן' : 'לא';
+      const hazCode    = d.isHazardous && d.hazCode ? d.hazCode : null;
       const portersLabel = d.needPorters ? 'כן' : 'לא';
       const rampLabel    = d.needRamp    ? 'כן' : 'לא';
       const summary = [weight, volume, qty].filter(Boolean).join(' • ');
@@ -1594,7 +1596,7 @@ function startDriverRealtime(uid) {
               ${qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qty}</div></div>` : ''}
               <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
               <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${desc}</div></div>
-              <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel}</div></div>
+              <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel}${hazCode ? ' — ' + hazCode : ''}</div></div>
               <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
               <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
               <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${brokerName}</div></div>
@@ -1681,7 +1683,7 @@ function startMyOrdersRealtime(uid) {
         return tb - ta;
       });
 
-    const pending = all.filter(d => d.status === 'offer_sent');
+    const pending = all.filter(d => d.status === 'offer_sent' || d.status === 'pending_approval');
     const active  = all.filter(d => ['accepted','delivered'].includes(d.status));
     const done    = all.filter(d => d.status === 'confirmed');
 
@@ -1837,7 +1839,7 @@ function startBrokerRealtime(uid) {
         return tb - ta;
       });
 
-    const pending   = all.filter(d => d.status === 'pending' || d.status === 'offer_sent');
+    const pending   = all.filter(d => d.status === 'pending' || d.status === 'offer_sent' || d.status === 'pending_approval');
     const active    = all.filter(d => d.status === 'accepted' || d.status === 'in_transit' || d.status === 'delivered');
     const done      = all.filter(d => d.status === 'confirmed' || d.status === 'cancelled');
 
@@ -1849,22 +1851,42 @@ function startBrokerRealtime(uid) {
       } else {
         pendList.innerHTML = pending.map(d => {
           const hasOffer = d.status === 'offer_sent';
+          const hasPendingApproval = d.status === 'pending_approval';
           const badge = hasOffer
             ? `<div class="badge" style="background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">💬 ${d.counterOffersCount||1} הצעות</div>`
-            : `<div class="badge bb">ממתין</div>`;
+            : hasPendingApproval
+              ? `<div class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">⏳ ממתין לאישורך</div>`
+              : `<div class="badge bb">ממתין</div>`;
+          const approvalBox = hasPendingApproval ? `
+            <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:10px;">
+              <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;">🚛 נהג ביקש לבצע הובלה זו</div>
+              <div style="font-size:15px;font-weight:800;color:var(--accent);">${d.driverName||'נהג'}</div>
+              ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">📱 ${d.driverPhone}</div>` : ''}
+              ${d.slot ? `<div style="font-size:12px;color:var(--muted);">⏰ ${d.slot}</div>` : ''}
+              <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${(d.proposedAmount||d.amount||0).toLocaleString()}</div>
+            </div>` : '';
           const offerBox = hasOffer ? `
             <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
               <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;">הצעה אחרונה</div>
               <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${(d.lastCounterAmount||0).toLocaleString()}</div>
               <div style="font-size:12px;color:var(--muted);">מ: ${d.lastCounterDriverName||'נהג'}</div>
             </div>` : '';
+          const cargoLabel = d.cargoType === 'cont'
+            ? ('מכולה' + (d.contSize ? ' ' + d.contSize : ''))
+            : 'חלקי';
+          const hazLabel     = d.isHazardous ? 'כן' : 'לא';
+          const hazCode      = d.isHazardous && d.hazCode ? d.hazCode : null;
+          const portersLabel = d.needPorters ? 'כן' : 'לא';
+          const rampLabel    = d.needRamp    ? 'כן' : 'לא';
+          const volLabel     = d.volume ? d.volume + ' מ"ק' : null;
+          const qtyLabel     = d.qty    ? d.qty + ' יח'' : null;
           return `
           <div class="card" id="bord-${d.id}">
             <div class="cm" onclick="toggleCard('bord-${d.id}')">
               <div class="ci ${hasOffer?'am':''}">${hasOffer?'💬':'📦'}</div>
               <div class="cinfo">
                 <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
-                <div class="cm2">${d.weight?d.weight.toLocaleString()+' ק"ג •':''} ${d.desc||''}</div>
+                <div class="cm2">${d.weight?d.weight.toLocaleString()+' ק"ג':''} • ${cargoLabel}</div>
               </div>
               <div class="cr"><div class="cp">₪${(hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0)).toLocaleString()}</div>${badge}<div class="chev">▼</div></div>
             </div>
@@ -1874,15 +1896,26 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${d.to||'—'}</div></div>
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${d.date||'—'}</div></div>
                 <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?d.weight.toLocaleString()+' ק"ג':'—'}</div></div>
+                ${volLabel ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${volLabel}</div></div>` : ''}
+                ${qtyLabel ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qtyLabel}</div></div>` : ''}
+                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
+                <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${d.desc||'—'}</div></div>
+                <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel}${hazCode ? ' — ' + hazCode : ''}</div></div>
+                <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
+                <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
+                <div class="dc"><div class="dcl">מחיר שפורסם</div><div class="dcv">₪${(d.amount||0).toLocaleString()}</div></div>
               </div>
+              ${approvalBox}
               ${offerBox}
               <div class="brow">
-                ${hasOffer?`<button class="btn bp" onclick="openCounterOffers('${d.id}')">👁 צפה בהצעות (${d.counterOffersCount||1})</button>`:''}
-                <button class="btn bred" onclick="cancelOrder('${d.id}')"> בטל</button>
+                ${hasPendingApproval ? `
+                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${d.driverUid||''}','${d.driverName||''}','${d.driverPhone||''}',${d.proposedAmount||d.amount||0},'${d.slot||''}')">✅ אשר נהג</button>
+                  <button class="btn bred" onclick="brokerRejectDriver('${d.id}')">✕ דחה נהג</button>
+                ` : hasOffer ? `<button class="btn bp" onclick="openCounterOffers('${d.id}')">צפה בהצעות (${d.counterOffersCount||1})</button>` : ''}
+                ${!hasPendingApproval ? `<button class="btn bred" onclick="cancelOrder('${d.id}')">בטל הזמנה</button>` : ''}
               </div>
             </div>
-          </div>`;
-        }).join('');
+          </div>`;        }).join('');
       }
     }
 
@@ -1895,13 +1928,20 @@ function startBrokerRealtime(uid) {
         actList.innerHTML = active.map(d => {
           const isDelivered = d.status === 'delivered';
           const finalAmt = d.finalAmount || d.amount || 0;
+          const cargoLabel2 = d.cargoType === 'cont'
+            ? ('מכולה' + (d.contSize ? ' ' + d.contSize : ''))
+            : 'חלקי';
+          const hazLabel2     = d.isHazardous ? 'כן' : 'לא';
+          const hazCode2      = d.isHazardous && d.hazCode ? d.hazCode : null;
+          const portersLabel2 = d.needPorters ? 'כן' : 'לא';
+          const rampLabel2    = d.needRamp    ? 'כן' : 'לא';
           return `
           <div class="card" id="bact-${d.id}">
             <div class="cm" onclick="toggleCard('bact-${d.id}')">
               <div class="ci ${isDelivered?'am':'g'}">${isDelivered?'📦':'🚛'}</div>
               <div class="cinfo">
                 <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
-                <div class="cm2">${isDelivered?'📦 ממתין לאישורך':'🚛 בדרך'} • ${d.driverName||'נהג'}</div>
+                <div class="cm2">${isDelivered?'ממתין לאישורך':'בדרך'} • ${d.driverName||'נהג'}</div>
               </div>
               <div class="cr">
                 <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
@@ -1912,20 +1952,30 @@ function startBrokerRealtime(uid) {
             <div class="cd">
               <div class="dg">
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${d.driverName||'—'}</div></div>
-                <div class="dc"><div class="dcl">טלפון</div><div class="dcv">${d.driverPhone||'—'}</div></div>
+                <div class="dc"><div class="dcl">טלפון נהג</div><div class="dcv">${d.driverPhone||'—'}</div></div>
                 <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${d.slot||'—'}</div></div>
                 <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
+                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${d.from||'—'}</div></div>
+                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${d.to||'—'}</div></div>
+                <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${d.date||'—'}</div></div>
+                <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?d.weight.toLocaleString()+' ק"ג':'—'}</div></div>
+                ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
+                ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
+                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel2}</div></div>
+                <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${d.desc||'—'}</div></div>
+                <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel2}${hazCode2 ? ' — ' + hazCode2 : ''}</div></div>
+                <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel2}</div></div>
+                <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel2}</div></div>
               </div>
               ${isDelivered ? `
               <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
-                🔒 הנהג אישר מסירה — אשר קבלה לשחרור תשלום
+                הנהג אישר מסירה — אשר קבלה לשחרור תשלום
               </div>
               <div class="brow">
                 <button class="btn bgr" onclick="brokerConfirmReceipt('${d.id}')">✅ אשר קבלה ושחרר תשלום</button>
               </div>` : ''}
             </div>
-          </div>`;
-        }).join('');
+          </div>`;        }).join('');
       }
     }
 
@@ -1952,6 +2002,11 @@ function startBrokerRealtime(uid) {
       const d = change.doc.data();
       const from = d.from || '—';
       const to   = d.to   || '—';
+      if (d.status === 'pending_approval') {
+        showPushNotification('🚛 נהג ביקש לבצע הובלה!', `${from} → ${to}  •  ${d.driverName||'נהג'} • ₪${(d.proposedAmount||d.amount||0).toLocaleString()}`, 'approval-' + change.doc.id);
+        addNotifBadge(1);
+        toast('🚛 ' + (d.driverName||'נהג') + ' ביקש לבצע הובלה — דרוש אישורך!');
+      }
       if (d.status === 'accepted') {
         showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${d.driverName || 'נהג'} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
         addNotifBadge(1);
@@ -2651,6 +2706,40 @@ window.driverConfirmDelivery = async function(shipId) {
 };
 
 // ── נהג: אשר מסירה ────────────────────────────────
+// ── עמיל: אשר נהג שביקש הובלה רגילה (pending_approval) ──
+window.brokerApproveDriver = async function(shipId, driverUid, driverName, driverPhone, amt, slot) {
+  if(!confirm('לאשר את ' + driverName + ' על ₪' + Number(amt).toLocaleString() + '?')) return;
+  try {
+    await updateDoc(doc(db,'shipments',shipId), {
+      status:      'accepted',
+      driverUid,
+      driverName,
+      driverPhone: driverPhone||'',
+      finalAmount: Number(amt),
+      slot:        slot||'',
+      acceptedAt:  serverTimestamp(),
+    });
+    document.getElementById('brk-succ-s').textContent = driverName+' יבצע את ההובלה!\n₪'+Number(amt).toLocaleString();
+    document.getElementById('brk-succ').classList.add('on');
+  } catch(e) { toast('שגיאה: '+e.message); }
+};
+
+// ── עמיל: דחה נהג שביקש הובלה רגילה ──────────────────
+window.brokerRejectDriver = async function(shipId) {
+  if(!confirm('לדחות את הנהג ולהחזיר את ההזמנה לרשימה?')) return;
+  try {
+    await updateDoc(doc(db,'shipments',shipId), {
+      status:         'pending',
+      driverUid:      '',
+      driverName:     '',
+      driverPhone:    '',
+      proposedAmount: 0,
+      slot:           '',
+    });
+    toast('הנהג נדחה — ההזמנה חזרה לרשימה הפתוחה');
+  } catch(e) { toast('שגיאה: '+e.message); }
+};
+
 window.brokerAcceptOfferByKey = function(key) {
   const o = window[key];
   if (!o) { toast('שגיאה: נסה לסגור ולפתוח שוב'); return; }
