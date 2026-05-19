@@ -1401,6 +1401,9 @@ window._fbDoCounter = async function(slotStr) {
       lastCounterDriverUid:  currentUser.uid,
       lastCounterDriverName: driverName,
       lastCounterAt:         serverTimestamp(),
+      driverUid:             currentUser.uid,
+      driverName,
+      driverPhone:           window._currentPhone || '',
     });
 
     if(waitEl) waitEl.classList.remove('on');
@@ -2385,7 +2388,7 @@ window.loadPaymentsScreen = async function() {
     // חישוב סיכומים
     let released = 0, escrow = 0, pending = 0;
     docs.forEach(d => {
-      const amt = d.amount || 0;
+      const amt = d.finalAmount || d.amount || 0;
       if (d.status === 'confirmed') released += amt;
       else if (d.status === 'accepted' || d.status === 'delivered') escrow += amt;
       else if (d.status === 'pending') pending += amt;
@@ -2415,7 +2418,7 @@ window.loadPaymentsScreen = async function() {
 function renderPaymentCard(d, role) {
   const st = ESCROW_LABEL[d.status] || ESCROW_LABEL.pending;
   const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
-  const amt = d.amount || 0;
+  const amt = d.finalAmount || d.amount || 0;
   const fee = Math.round(amt * 0.05);
   const net = amt - fee;
 
