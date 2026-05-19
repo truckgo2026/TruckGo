@@ -1457,7 +1457,7 @@ function startDriverRealtime(uid) {
   // ללא orderBy - מיון בצד הלקוח, נמנע שגיאת composite index
   const q = query(collection(db, 'shipments'), where('status', '==', 'pending'));
 
-  _unsubDriverOrders = onSnapshot(q, (snapshot) => {
+  _unsubDriverOrders = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
     const container = document.getElementById('drv-offers-list');
     if (!container) return;
 
@@ -1554,7 +1554,7 @@ function startBrokerRealtime(uid) {
   // ללא orderBy - מיון בצד הלקוח
   const q = query(collection(db, 'shipments'), where('brokerUid', '==', uid));
 
-  _unsubBrokerOrders = onSnapshot(q, (snapshot) => {
+  _unsubBrokerOrders = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
     const all = snapshot.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => {
@@ -1592,7 +1592,7 @@ function startBrokerRealtime(uid) {
                 <div class="ct">${d.from||'—'} → ${d.to||'—'}</div>
                 <div class="cm2">${d.weight?d.weight.toLocaleString()+' ק"ג •':''} ${d.desc||''}</div>
               </div>
-              <div class="cr"><div class="cp">₪${(d.amount||0).toLocaleString()}</div>${badge}<div class="chev">▼</div></div>
+              <div class="cr"><div class="cp">₪${(hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0)).toLocaleString()}</div>${badge}<div class="chev">▼</div></div>
             </div>
             <div class="cd">
               <div class="dg">
@@ -1666,7 +1666,7 @@ function startBrokerRealtime(uid) {
             <div class="cm">
               <div class="ci g"></div>
               <div class="cinfo"><div class="ct">${d.from||'—'} → ${d.to||'—'}</div><div class="cm2">${d.date||''} • ${d.weight?d.weight.toLocaleString()+' ק"ג':''}</div></div>
-              <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div></div>
+              <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div></div>
             </div>
           </div>`).join('');
       }
@@ -2319,13 +2319,21 @@ window.openCounterOffers = async function(shipmentId) {
       document.getElementById('com-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין הצעות עדיין</div>';
       return;
     }
-    document.getElementById('com-list').innerHTML = offersSnap.docs.map(d => {
+    document.getElementById('com-list').innerHTML = offersSnap.docs.map((d,idx) => {
       const o = d.data();
       const diff = (o.proposedAmount||0) - origAmt;
       const diffClr = diff <= 0 ? 'var(--green)' : 'var(--amber)';
       const diffTxt = diff===0?'':(diff<0?'▼ זול ב-':'▲ יקר ב-')+'₪'+Math.abs(diff).toLocaleString();
       const isPending = !o.status || o.status==='pending';
       const statusBadge = !isPending ? `<div class="badge ${o.status==='accepted'?'bg':'br'}">${o.status==='accepted'?'✅ אושר':'❌ נדחה'}</div>` : '';
+      // Store offer data safely in a JS variable to avoid HTML attribute escaping issues
+      const offerKey = `_coffer_${idx}`;
+      window[offerKey] = {
+        shipmentId, offerId: d.id,
+        driverUid: o.driverUid||'', driverName: o.driverName||'נהג',
+        driverPhone: o.driverPhone||'', proposedAmount: o.proposedAmount||0,
+        slot: o.slot||''
+      };
       return `
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
@@ -2341,7 +2349,7 @@ window.openCounterOffers = async function(shipmentId) {
         </div>
         ${isPending ? `
         <div class="brow">
-          <button class="btn bgr" onclick="brokerAcceptOffer('${shipmentId}','${d.id}','${o.driverUid||''}','${o.driverName||''}','${o.driverPhone||''}',${o.proposedAmount||0},'${o.slot||''}')">✅ אשר נהג זה</button>
+          <button class="btn bgr" onclick="brokerAcceptOfferByKey('${offerKey}')">✅ אשר נהג זה</button>
           <button class="btn bred" onclick="brokerRejectOffer('${shipmentId}','${d.id}')">✕ דחה</button>
         </div>` : statusBadge}
       </div>`;
@@ -2350,6 +2358,13 @@ window.openCounterOffers = async function(shipmentId) {
     console.error('openCounterOffers:', e);
     document.getElementById('com-list').innerHTML = `<div style="color:var(--red);padding:10px;">שגיאה: ${e.message}</div>`;
   }
+};
+
+// ── עמיל: אשר הצעה נגדית (via safe key) ──────────────
+window.brokerAcceptOfferByKey = function(key) {
+  const o = window[key];
+  if (!o) { toast('שגיאה: נסה לסגור ולפתוח שוב'); return; }
+  brokerAcceptOffer(o.shipmentId, o.offerId, o.driverUid, o.driverName, o.driverPhone, o.proposedAmount, o.slot);
 };
 
 // ── עמיל: אשר הצעה נגדית ─────────────────────────────
