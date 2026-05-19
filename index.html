@@ -1879,7 +1879,7 @@ function startBrokerRealtime(uid) {
           const portersLabel = d.needPorters ? 'כן' : 'לא';
           const rampLabel    = d.needRamp    ? 'כן' : 'לא';
           const volLabel     = d.volume ? d.volume + ' מ"ק' : null;
-          const qtyLabel     = d.qty    ? d.qty + ' יח'' : null;
+          const qtyLabel     = d.qty    ? d.qty + " יח'" : null;
           return `
           <div class="card" id="bord-${d.id}">
             <div class="cm" onclick="toggleCard('bord-${d.id}')">
