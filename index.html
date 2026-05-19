@@ -998,9 +998,9 @@ function setFileLabel(input, labelId){
 }
 // showForgotOtp מוגדרת ב-Firebase module למטה עם שליחה אמיתית
 // cargo type toggle
-let cargoType='bulk';
+window.cargoType='bulk';
 function selectCargo(type){
-  cargoType=type;
+  window.cargoType=type;
   const bulk=document.getElementById('opt-bulk');
   const cont=document.getElementById('opt-cont');
   const sz=document.getElementById('cont-size');
@@ -1014,9 +1014,9 @@ function selectCargo(type){
     sz.style.display='block';
   }
 }
-let contSize='20';
+window.contSize='20';
 function selectSize(s){
-  contSize=s;
+  window.contSize=s;
   ['sz-20','sz-40','sz-40hc','sz-opentop'].forEach(id => {
     const el = document.getElementById(id);
     if(!el) return;
@@ -1039,9 +1039,9 @@ function toggleExtra(key){
     el.style.cssText='flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;';
   }
 }
-let isHaz=false;
+window.isHaz=false;
 function selectHaz(v){
-  isHaz=v;
+  window.isHaz=v;
   const no=document.getElementById('haz-no');
   const yes=document.getElementById('haz-yes');
   const det=document.getElementById('haz-detail');
@@ -1231,6 +1231,9 @@ window.submitOrderReal = async function() {
     });
     // אפס שירותים נוספים
     window._extras = { porters: false, ramp: false };
+    window.isHaz = false;
+    window.cargoType = 'bulk';
+    window.contSize = '20';
     ['opt-porters','opt-ramp'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.style.cssText='flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;';
