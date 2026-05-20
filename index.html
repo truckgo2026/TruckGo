@@ -1409,7 +1409,6 @@ if("serviceWorker" in navigator){
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
 // אין צורך להסתיר - האבטחה מתבצעת דרך Firebase Rules + הגבלת דומיין
@@ -1426,7 +1425,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 const ADMIN_UID = 'GDtYhD41Y5NcTkPw5vuJXaGR1Lr2';
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
@@ -2232,12 +2230,16 @@ window.fbRegister = async function() {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     currentUser = result.user;
 
-    // העלאת מסמכים ל-Storage
+    // העלאת מסמכים ל-Cloudinary
     let docUrls = {};
-    try {
-      docUrls = await uploadDocuments(currentUser.uid, role);
-    } catch(uploadErr) {
-      console.warn('שגיאה בהעלאת מסמכים:', uploadErr);
+    if (role === 'drv' || role === 'cmp') {
+      btn.textContent = 'מעלה מסמכים...';
+      try {
+        docUrls = await uploadDocuments(currentUser.uid, role);
+      } catch(uploadErr) {
+        console.warn('שגיאה בהעלאת מסמכים:', uploadErr);
+        toast('שים לב: המסמכים לא הועלו, ניתן לעדכן מאוחר יותר');
+      }
     }
 
     await setDoc(doc(db, 'users', currentUser.uid), {
@@ -2499,25 +2501,34 @@ function routeByStatus(d, user) {
   }
 }
 
-// ── העלאת מסמכים ל-Firebase Storage ──────────────
+// ── העלאת מסמכים ל-Cloudinary ──────────────────────
+async function uploadToCloudinary(file, uid, docType) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'truckgo_docs');
+  formData.append('folder', `docs/${uid}`);
+  formData.append('public_id', `${uid}_${docType}_${Date.now()}`);
+  const res = await fetch('https://api.cloudinary.com/v1_1/dgr0a7syd/auto/upload', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'שגיאה בהעלאה');
+  return data.secure_url;
+}
+
 async function uploadDocuments(uid, role) {
-  const files = {};
+  const urls = {};
   if (role === 'drv') {
     const ins = document.getElementById('drv-insurance')?.files[0];
     const lic = document.getElementById('drv-license')?.files[0];
-    if (ins) files['insurance'] = ins;
-    if (lic) files['license'] = lic;
+    if (ins) urls['insuranceUrl'] = await uploadToCloudinary(ins, uid, 'insurance');
+    if (lic) urls['licenseUrl']   = await uploadToCloudinary(lic, uid, 'license');
   } else if (role === 'cmp') {
     const ins = document.getElementById('cmp-insurance')?.files[0];
     const biz = document.getElementById('cmp-biz')?.files[0];
-    if (ins) files['insurance'] = ins;
-    if (biz) files['bizLicense'] = biz;
-  }
-  const urls = {};
-  for (const [key, file] of Object.entries(files)) {
-    const storageRef = ref(storage, `docs/${uid}/${key}_${Date.now()}`);
-    await uploadBytes(storageRef, file);
-    urls[key] = await getDownloadURL(storageRef);
+    if (ins) urls['insuranceUrl']  = await uploadToCloudinary(ins, uid, 'insurance');
+    if (biz) urls['bizLicenseUrl'] = await uploadToCloudinary(biz, uid, 'bizlicense');
   }
   return urls;
 }
