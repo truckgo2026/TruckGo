@@ -697,7 +697,7 @@ textarea.fi{resize:vertical;}
     <div class="sh" style="max-height:82%;overflow-y:auto;">
       <div class="shandle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div class="stitle" style="margin-bottom:0;">💬 הצעות נגדיות</div>
+        <div class="stitle" style="margin-bottom:0;">הצעות נגדיות</div>
         <button onclick="document.getElementById('counter-offers-modal').classList.remove('on')"
           style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">סגור ✕</button>
       </div>
@@ -1416,7 +1416,7 @@ window._fbDoAccept = async function(slotStr) {
       requestedAt: serverTimestamp(),
     });
     if(waitEl) waitEl.classList.remove('on');
-    showOv('drv-succ', '✅ נשלח לעמיל!',
+    showOv('drv-succ', 'נשלח לעמיל!',
       'טווח: ' + slotStr + '\n₪' + p.amt.toLocaleString() + '\nממתין לאישור עמיל המכס');
   } catch(e) {
     console.error('_fbDoAccept error:', e);
@@ -1449,7 +1449,7 @@ window._fbDoCounter = async function(slotStr) {
       createdAt:      serverTimestamp(),
     });
 
-    // 2. עדכן shipment ראשי
+    // 2. עדכן shipment ראשי (ללא driverUid — הנהג עדיין לא אושר)
     await updateDoc(doc(db, 'shipments', p.docId), {
       status:                'offer_sent',
       hasCounterOffers:      true,
@@ -1458,13 +1458,10 @@ window._fbDoCounter = async function(slotStr) {
       lastCounterDriverUid:  currentUser.uid,
       lastCounterDriverName: driverName,
       lastCounterAt:         serverTimestamp(),
-      driverUid:             currentUser.uid,
-      driverName,
-      driverPhone:           window._currentPhone || '',
     });
 
     if(waitEl) waitEl.classList.remove('on');
-    showOv('drv-succ', '💬 הצעה נשלחה!',
+    showOv('drv-succ', 'הצעה נשלחה!',
       'הצעת ₪' + p.proposedAmt.toLocaleString() +
       '\nטווח: ' + slotStr +
       '\nעמיל המכס יקבל התראה');
@@ -1721,7 +1718,7 @@ function startMyOrdersRealtime(uid) {
         pendingEl.innerHTML = pending.map(d => `
           <div class="card">
             <div class="cm">
-              <div class="ci am">💬</div>
+              <div class="ci am"></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
                 <div class="cm2">ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
@@ -1745,12 +1742,12 @@ function startMyOrdersRealtime(uid) {
           const isDelivered = d.status === 'delivered';
           const finalAmt = d.finalAmount || d.amount || 0;
           return `
-          <div class="card">
+          <div class="card" id="dact-${d.id}">
             <div class="cm" onclick="toggleCard('dact-${d.id}')">
-              <div class="ci ${isDelivered?'am':'g'}">${isDelivered?'📦':'🚛'}</div>
+              <div class="ci ${isDelivered?'am':'g'}"></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
-                <div class="cm2">${isDelivered?'📦 נמסר — ממתין לאישור קבלה':'🚛 הובלה פעילה'} • ${esc(d.slot)}</div>
+                <div class="cm2">${isDelivered?'נמסר — ממתין לאישור קבלה':'הובלה פעילה'} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
                 <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
@@ -1758,7 +1755,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="chev">▼</div>
               </div>
             </div>
-            <div class="cd" id="dact-${d.id}">
+            <div class="cd">
               <div class="dg">
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
@@ -1767,9 +1764,9 @@ function startMyOrdersRealtime(uid) {
                 <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
                 <div class="dc"><div class="dcl">עמיל</div><div class="dcv">${esc(d.brokerName)}</div></div>
               </div>
-              ${!isDelivered ? `<div class="brow"><button class="btn bgr" onclick="driverConfirmDelivery('${d.id}')">✅ אשר מסירה</button></div>` : `
+              ${!isDelivered ? `<div class="brow"><button class="btn bgr" onclick="driverConfirmDelivery('${d.id}')">אשר מסירה</button></div>` : `
               <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
-                ⏳ ממתין לאישור קבלה מהעמיל לשחרור תשלום
+                ממתין לאישור קבלה מהעמיל לשחרור תשלום
               </div>`}
             </div>
           </div>`;
@@ -1786,7 +1783,7 @@ function startMyOrdersRealtime(uid) {
         doneEl.innerHTML = done.map(d => `
           <div class="card">
             <div class="cm">
-              <div class="ci g"></div>
+              <div class="ci g">
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
                 <div class="cm2">${esc(d.date)} • ${esc(d.slot)}</div>
@@ -1820,7 +1817,7 @@ function startMyOrdersRealtime(uid) {
         if (d.status === 'accepted') {
           showPushNotification('✅ אושרת!', `${d.from||''} → ${d.to||''} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + change.doc.id);
           addNotifBadge(1);
-          toast('✅ ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
+          toast('ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
           drvTab('mine');
         }
       }
@@ -1870,13 +1867,13 @@ function startBrokerRealtime(uid) {
           const hasOffer = d.status === 'offer_sent';
           const hasPendingApproval = d.status === 'pending_approval';
           const badge = hasOffer
-            ? `<div class="badge" style="background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">💬 ${d.counterOffersCount||1} הצעות</div>`
+            ? `<div class="badge" style="background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">${d.counterOffersCount||1} הצעות</div>`
             : hasPendingApproval
-              ? `<div class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">⏳ ממתין לאישורך</div>`
+              ? `<div class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:11px;padding:3px 8px;border-radius:20px;">ממתין לאישורך</div>`
               : `<div class="badge bb">ממתין</div>`;
           const approvalBox = hasPendingApproval ? `
             <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:10px;">
-              <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;">🚛 נהג ביקש לבצע הובלה זו</div>
+              <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;">נהג ביקש לבצע הובלה זו</div>
               <div style="font-size:15px;font-weight:800;color:var(--accent);">${d.driverName||'נהג'}</div>
               ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">📱 ${d.driverPhone}</div>` : ''}
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">⏰ ${d.slot}</div>` : ''}
@@ -1900,7 +1897,7 @@ function startBrokerRealtime(uid) {
           return `
           <div class="card" id="bord-${d.id}">
             <div class="cm" onclick="toggleCard('bord-${d.id}')">
-              <div class="ci ${hasOffer?'am':''}">${hasOffer?'💬':'📦'}</div>
+              <div class="ci ${hasOffer?'am':''}"></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
@@ -1926,8 +1923,8 @@ function startBrokerRealtime(uid) {
               ${offerBox}
               <div class="brow">
                 ${hasPendingApproval ? `
-                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${d.driverUid||''}','${d.driverName||''}','${d.driverPhone||''}',${d.proposedAmount||d.amount||0},'${d.slot||''}')">✅ אשר נהג</button>
-                  <button class="btn bred" onclick="brokerRejectDriver('${d.id}')">✕ דחה נהג</button>
+                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${d.driverUid||''}','${d.driverName||''}','${d.driverPhone||''}',${d.proposedAmount||d.amount||0},'${d.slot||''}')">אשר נהג</button>
+                  <button class="btn bred" onclick="brokerRejectDriver('${d.id}')">דחה נהג</button>
                 ` : hasOffer ? `<button class="btn bp" onclick="openCounterOffers('${d.id}')">צפה בהצעות (${d.counterOffersCount||1})</button>` : ''}
                 ${!hasPendingApproval ? `<button class="btn bred" onclick="cancelOrder('${d.id}')">בטל הזמנה</button>` : ''}
               </div>
@@ -1955,7 +1952,7 @@ function startBrokerRealtime(uid) {
           return `
           <div class="card" id="bact-${d.id}">
             <div class="cm" onclick="toggleCard('bact-${d.id}')">
-              <div class="ci ${isDelivered?'am':'g'}">${isDelivered?'📦':'🚛'}</div>
+              <div class="ci ${isDelivered?'am':'g'}"></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
                 <div class="cm2">${isDelivered?'ממתין לאישורך':'בדרך'} • ${esc(d.driverName)}</div>
@@ -1989,7 +1986,7 @@ function startBrokerRealtime(uid) {
                 הנהג אישר מסירה — אשר קבלה לשחרור תשלום
               </div>
               <div class="brow">
-                <button class="btn bgr" onclick="brokerConfirmReceipt('${d.id}')">✅ אשר קבלה ושחרר תשלום</button>
+                <button class="btn bgr" onclick="brokerConfirmReceipt('${d.id}')">אשר קבלה ושחרר תשלום</button>
               </div>` : ''}
             </div>
           </div>`;        }).join('');
@@ -2005,7 +2002,7 @@ function startBrokerRealtime(uid) {
         doneList.innerHTML = done.map(d => `
           <div class="card">
             <div class="cm">
-              <div class="ci g"></div>
+              <div class="ci g">
               <div class="cinfo"><div class="ct">${esc(d.from)} → ${esc(d.to)}</div><div class="cm2">${esc(d.date)} • ${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''}</div></div>
               <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div></div>
             </div>
@@ -2022,22 +2019,22 @@ function startBrokerRealtime(uid) {
       if (d.status === 'pending_approval') {
         showPushNotification('🚛 נהג ביקש לבצע הובלה!', `${from} → ${to}  •  ${d.driverName||'נהג'} • ₪${(d.proposedAmount||d.amount||0).toLocaleString()}`, 'approval-' + change.doc.id);
         addNotifBadge(1);
-        toast('🚛 ' + (d.driverName||'נהג') + ' ביקש לבצע הובלה — דרוש אישורך!');
+        toast((d.driverName||'נהג') + ' ביקש לבצע הובלה — דרוש אישורך!');
       }
       if (d.status === 'accepted') {
         showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${d.driverName || 'נהג'} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
         addNotifBadge(1);
-        toast('✅ ' + (d.driverName||'נהג') + ' קיבל את ההזמנה!');
+        toast((d.driverName||'נהג') + ' קיבל את ההזמנה!');
       }
       if (d.status === 'offer_sent') {
         showPushNotification('💬 הצעה נגדית!', `${from} → ${to}  •  ${d.lastCounterDriverName||'נהג'} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-' + change.doc.id);
         addNotifBadge(1);
-        toast('💬 הצעה נגדית: ₪'+(d.lastCounterAmount||0).toLocaleString()+' מ-'+(d.lastCounterDriverName||'נהג'));
+        toast('הצעה נגדית: ₪'+(d.lastCounterAmount||0).toLocaleString()+' מ-'+(d.lastCounterDriverName||'נהג'));
       }
       if (d.status === 'delivered') {
         showPushNotification('📦 נהג אישר מסירה!', `${from} → ${to}  — אשר קבלה לשחרור תשלום`, 'delivered-' + change.doc.id);
         addNotifBadge(1);
-        toast('📦 ' + (d.driverName||'נהג') + ' אישר מסירה — לחץ לאשר קבלה!');
+        toast((d.driverName||'נהג') + ' אישר מסירה — לחץ לאשר קבלה!');
       }
     });
   }, err => console.error('Broker listener error', err));
@@ -2308,7 +2305,7 @@ window.resendVerificationEmail = async function() {
           go(snap.data().role === 'brk' ? 's-broker' : 's-driver');
         } else { go('s-login'); }
       } else { go('s-login'); }
-      setTimeout(() => toast('✅ המייל אומת בהצלחה! ברוך הבא ל-TruckGo'), 600);
+      setTimeout(() => toast('המייל אומת בהצלחה! ברוך הבא ל-TruckGo'), 600);
     } catch(e) {
       showActionError('הקישור לאימות המייל פג תוקף. בקש שליחה מחדש.');
     }
@@ -2369,7 +2366,7 @@ window._doResetPassword = async function(oobCode) {
     await confirmPasswordReset(auth, oobCode, pw1);
     document.getElementById('reset-pw-overlay').remove();
     go('s-login');
-    setTimeout(() => toast('✅ הסיסמה אופסה! כנס עם הסיסמה החדשה'), 400);
+    setTimeout(() => toast('הסיסמה אופסה! כנס עם הסיסמה החדשה'), 400);
   } catch(e) {
     err.textContent = e.code === 'auth/expired-action-code'
       ? 'הקישור פג תוקף — בקש קישור חדש'
@@ -2381,7 +2378,7 @@ window._doResetPassword = async function(oobCode) {
 
 function showActionError(msg) {
   go('s-login');
-  setTimeout(() => toast('❌ ' + msg), 500);
+  setTimeout(() => toast(msg), 500);
 }
 
 //  AUTO LOGIN CHECK 
@@ -2675,7 +2672,7 @@ window.openCounterOffers = async function(shipmentId) {
       const diffClr = diff <= 0 ? 'var(--green)' : 'var(--amber)';
       const diffTxt = diff===0?'':(diff<0?'▼ זול ב-':'▲ יקר ב-')+'₪'+Math.abs(diff).toLocaleString();
       const isPending = !o.status || o.status==='pending';
-      const statusBadge = !isPending ? `<div class="badge ${o.status==='accepted'?'bg':'br'}">${o.status==='accepted'?'✅ אושר':'❌ נדחה'}</div>` : '';
+      const statusBadge = !isPending ? `<div class="badge ${o.status==='accepted'?'bg':'br'}">${o.status==='accepted'?'אושר':'נדחה'}</div>` : '';
       // Store offer data safely in a JS variable to avoid HTML attribute escaping issues
       const offerKey = `_coffer_${idx}`;
       _offerCache[offerKey] = {
@@ -2699,8 +2696,8 @@ window.openCounterOffers = async function(shipmentId) {
         </div>
         ${isPending ? `
         <div class="brow">
-          <button class="btn bgr" onclick="brokerAcceptOfferByKey('${offerKey}')">✅ אשר נהג זה</button>
-          <button class="btn bred" onclick="brokerRejectOffer('${shipmentId}','${d.id}')">✕ דחה</button>
+          <button class="btn bgr" onclick="brokerAcceptOfferByKey('${offerKey}')">אשר נהג זה</button>
+          <button class="btn bred" onclick="brokerRejectOffer('${shipmentId}','${d.id}')">דחה</button>
         </div>` : statusBadge}
       </div>`;
     }).join('');
@@ -2718,7 +2715,7 @@ window.driverConfirmDelivery = async function(shipId) {
       status: 'delivered',
       deliveredAt: serverTimestamp(),
     });
-    toast('📦 מסירה אושרה! ממתין לאישור עמיל לשחרור תשלום');
+    toast('מסירה אושרה! ממתין לאישור עמיל לשחרור תשלום');
   } catch(e) { toast('שגיאה: ' + e.message); }
 };
 
