@@ -314,6 +314,48 @@ textarea.fi{resize:vertical;}
   </div>
 </div>
 
+<!--  S-PENDING: ממתין לאישור מנהל  -->
+<div class="scr" id="s-pending">
+  <div class="auth-wrap" style="padding:32px 24px;text-align:center;">
+    <div class="a-logo" style="font-size:22px;margin-bottom:8px;">TruckGo</div>
+    <div style="width:64px;height:64px;background:var(--amber-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div style="font-size:20px;font-weight:900;color:var(--text);margin-bottom:8px;">הבקשה שלך ממתינה לאישור</div>
+    <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px;">בדקנו את פרטיך ואנחנו מאמתים את המסמכים שהעלית.<br>נשלח אליך אימייל ברגע שהחשבון יאושר.</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:right;margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">מה קורה עכשיו?</div>
+      <div style="font-size:13px;color:var(--text);margin-bottom:8px;"><span style="color:var(--green);font-weight:700;">1.</span> המסמכים שלך נשלחו לבדיקה</div>
+      <div style="font-size:13px;color:var(--text);margin-bottom:8px;"><span style="color:var(--green);font-weight:700;">2.</span> הצוות שלנו יאמת תוך 24 שעות</div>
+      <div style="font-size:13px;color:var(--text);"><span style="color:var(--green);font-weight:700;">3.</span> תקבל אימייל עם אישור גישה</div>
+    </div>
+    <button class="ab" onclick="fbLogout()" style="background:transparent;color:var(--muted);border:1px solid var(--border);font-size:14px;">התנתק</button>
+  </div>
+</div>
+
+<!--  S-ADMIN: מסך ניהול מסמכים  -->
+<div class="scr" id="s-admin">
+  <div class="tb">
+    <div class="logo">Truck<b>Go</b></div>
+    <div style="font-size:13px;font-weight:700;color:var(--accent);">ניהול</div>
+  </div>
+  <div style="padding:16px;overflow-y:auto;flex:1;">
+    <div style="font-size:16px;font-weight:900;margin-bottom:4px;">משתמשים ממתינים לאישור</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">לחץ על מסמך לפתיחה</div>
+    <div id="admin-list"><div style="text-align:center;color:var(--muted);padding:40px 0;">טוען...</div></div>
+  </div>
+  <div class="bnav">
+    <div class="ni on" onclick="loadAdminList()">
+      <div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="ni-l">ממתינים</div>
+    </div>
+    <div class="ni" onclick="fbLogout()">
+      <div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+      <div class="ni-l">התנתק</div>
+    </div>
+  </div>
+</div>
+
 <!--  S-FORGOT: שכחתי סיסמה  -->
 <div class="scr" id="s-forgot">
   <div class="a-hero" style="padding:40px 28px 30px;">
@@ -1367,6 +1409,7 @@ if("serviceWorker" in navigator){
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
 // אין צורך להסתיר - האבטחה מתבצעת דרך Firebase Rules + הגבלת דומיין
@@ -1383,6 +1426,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
+const ADMIN_UID = 'GDtYhD41Y5NcTkPw5vuJXaGR1Lr2';
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
 window._fbAddDoc = async function(data) {
@@ -1823,7 +1868,7 @@ function startMyOrdersRealtime(uid) {
       if (change.type === 'modified' && !snapshot.metadata.hasPendingWrites) {
         const d = change.doc.data();
         if (d.status === 'accepted') {
-          showPushNotification('✅ אושרת!', `${d.from||''} → ${d.to||''} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + change.doc.id);
+          showPushNotification('✅ אושרת!', `${esc(d.from)} → ${esc(d.to)} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + change.doc.id);
           addNotifBadge(1);
           toast('ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
           drvTab('mine');
@@ -1882,7 +1927,7 @@ function startBrokerRealtime(uid) {
           const approvalBox = hasPendingApproval ? `
             <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:10px;">
               <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px;">נהג ביקש לבצע הובלה זו</div>
-              <div style="font-size:15px;font-weight:800;color:var(--accent);">${d.driverName||'נהג'}</div>
+              <div style="font-size:15px;font-weight:800;color:var(--accent);">${esc(d.driverName)}</div>
               ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(d.driverPhone)}</div>` : ''}
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
               <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${(d.proposedAmount||d.amount||0).toLocaleString()}</div>
@@ -1891,7 +1936,7 @@ function startBrokerRealtime(uid) {
             <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
               <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;">הצעה אחרונה</div>
               <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${(d.lastCounterAmount||0).toLocaleString()}</div>
-              <div style="font-size:12px;color:var(--muted);">מ: ${d.lastCounterDriverName||'נהג'}</div>
+              <div style="font-size:12px;color:var(--muted);">מ: ${esc(d.lastCounterDriverName)}</div>
             </div>` : '';
           const cargoLabel = d.cargoType === 'cont'
             ? ('מכולה' + (d.contSize ? ' ' + d.contSize : ''))
@@ -1931,7 +1976,7 @@ function startBrokerRealtime(uid) {
               ${offerBox}
               <div class="brow">
                 ${hasPendingApproval ? `
-                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${d.driverUid||''}','${d.driverName||''}','${d.driverPhone||''}',${d.proposedAmount||d.amount||0},'${d.slot||''}')">אשר נהג</button>
+                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${d.driverUid||''}','${esc(d.driverName)}','${esc(d.driverPhone)}',${d.proposedAmount||d.amount||0},'${esc(d.slot)}')">אשר נהג</button>
                   <button class="btn bred" onclick="brokerRejectDriver('${d.id}')">דחה נהג</button>
                 ` : hasOffer ? `<button class="btn bp" onclick="openCounterOffers('${d.id}')">צפה בהצעות (${d.counterOffersCount||1})</button>` : ''}
                 ${!hasPendingApproval ? `<button class="btn bred" onclick="cancelOrder('${d.id}')">בטל הזמנה</button>` : ''}
@@ -1977,14 +2022,14 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">טלפון נהג</div><div class="dcv">${esc(d.driverPhone)}</div></div>
                 <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot)}</div></div>
                 <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
-                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${d.from||'—'}</div></div>
-                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${d.to||'—'}</div></div>
-                <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${d.date||'—'}</div></div>
+                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
+                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
+                <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
                 <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?d.weight.toLocaleString()+' ק"ג':'—'}</div></div>
                 ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
                 ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel2}</div></div>
-                <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${d.desc||'—'}</div></div>
+                <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
                 <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel2}${hazCode2 ? ' — ' + hazCode2 : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel2}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel2}</div></div>
@@ -2025,17 +2070,17 @@ function startBrokerRealtime(uid) {
       const from = d.from || '—';
       const to   = d.to   || '—';
       if (d.status === 'pending_approval') {
-        showPushNotification('🚛 נהג ביקש לבצע הובלה!', `${from} → ${to}  •  ${d.driverName||'נהג'} • ₪${(d.proposedAmount||d.amount||0).toLocaleString()}`, 'approval-' + change.doc.id);
+        showPushNotification('🚛 נהג ביקש לבצע הובלה!', `${from} → ${to}  •  ${esc(d.driverName)} • ₪${(d.proposedAmount||d.amount||0).toLocaleString()}`, 'approval-' + change.doc.id);
         addNotifBadge(1);
         toast((d.driverName||'נהג') + ' ביקש לבצע הובלה — דרוש אישורך!');
       }
       if (d.status === 'accepted') {
-        showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${d.driverName || 'נהג'} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
+        showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${esc(d.driverName)} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
         addNotifBadge(1);
         toast((d.driverName||'נהג') + ' קיבל את ההזמנה!');
       }
       if (d.status === 'offer_sent') {
-        showPushNotification('💬 הצעה נגדית!', `${from} → ${to}  •  ${d.lastCounterDriverName||'נהג'} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-' + change.doc.id);
+        showPushNotification('💬 הצעה נגדית!', `${from} → ${to}  •  ${esc(d.lastCounterDriverName)} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-' + change.doc.id);
         addNotifBadge(1);
         toast('הצעה נגדית: ₪'+(d.lastCounterAmount||0).toLocaleString()+' מ-'+(d.lastCounterDriverName||'נהג'));
       }
@@ -2116,7 +2161,7 @@ window.fbLogin = async function() {
     if (snap.exists()) {
       const data = snap.data();
       loadProfile(data, currentUser);
-      go(data.role === 'brk' ? 's-broker' : 's-driver');
+      routeByStatus(data, currentUser);
     } else {
       go('s-driver');
     }
@@ -2186,8 +2231,18 @@ window.fbRegister = async function() {
     isRegistering = true;
     const result = await createUserWithEmailAndPassword(auth, email, password);
     currentUser = result.user;
+
+    // העלאת מסמכים ל-Storage
+    let docUrls = {};
+    try {
+      docUrls = await uploadDocuments(currentUser.uid, role);
+    } catch(uploadErr) {
+      console.warn('שגיאה בהעלאת מסמכים:', uploadErr);
+    }
+
     await setDoc(doc(db, 'users', currentUser.uid), {
       ...profileData,
+      ...docUrls,
       emailVerified: false,
       createdAt: serverTimestamp()
     });
@@ -2259,8 +2314,7 @@ window.checkEmailVerified = async function() {
       if (snap.exists()) {
         const data = snap.data();
         loadProfile(data, currentUser);
-        go(data.role === 'brk' ? 's-broker' : 's-driver');
-        toast('ברוך הבא ל-TruckGo!');
+        routeByStatus(data, currentUser);
       }
     } else {
       toast('טרם אישרת את האימייל שלך');
@@ -2310,7 +2364,7 @@ window.resendVerificationEmail = async function() {
         const snap = await getDoc(doc(db, 'users', auth.currentUser.uid));
         if (snap.exists()) {
           loadProfile(snap.data(), auth.currentUser);
-          go(snap.data().role === 'brk' ? 's-broker' : 's-driver');
+          routeByStatus(snap.data(), auth.currentUser);
         } else { go('s-login'); }
       } else { go('s-login'); }
       setTimeout(() => toast('המייל אומת בהצלחה! ברוך הבא ל-TruckGo'), 600);
@@ -2408,8 +2462,7 @@ auth.onAuthStateChanged(async (user) => {
             if (snap.exists()) {
               const d = snap.data();
               loadProfile(d, currentUser);
-              go(d.role === 'brk' ? 's-broker' : 's-driver');
-              toast('ברוך הבא ל-TruckGo!');
+              routeByStatus(d, currentUser);
             }
           }
         } catch(e) { clearInterval(verifyInterval); }
@@ -2420,10 +2473,117 @@ auth.onAuthStateChanged(async (user) => {
     if (snap.exists()) {
       const d = snap.data();
       loadProfile(d, currentUser);
-      go(d.role === 'brk' ? 's-broker' : 's-driver');
+      routeByStatus(d, currentUser);
     }
   }
 });
+
+// ── ניתוב לפי סטטוס משתמש ──────────────────────────
+function routeByStatus(d, user) {
+  // אדמין — מסך ניהול
+  if (user.uid === ADMIN_UID) {
+    go('s-admin');
+    loadAdminList();
+    return;
+  }
+  // עמיל מכס — נכנס תמיד
+  if (d.role === 'brk') {
+    go('s-broker');
+    return;
+  }
+  // נהג / חברה — בודק אישור
+  if (d.status === 'approved') {
+    go('s-driver');
+  } else {
+    go('s-pending');
+  }
+}
+
+// ── העלאת מסמכים ל-Firebase Storage ──────────────
+async function uploadDocuments(uid, role) {
+  const files = {};
+  if (role === 'drv') {
+    const ins = document.getElementById('drv-insurance')?.files[0];
+    const lic = document.getElementById('drv-license')?.files[0];
+    if (ins) files['insurance'] = ins;
+    if (lic) files['license'] = lic;
+  } else if (role === 'cmp') {
+    const ins = document.getElementById('cmp-insurance')?.files[0];
+    const biz = document.getElementById('cmp-biz')?.files[0];
+    if (ins) files['insurance'] = ins;
+    if (biz) files['bizLicense'] = biz;
+  }
+  const urls = {};
+  for (const [key, file] of Object.entries(files)) {
+    const storageRef = ref(storage, `docs/${uid}/${key}_${Date.now()}`);
+    await uploadBytes(storageRef, file);
+    urls[key] = await getDownloadURL(storageRef);
+  }
+  return urls;
+}
+
+// ── מסך ניהול: טעינת רשימת ממתינים ──────────────
+window.loadAdminList = async function() {
+  const list = document.getElementById('admin-list');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">טוען...</div>';
+  try {
+    const q = query(collection(db, 'users'), where('status', '==', 'pending'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">אין משתמשים ממתינים</div>';
+      return;
+    }
+    const roleMap = { drv: 'נהג', cmp: 'חברת הובלה', brk: 'עמיל מכס' };
+    list.innerHTML = snap.docs.map(d => {
+      const u = d.data();
+      const docs = [];
+      if (u.insuranceUrl) docs.push(`<a href="${esc(u.insuranceUrl)}" target="_blank" style="display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--accent);text-decoration:none;margin-left:6px;">ביטוח</a>`);
+      if (u.licenseUrl) docs.push(`<a href="${esc(u.licenseUrl)}" target="_blank" style="display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--accent);text-decoration:none;margin-left:6px;">רישיון</a>`);
+      if (u.bizLicenseUrl) docs.push(`<a href="${esc(u.bizLicenseUrl)}" target="_blank" style="display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--accent);text-decoration:none;margin-left:6px;">רישיון עסק</a>`);
+      return `
+      <div class="card" style="margin-bottom:12px;">
+        <div style="padding:14px 16px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+              <div style="font-weight:700;font-size:15px;">${esc(u.name)}</div>
+              <div style="font-size:12px;color:var(--muted);">${esc(u.email||'')} • ${esc(roleMap[u.role]||u.role)}</div>
+              ${u.phone ? `<div style="font-size:12px;color:var(--muted);">טל: ${esc(u.phone)}</div>` : ''}
+              ${u.idNumber ? `<div style="font-size:12px;color:var(--muted);">ת"ז: ${esc(u.idNumber)}</div>` : ''}
+              ${u.companyName ? `<div style="font-size:12px;color:var(--muted);">חברה: ${esc(u.companyName)}</div>` : ''}
+            </div>
+            <div class="badge bam">ממתין</div>
+          </div>
+          ${docs.length ? `<div style="margin-bottom:12px;">${docs.join('')}</div>` : '<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">לא הועלו מסמכים</div>'}
+          <div style="display:flex;gap:8px;">
+            <button class="btn bgr" style="flex:1;" onclick="adminApprove('${d.id}')">אשר</button>
+            <button class="btn bred" style="flex:1;" onclick="adminReject('${d.id}')">דחה</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);padding:16px;">שגיאה: ${esc(e.message)}</div>`;
+  }
+};
+
+window.adminApprove = async function(uid) {
+  if (!confirm('לאשר משתמש זה?')) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), { status: 'approved' });
+    toast('המשתמש אושר!');
+    loadAdminList();
+  } catch(e) { toast('שגיאה: ' + e.message); }
+};
+
+window.adminReject = async function(uid) {
+  if (!confirm('לדחות משתמש זה?')) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
+    toast('המשתמש נדחה');
+    loadAdminList();
+  } catch(e) { toast('שגיאה: ' + e.message); }
+};
 
 function loadProfile(d, user) {
   // שמור תפקיד ו-uid לשימוש גלובלי
@@ -2604,7 +2764,7 @@ function renderPaymentCard(d, role) {
     <div class="cm" onclick="toggleCard('pay-${d.id}')">
       <div class="ci ${d.status === 'confirmed' ? 'g' : 'am'}">${st.icon}</div>
       <div class="cinfo">
-        <div class="ct">${d.from || '—'} → ${d.to || '—'}</div>
+        <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
         <div class="cm2">${date} • ${role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג')}</div>
       </div>
       <div class="cr">
