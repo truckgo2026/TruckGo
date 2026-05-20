@@ -2597,8 +2597,21 @@ window.loadAdminList = async function() {
 window.adminApprove = async function(uid) {
   if (!confirm('לאשר משתמש זה?')) return;
   try {
+    const userSnap = await getDoc(doc(db, 'users', uid));
+    const userData = userSnap.data();
     await updateDoc(doc(db, 'users', uid), { status: 'approved' });
-    toast('המשתמש אושר!');
+
+    // שלח מייל אישור
+    try {
+      await emailjs.send('service_kgiu5os', 'template_rv1sr7h', {
+        user_name:  userData.name  || 'משתמש',
+        user_email: userData.email || '',
+      }, 'D15NWQQI3UcYMF9w3');
+    } catch(mailErr) {
+      console.warn('שגיאה בשליחת מייל:', mailErr);
+    }
+
+    toast('המשתמש אושר ומייל נשלח!');
     loadAdminList();
   } catch(e) { toast('שגיאה: ' + e.message); }
 };
