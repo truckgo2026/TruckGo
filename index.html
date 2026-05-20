@@ -314,6 +314,23 @@ textarea.fi{resize:vertical;}
   </div>
 </div>
 
+<!--  S-ADMIN-SELECT: בחירת מסך לאדמין  -->
+<div class="scr" id="s-admin-select">
+  <div class="auth-wrap" style="padding:32px 24px;">
+    <div class="a-logo" style="font-size:22px;margin-bottom:4px;">TruckGo</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;">כניסת מנהל — בחר מסך</div>
+    <button class="ab" onclick="go('s-admin');loadAdminList();" style="margin-bottom:12px;">
+      ניהול מסמכים ואישורים
+    </button>
+    <button class="ab" onclick="go('s-driver')" style="margin-bottom:12px;background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
+      מסך נהג (בדיקה)
+    </button>
+    <button class="ab" onclick="go('s-broker')" style="background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
+      מסך עמיל מכס (בדיקה)
+    </button>
+  </div>
+</div>
+
 <!--  S-PENDING: ממתין לאישור מנהל  -->
 <div class="scr" id="s-pending">
   <div class="auth-wrap" style="padding:32px 24px;text-align:center;">
@@ -2482,10 +2499,9 @@ auth.onAuthStateChanged(async (user) => {
 
 // ── ניתוב לפי סטטוס משתמש ──────────────────────────
 function routeByStatus(d, user) {
-  // אדמין — מסך ניהול
+  // אדמין — בחירת מסך
   if (user.uid === ADMIN_UID) {
-    go('s-admin');
-    loadAdminList();
+    go('s-admin-select');
     return;
   }
   // עמיל מכס — נכנס תמיד
