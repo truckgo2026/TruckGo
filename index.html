@@ -1385,10 +1385,10 @@ function toast(msg){
 }
 </script>
 <script>
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => r.unregister());
-  });
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then(reg => { console.log('SW registered:', reg.scope); })
+    .catch(err => { console.warn('SW registration failed:', err); });
 }
 </script>
 
@@ -1548,28 +1548,73 @@ let _unsubPayments = null;
 let _lastKnownOrderIds = new Set();  // למניעת התראה כפולה בטעינה ראשונה
 
 // ────── PUSH NOTIFICATIONS HELPER ──────
+// ────── FCM Push Notifications ──────
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+
+const VAPID_KEY = "BAefTtvlbwP3BCAsmO8EpYhoSlrRb3yZQohqF73q58y35BOusfgmM1RJ8OsyFL0Rrs2qod8TlJpsygOojk962ZM";
+let _messaging = null;
+
+async function initFCM() {
+  try {
+    _messaging = getMessaging(app);
+
+    // הודעות כשהאפליקציה פתוחה
+    onMessage(_messaging, (payload) => {
+      const { title, body } = payload.notification || {};
+      if (title) showPushNotification(title, body || '', payload.data?.tag || 'truckgo');
+    });
+  } catch(e) {
+    console.warn('FCM init error:', e);
+  }
+}
+
 async function requestPushPermission() {
   if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
   if (Notification.permission === 'denied') return false;
+
   const perm = await Notification.requestPermission();
-  return perm === 'granted';
+  if (perm !== 'granted') return false;
+
+  try {
+    if (!_messaging) await initFCM();
+    const swReg = await navigator.serviceWorker.ready;
+    const token = await getToken(_messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (token && window._currentUid) {
+      // שמור את ה-token של המכשיר ב-Firestore
+      await updateDoc(doc(db, 'users', window._currentUid), { fcmToken: token });
+      console.log('FCM token saved');
+    }
+    return true;
+  } catch(e) {
+    console.warn('FCM token error:', e);
+    return true; // הרשאה ניתנה גם אם ה-token נכשל
+  }
 }
 
 function showPushNotification(title, body, tag) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
-    new Notification(title, {
-      body,
-      tag: tag || 'truckgo',
-      icon: 'icon.png',
-      badge: 'icon.png',
-      vibrate: [200, 100, 200],
-      requireInteraction: false,
-      silent: false,
-    });
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SHOW_NOTIFICATION',
+        title,
+        body,
+        tag: tag || 'truckgo',
+      });
+    } else {
+      new Notification(title, {
+        body,
+        tag: tag || 'truckgo',
+        icon: '/icon.png',
+        badge: '/icon.png',
+        vibrate: [200, 100, 200],
+      });
+    }
   } catch(e) { console.warn('Notification error', e); }
 }
+
+// אתחל FCM מיד
+initFCM();
 
 // ────── BADGE on notification bell ──────
 let _notifCount = 0;
