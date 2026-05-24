@@ -324,10 +324,10 @@ textarea.fi{resize:vertical;}
     <button class="ab" onclick="go('s-admin');loadAdminList();" style="margin-bottom:12px;">
       ניהול מסמכים ואישורים
     </button>
-    <button class="ab" onclick="go('s-driver')" style="margin-bottom:12px;background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
+    <button class="ab" onclick="adminGoDriver()" style="margin-bottom:12px;background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
       מסך נהג (בדיקה)
     </button>
-    <button class="ab" onclick="go('s-broker')" style="background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
+    <button class="ab" onclick="adminGoBroker()" style="background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
       מסך עמיל מכס (בדיקה)
     </button>
   </div>
@@ -1034,13 +1034,14 @@ if (!window.fbVerifyOtp) {
 }
 
 async function goBack(){
-  let role = window.selectedRole;
+  let role = window.selectedRole || localStorage.getItem('truckgo_role');
   if (!role) {
     try {
       if (currentUser) {
         const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
         if (uSnap.exists()) role = uSnap.data().role || 'drv';
         window.selectedRole = role;
+        localStorage.setItem('truckgo_role', role);
       }
     } catch(e) {}
   }
@@ -2385,6 +2386,8 @@ window.fbLogout = async function() {
   clearNotifBadge();
   await signOut(auth);
   currentUser = null;
+  window.selectedRole = null;
+  localStorage.removeItem('truckgo_role');
   go('s-login');
   toast(' התנתקת');
 };
@@ -2566,6 +2569,23 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
+// ── ניתוב אדמין למסכים ──────────────────────────────
+window.adminGoDriver = function() {
+  window.selectedRole = 'drv';
+  localStorage.setItem('truckgo_role', 'drv');
+  if (currentUser) startDriverRealtime(currentUser.uid);
+  go('s-driver');
+};
+window.adminGoBroker = function() {
+  window.selectedRole = 'brk';
+  localStorage.setItem('truckgo_role', 'brk');
+  if (currentUser) {
+    startBrokerRealtime(currentUser.uid);
+    startPaymentsRealtime(currentUser.uid, 'brk');
+  }
+  go('s-broker');
+};
+
 // ── ניתוב לפי סטטוס משתמש ──────────────────────────
 function routeByStatus(d, user) {
   // אדמין — בחירת מסך
@@ -2697,6 +2717,7 @@ window.adminReject = async function(uid) {
 function loadProfile(d, user) {
   // שמור תפקיד ו-uid לשימוש גלובלי
   window.selectedRole = d.role;
+  localStorage.setItem('truckgo_role', d.role); // שמור ב-localStorage לעמידות
   window._currentUid = user ? user.uid : (currentUser ? currentUser.uid : '');
   window._currentPhone = d.phone || '';
 
@@ -2792,9 +2813,14 @@ window.loadPaymentsScreen = async function() {
   let role = 'drv';
   try {
     const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
-    if (uSnap.exists()) role = uSnap.data().role || 'drv';
-    window.selectedRole = role;
-  } catch(e) { role = window.selectedRole || 'drv'; }
+    if (uSnap.exists()) {
+      role = uSnap.data().role || 'drv';
+      window.selectedRole = role;
+      localStorage.setItem('truckgo_role', role);
+    }
+  } catch(e) {
+    role = window.selectedRole || localStorage.getItem('truckgo_role') || 'drv';
+  }
 
   // הצג bnav נכון
   document.getElementById('pay-bnav-drv').style.display = role === 'drv' ? 'flex' : 'none';
