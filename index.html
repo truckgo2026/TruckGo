@@ -1289,6 +1289,8 @@ function submitOrder(){document.getElementById('no-succ').classList.add('on');}
 window.submitOrderReal = async function() {
   const btn = document.querySelector('#s-neworder .fbt');
   if(btn){ btn.textContent='שולח...'; btn.disabled=true; }
+  const user = window._auth ? window._auth.currentUser : null;
+  if (!user) { toast('שגיאה: לא מחובר'); if(btn){ btn.textContent='פרסם הובלה'; btn.disabled=false; } return; }
   try {
     const from   = document.getElementById('order-from')?.value?.trim() || '';
     const to     = document.getElementById('order-to')?.value?.trim() || '';
@@ -1307,7 +1309,7 @@ window.submitOrderReal = async function() {
       await window._fbAddDoc({
         from, to, date, weight, qty, volume, desc,
         amount: amt,
-        brokerUid: currentUser.uid,
+        brokerUid: user.uid,
         brokerName: document.getElementById('p-name-v')?.textContent || '',
         status: 'pending',
         cargoType: window.cargoType || 'bulk',
@@ -1464,6 +1466,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const ADMIN_UID = 'GDtYhD41Y5NcTkPw5vuJXaGR1Lr2';
+window._auth = auth; // חשוף auth לפונקציות חיצוניות
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
 window._fbAddDoc = async function(data) {
