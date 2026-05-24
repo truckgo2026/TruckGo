@@ -991,6 +991,7 @@ textarea.fi{resize:vertical;}
       <div class="ir" onclick="toast(' התראות')"><div class="iii"></div><div class="ic2"><div class="iv">התראות ועדכונים</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="toast(' שינוי סיסמה')"><div class="iii"></div><div class="ic2"><div class="iv">שינוי סיסמה</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="toast(' 03-1234567')"><div class="iii"></div><div class="ic2"><div class="iv">תמיכה</div></div><span style="color:var(--muted)">←</span></div>
+      <div class="ir" id="switch-screen-row" style="display:none" onclick="switchScreen()"><div class="iii">🔄</div><div class="ic2"><div class="iv" style="color:var(--accent)" id="switch-screen-label">החלף למסך עמיל מכס</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="fbLogout()"><div class="iii"></div><div class="ic2"><div class="iv" style="color:var(--red)">התנתקות</div></div><span style="color:var(--muted)">←</span></div>
     </div>
   </div>
@@ -1055,6 +1056,9 @@ function go(id){
   // טען נתונים דינמיים
   if (id === 's-payments') {
     if (typeof loadPaymentsScreen === 'function') loadPaymentsScreen();
+  }
+  if (id === 's-profile') {
+    if (typeof updateSwitchButton === 'function') updateSwitchButton();
   }
   // נקה badge כשנכנסים לדף הנהג
   if (id === 's-driver') {
@@ -2586,6 +2590,30 @@ window.adminGoBroker = function() {
   go('s-broker');
 };
 
+window.switchScreen = function() {
+  const current = localStorage.getItem('truckgo_role') || window.selectedRole;
+  if (current === 'brk') {
+    window.adminGoDriver();
+  } else {
+    window.adminGoBroker();
+  }
+};
+
+function updateSwitchButton() {
+  if (!currentUser) return;
+  const row = document.getElementById('switch-screen-row');
+  const label = document.getElementById('switch-screen-label');
+  if (!row || !label) return;
+  // הצג רק לאדמין
+  if (currentUser.uid === ADMIN_UID) {
+    row.style.display = 'flex';
+    const cur = localStorage.getItem('truckgo_role') || window.selectedRole;
+    label.textContent = cur === 'brk' ? '🔄 החלף למסך נהג' : '🔄 החלף למסך עמיל מכס';
+  } else {
+    row.style.display = 'none';
+  }
+}
+
 // ── ניתוב לפי סטטוס משתמש ──────────────────────────
 function routeByStatus(d, user) {
   // אדמין — בחירת מסך
@@ -2809,17 +2837,17 @@ const ESCROW_LABEL = {
 // טען מסך תשלומים לפי תפקיד
 window.loadPaymentsScreen = async function() {
   if (!currentUser) return;
-  // תמיד קרא role ישירות מ-Firestore — לא סומכים על window.selectedRole
-  let role = 'drv';
-  try {
-    const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
-    if (uSnap.exists()) {
-      role = uSnap.data().role || 'drv';
-      window.selectedRole = role;
-      localStorage.setItem('truckgo_role', role);
-    }
-  } catch(e) {
-    role = window.selectedRole || localStorage.getItem('truckgo_role') || 'drv';
+  // עדיפות: localStorage (נקבע ע"י adminGoBroker/adminGoDriver) > Firestore
+  let role = localStorage.getItem('truckgo_role') || window.selectedRole;
+  if (!role) {
+    try {
+      const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (uSnap.exists()) {
+        role = uSnap.data().role || 'drv';
+        window.selectedRole = role;
+        localStorage.setItem('truckgo_role', role);
+      }
+    } catch(e) { role = 'drv'; }
   }
 
   // הצג bnav נכון
