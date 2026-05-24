@@ -1307,7 +1307,7 @@ window.submitOrderReal = async function() {
       await window._fbAddDoc({
         from, to, date, weight, qty, volume, desc,
         amount: amt,
-        brokerUid: window._currentUid,
+        brokerUid: currentUser.uid,
         brokerName: document.getElementById('p-name-v')?.textContent || '',
         status: 'pending',
         cargoType: window.cargoType || 'bulk',
@@ -2694,7 +2694,7 @@ window.adminReject = async function(uid) {
 function loadProfile(d, user) {
   // שמור תפקיד ו-uid לשימוש גלובלי
   window.selectedRole = d.role;
-  window._currentUid = user ? user.uid : '';
+  window._currentUid = user ? user.uid : (currentUser ? currentUser.uid : '');
   window._currentPhone = d.phone || '';
 
   // ────── הפעל real-time listeners ──────
