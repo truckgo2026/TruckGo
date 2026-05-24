@@ -310,6 +310,7 @@ textarea.fi{resize:vertical;}
     <input class="fi" id="login-email" type="email" placeholder="user@example.com" autocomplete="email">
     <div class="fl">סיסמה</div>
     <input class="fi" id="login-password" type="password" placeholder="סיסמה" autocomplete="current-password">
+    <div id="login-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;color:#dc2626;margin-bottom:12px;text-align:center;"></div>
     <button class="ab" id="login-btn" onclick="fbLogin()">כניסה לאפליקציה →</button>
     <div class="al">שכחת סיסמה? <a onclick="go('s-forgot')">איפוס סיסמה</a></div>
     <div class="al">עדיין אין לך חשבון? <a onclick="go('s-register')">הירשם כאן</a></div>
@@ -937,6 +938,7 @@ textarea.fi{resize:vertical;}
   </div>
   <div class="bnav" id="pay-bnav-brk" style="display:none">
     <div class="ni on" onclick="go('s-broker')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="ni-l">הובלות</div></div>
+    <div class="ni" onclick="go('s-neworder')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="ni-l">הזמנה חדשה</div></div>
     <div class="ni"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
     <div class="ni" onclick="go('s-profile')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="ni-l">פרופיל</div></div>
   </div>
@@ -2235,8 +2237,14 @@ function stopAllListeners() {
 window.fbLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email) { toast('הכנס אימייל'); return; }
-  if (!password) { toast('הכנס סיסמה'); return; }
+  const errEl = document.getElementById('login-error');
+
+  // נקה שגיאה קודמת
+  errEl.style.display = 'none';
+  errEl.textContent = '';
+
+  if (!email) { errEl.textContent = '⚠️ יש להזין כתובת אימייל'; errEl.style.display = 'block'; return; }
+  if (!password) { errEl.textContent = '⚠️ יש להזין סיסמה'; errEl.style.display = 'block'; return; }
 
   const btn = document.getElementById('login-btn');
   btn.textContent = 'מתחבר...';
@@ -2255,10 +2263,18 @@ window.fbLogin = async function() {
     }
     toast('כניסה בוצעה בהצלחה!');
   } catch(e) {
-    const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-      ? ' אימייל או סיסמה שגויים'
-      : 'שגיאה: ' + (e.message || 'נסה שוב');
-    toast(msg);
+    const msg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email')
+      ? '❌ אימייל או סיסמה שגויים — נסה שנית'
+      : '❌ שגיאת התחברות — בדוק את הפרטים ונסה שנית';
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    // הדגש שדות שגויים
+    document.getElementById('login-email').style.borderColor = '#dc2626';
+    document.getElementById('login-password').style.borderColor = '#dc2626';
+    setTimeout(() => {
+      document.getElementById('login-email').style.borderColor = '';
+      document.getElementById('login-password').style.borderColor = '';
+    }, 3000);
   } finally {
     btn.textContent = 'כניסה לאפליקציה →';
     btn.disabled = false;
