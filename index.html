@@ -320,15 +320,12 @@ textarea.fi{resize:vertical;}
 <div class="scr" id="s-admin-select">
   <div class="auth-wrap" style="padding:32px 24px;">
     <div class="a-logo" style="font-size:22px;margin-bottom:4px;">TruckGo</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;">כניסת מנהל — בחר מסך</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:32px;text-align:center;">כניסת מנהל</div>
     <button class="ab" onclick="go('s-admin');loadAdminList();" style="margin-bottom:12px;">
       ניהול מסמכים ואישורים
     </button>
-    <button class="ab" onclick="adminGoDriver()" style="margin-bottom:12px;background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
-      מסך נהג (בדיקה)
-    </button>
-    <button class="ab" onclick="adminGoBroker()" style="background:var(--surface);color:var(--accent);border:2px solid var(--accent);">
-      מסך עמיל מכס (בדיקה)
+    <button class="ab" onclick="fbLogout()" style="background:transparent;color:var(--muted);border:1px solid var(--border);font-size:14px;">
+      התנתק
     </button>
   </div>
 </div>
@@ -991,7 +988,6 @@ textarea.fi{resize:vertical;}
       <div class="ir" onclick="toast(' התראות')"><div class="iii"></div><div class="ic2"><div class="iv">התראות ועדכונים</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="toast(' שינוי סיסמה')"><div class="iii"></div><div class="ic2"><div class="iv">שינוי סיסמה</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="toast(' 03-1234567')"><div class="iii"></div><div class="ic2"><div class="iv">תמיכה</div></div><span style="color:var(--muted)">←</span></div>
-      <div class="ir" id="switch-screen-row" style="display:none" onclick="switchScreen()"><div class="iii">🔄</div><div class="ic2"><div class="iv" style="color:var(--accent)" id="switch-screen-label">החלף למסך עמיל מכס</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="fbLogout()"><div class="iii"></div><div class="ic2"><div class="iv" style="color:var(--red)">התנתקות</div></div><span style="color:var(--muted)">←</span></div>
     </div>
   </div>
