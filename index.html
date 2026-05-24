@@ -1033,8 +1033,17 @@ if (!window.fbVerifyOtp) {
   window.fbVerifyOtp = function() { toast('אימות OTP — בקרוב'); };
 }
 
-function goBack(){
-  const role = window.selectedRole || 'drv';
+async function goBack(){
+  let role = window.selectedRole;
+  if (!role) {
+    try {
+      if (currentUser) {
+        const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (uSnap.exists()) role = uSnap.data().role || 'drv';
+        window.selectedRole = role;
+      }
+    } catch(e) {}
+  }
   go(role === 'brk' ? 's-broker' : 's-driver');
 }
 function go(id){
@@ -1548,7 +1557,7 @@ window._fbDoCounter = async function(slotStr) {
 
 let currentUser = null;
 let isRegistering = false; // מונע onAuthStateChanged בזמן הרשמה
-window.selectedRole = window.selectedRole || 'drv';
+// selectedRole נקבע תמיד מ-Firestore ב-loadProfile — אין ברירת מחדל כאן
 
 // ─────────────────────────────────────────────
 // REAL-TIME LISTENERS
@@ -2776,15 +2785,13 @@ const ESCROW_LABEL = {
 // טען מסך תשלומים לפי תפקיד
 window.loadPaymentsScreen = async function() {
   if (!currentUser) return;
-  // קח role מה-Firestore אם לא מוגדר בוודאות
-  let role = window.selectedRole;
-  if (!role || role === 'drv') {
-    try {
-      const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
-      if (uSnap.exists()) role = uSnap.data().role || 'drv';
-      window.selectedRole = role;
-    } catch(e) {}
-  }
+  // תמיד קרא role ישירות מ-Firestore — לא סומכים על window.selectedRole
+  let role = 'drv';
+  try {
+    const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    if (uSnap.exists()) role = uSnap.data().role || 'drv';
+    window.selectedRole = role;
+  } catch(e) { role = window.selectedRole || 'drv'; }
 
   // הצג bnav נכון
   document.getElementById('pay-bnav-drv').style.display = role === 'drv' ? 'flex' : 'none';
