@@ -25,7 +25,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .phone{width:100%;height:100vh;height:100dvh;background:var(--bg);border-radius:0;overflow:hidden;position:relative;display:flex;flex-direction:column;}@media(min-width:480px){body{background:#1e3a8a;display:flex;align-items:center;justify-content:center;padding:20px;}.phone{width:390px;height:844px;border-radius:44px;box-shadow:0 40px 80px rgba(0,0,0,0.5),0 0 0 10px #0f2060;}}
 
 /* SCREENS */
-.scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .22s;background:var(--bg);scrollbar-width:none;}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;opacity:0;pointer-events:none;transition:opacity .22s;background:var(--bg);}
 .scr::-webkit-scrollbar{display:none;}
 .scr-body{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
 .scr-body::-webkit-scrollbar{display:none;}
@@ -39,7 +39,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .tb-title{font-size:17px;font-weight:700;}
 
 /* BOTTOM NAV */
-.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;position:sticky;bottom:0;z-index:50;}
+.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;}
 .ni{flex:1;text-align:center;cursor:pointer;padding:4px 0;}
 .ni .ni-i{font-size:20px;}
 .ni .ni-l{font-size:11px;color:var(--muted);margin-top:3px;}
@@ -559,6 +559,7 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
+  <div class="scr-body">
   <!-- הובלה פעילה — נטען מ-Firestore -->
   <div id="drv-active-job" style="margin:14px 16px 0;display:none;">
     <!-- יוחלף ב-JS -->
@@ -608,6 +609,7 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
   <div class="sp"></div>
+  </div><!-- end scr-body -->
   <div class="bnav">
     <div class="ni on" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
     <div class="ni" onclick="go('s-payments')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
@@ -700,6 +702,7 @@ textarea.fi{resize:vertical;}
     <div class="tab" onclick="go('s-neworder')" style="background:var(--accent);color:#fff;border-color:var(--accent);display:flex;align-items:center;gap:5px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> הזמנה חדשה</div>
   </div>
 
+  <div class="scr-body">
   <div id="b-pend" style="padding:12px 16px 0;">
     <div id="b-pend-list">
       <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
@@ -728,6 +731,7 @@ textarea.fi{resize:vertical;}
   </div>
 
     <div class="sp"></div>
+  </div><!-- end scr-body -->
   <div class="bnav">
     <div class="ni on" onclick="go('s-broker')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="ni-l">הובלות</div></div>
     <div class="ni" onclick="go('s-neworder')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="ni-l">הזמנה חדשה</div></div>
@@ -894,6 +898,7 @@ textarea.fi{resize:vertical;}
   </div>
 
   <!-- סיכום כספי -->
+  <div class="scr-body">
   <div class="payh">
     <div class="pl" id="pay-role-label">יתרה זמינה</div>
     <div class="pa" id="pay-balance">₪0</div>
@@ -922,6 +927,7 @@ textarea.fi{resize:vertical;}
   </div>
 
   <div class="sp"></div>
+  </div><!-- end scr-body -->
   <div class="bnav" id="pay-bnav-drv" style="display:none">
     <div class="ni" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
     <div class="ni on"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
@@ -959,6 +965,7 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
+  <div class="scr-body">
   <div style="margin:14px 16px 0;">
     <div class="sec-t">פרטים אישיים</div>
     <div class="icard">
@@ -987,6 +994,7 @@ textarea.fi{resize:vertical;}
   </div>
 
   <div class="sp"></div>
+  </div><!-- end scr-body -->
   <div class="bnav">
     <div class="ni" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
     <div class="ni" onclick="go('s-payments')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
