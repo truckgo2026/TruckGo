@@ -2774,7 +2774,15 @@ const ESCROW_LABEL = {
 // טען מסך תשלומים לפי תפקיד
 window.loadPaymentsScreen = async function() {
   if (!currentUser) return;
-  const role = window.selectedRole;
+  // קח role מה-Firestore אם לא מוגדר בוודאות
+  let role = window.selectedRole;
+  if (!role || role === 'drv') {
+    try {
+      const uSnap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (uSnap.exists()) role = uSnap.data().role || 'drv';
+      window.selectedRole = role;
+    } catch(e) {}
+  }
 
   // הצג bnav נכון
   document.getElementById('pay-bnav-drv').style.display = role === 'drv' ? 'flex' : 'none';
@@ -2836,6 +2844,7 @@ window.loadPaymentsScreen = async function() {
 function renderPaymentCard(d, role) {
   const st = ESCROW_LABEL[d.status] || ESCROW_LABEL.pending;
   const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
+  const deliveryDate = d.date || d.deliveryDate || '—';
   const amt = d.finalAmount || d.amount || 0;
   const fee = Math.round(amt * 0.05);
   const net = amt - fee;
@@ -2854,6 +2863,16 @@ function renderPaymentCard(d, role) {
       הכסף נעול באפליקציה — ${d.status === 'delivered' ? 'ממתין לאישור עמיל המכס' : 'ממתין לאישור מסירה'}
     </div>` : '';
 
+  // פרטים נוספים
+  const weightTxt = d.weight ? `${d.weight} ק"ג` : '—';
+  const volTxt = d.volume ? `${d.volume} מ"ק` : '—';
+  const cargoTxt = d.cargoType || d.cargo || '—';
+  const notesTxt = d.notes || d.description || '';
+  const truckTxt = d.truckType || '—';
+  const driverName = d.driverName || d.driverPhone || '—';
+  const brokerName = d.brokerName || d.brokerCompany || '—';
+  const hazardous = d.hazardous ? `<span style="color:var(--red);font-weight:700;">⚠️ חומרים מסוכנים${d.hazardCode ? ' — ' + d.hazardCode : ''}</span>` : '';
+
   return `
   <div class="card" id="pay-${d.id}" style="margin-bottom:10px;">
     <div class="cm" onclick="toggleCard('pay-${d.id}')">
@@ -2870,6 +2889,19 @@ function renderPaymentCard(d, role) {
     </div>
     <div class="cd">
       ${escrowBar}
+      <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">פרטי הובלה</div>
+      <div class="dr"><span class="dk"> מוצא</span><span class="dv">${esc(d.from||'—')}</span></div>
+      <div class="dr"><span class="dk"> יעד</span><span class="dv">${esc(d.to||'—')}</span></div>
+      <div class="dr"><span class="dk"> תאריך משלוח</span><span class="dv">${deliveryDate}</span></div>
+      <div class="dr"><span class="dk"> סוג מטען</span><span class="dv">${esc(cargoTxt)}</span></div>
+      <div class="dr"><span class="dk"> משקל</span><span class="dv">${weightTxt}</span></div>
+      <div class="dr"><span class="dk"> נפח</span><span class="dv">${volTxt}</span></div>
+      <div class="dr"><span class="dk"> סוג משאית</span><span class="dv">${esc(truckTxt)}</span></div>
+      ${hazardous ? `<div class="dr"><span class="dk"> סיכון</span><span class="dv">${hazardous}</span></div>` : ''}
+      ${notesTxt ? `<div class="dr"><span class="dk"> הערות</span><span class="dv">${esc(notesTxt)}</span></div>` : ''}
+      <div class="dr"><span class="dk"> נהג</span><span class="dv">${esc(driverName)}</span></div>
+      <div class="dr"><span class="dk"> עמיל</span><span class="dv">${esc(brokerName)}</span></div>
+      <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;">תשלום</div>
       <div class="dr"><span class="dk">ברוטו</span><span class="dv">₪${amt.toLocaleString()}</span></div>
       <div class="dr"><span class="dk">עמלת פלטפורמה (5%)</span><span class="dv r">-₪${fee.toLocaleString()}</span></div>
       <div class="dr"><span class="dk">נטו לנהג</span><span class="dv g">₪${net.toLocaleString()}</span></div>
