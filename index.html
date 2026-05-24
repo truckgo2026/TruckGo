@@ -2844,69 +2844,62 @@ window.loadPaymentsScreen = async function() {
 function renderPaymentCard(d, role) {
   const st = ESCROW_LABEL[d.status] || ESCROW_LABEL.pending;
   const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
-  const deliveryDate = d.date || d.deliveryDate || '—';
   const amt = d.finalAmount || d.amount || 0;
   const fee = Math.round(amt * 0.05);
   const net = amt - fee;
+  const isDelivered = d.status === 'delivered';
+  const isConfirmed = d.status === 'confirmed';
 
-  // כפתורי פעולה לפי תפקיד וסטטוס
   let actions = '';
   if (role === 'drv' && d.status === 'accepted') {
-    actions = `<button class="btn bgr" onclick="driverConfirmDelivery('${d.id}')"> אשר מסירה</button>`;
+    actions = `<div class="brow"><button class="btn bgr" onclick="driverConfirmDelivery('${d.id}')"> אשר מסירה</button></div>`;
   }
   if (role === 'brk' && d.status === 'delivered') {
-    actions = `<button class="btn bgr" onclick="brokerConfirmReceipt('${d.id}')">אשר קבלה ושחרר תשלום</button>`;
+    actions = `<div class="brow"><button class="btn bgr" onclick="brokerConfirmReceipt('${d.id}')">אשר קבלה ושחרר תשלום</button></div>`;
   }
 
-  const escrowBar = d.status === 'accepted' || d.status === 'delivered' ? `
-    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--amber);border:1px solid #fde68a;">
-      הכסף נעול באפליקציה — ${d.status === 'delivered' ? 'ממתין לאישור עמיל המכס' : 'ממתין לאישור מסירה'}
+  const escrowBar = (d.status === 'accepted' || d.status === 'delivered') ? `
+    <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
+      הכסף נעול באפליקציה — ${isDelivered ? 'ממתין לאישור קבלה מהעמיל' : 'ממתין לאישור מסירה'}
     </div>` : '';
-
-  // פרטים נוספים
-  const weightTxt = d.weight ? `${d.weight} ק"ג` : '—';
-  const volTxt = d.volume ? `${d.volume} מ"ק` : '—';
-  const cargoTxt = d.cargoType || d.cargo || '—';
-  const notesTxt = d.notes || d.description || '';
-  const truckTxt = d.truckType || '—';
-  const driverName = d.driverName || d.driverPhone || '—';
-  const brokerName = d.brokerName || d.brokerCompany || '—';
-  const hazardous = d.hazardous ? `<span style="color:var(--red);font-weight:700;">⚠️ חומרים מסוכנים${d.hazardCode ? ' — ' + d.hazardCode : ''}</span>` : '';
 
   return `
   <div class="card" id="pay-${d.id}" style="margin-bottom:10px;">
     <div class="cm" onclick="toggleCard('pay-${d.id}')">
-      <div class="ci ${d.status === 'confirmed' ? 'g' : 'am'}">${st.icon}</div>
+      <div class="ci ${isConfirmed ? 'g' : 'am'}">${st.icon}</div>
       <div class="cinfo">
         <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
         <div class="cm2">${date} • ${role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג')}</div>
       </div>
       <div class="cr">
-        <div class="cp" style="color:${d.status === 'confirmed' ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${amt.toLocaleString()}</div>
+        <div class="cp" style="color:${isConfirmed ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${amt.toLocaleString()}</div>
         <div class="badge ${st.cls}">${st.txt}</div>
-        <div class="chev"></div>
+        <div class="chev">▼</div>
       </div>
     </div>
     <div class="cd">
       ${escrowBar}
-      <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">פרטי הובלה</div>
-      <div class="dr"><span class="dk"> מוצא</span><span class="dv">${esc(d.from||'—')}</span></div>
-      <div class="dr"><span class="dk"> יעד</span><span class="dv">${esc(d.to||'—')}</span></div>
-      <div class="dr"><span class="dk"> תאריך משלוח</span><span class="dv">${deliveryDate}</span></div>
-      <div class="dr"><span class="dk"> סוג מטען</span><span class="dv">${esc(cargoTxt)}</span></div>
-      <div class="dr"><span class="dk"> משקל</span><span class="dv">${weightTxt}</span></div>
-      <div class="dr"><span class="dk"> נפח</span><span class="dv">${volTxt}</span></div>
-      <div class="dr"><span class="dk"> סוג משאית</span><span class="dv">${esc(truckTxt)}</span></div>
-      ${hazardous ? `<div class="dr"><span class="dk"> סיכון</span><span class="dv">${hazardous}</span></div>` : ''}
-      ${notesTxt ? `<div class="dr"><span class="dk"> הערות</span><span class="dv">${esc(notesTxt)}</span></div>` : ''}
-      <div class="dr"><span class="dk"> נהג</span><span class="dv">${esc(driverName)}</span></div>
-      <div class="dr"><span class="dk"> עמיל</span><span class="dv">${esc(brokerName)}</span></div>
-      <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;">תשלום</div>
-      <div class="dr"><span class="dk">ברוטו</span><span class="dv">₪${amt.toLocaleString()}</span></div>
-      <div class="dr"><span class="dk">עמלת פלטפורמה (5%)</span><span class="dv r">-₪${fee.toLocaleString()}</span></div>
-      <div class="dr"><span class="dk">נטו לנהג</span><span class="dv g">₪${net.toLocaleString()}</span></div>
-      <div class="dr"><span class="dk">סטטוס</span><span class="dv">${st.txt}</span></div>
-      ${actions ? `<div class="brow" style="margin-top:10px;">${actions}</div>` : ''}
+      <div class="dg">
+        <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from||'—')}</div></div>
+        <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to||'—')}</div></div>
+        <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date||'—')}</div></div>
+        <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot||'—')}</div></div>
+        <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight ? Number(d.weight).toLocaleString()+' ק"ג' : '—'}</div></div>
+        ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${esc(d.volume)} מ"ק</div></div>` : ''}
+        ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${esc(d.qty)} יח'</div></div>` : ''}
+        <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+esc(d.contSize):'')):'חלקי'}</div></div>
+        <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc||'—')}</div></div>
+        <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
+        <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
+        <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
+        <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName||'—')}</div></div>
+        <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName||'—')}</div></div>
+        <div class="dc"><div class="dcl">ברוטו</div><div class="dcv">₪${amt.toLocaleString()}</div></div>
+        <div class="dc"><div class="dcl">עמלה (5%)</div><div class="dcv" style="color:var(--red)">-₪${fee.toLocaleString()}</div></div>
+        <div class="dc"><div class="dcl">נטו לנהג</div><div class="dcv" style="color:var(--green)">₪${net.toLocaleString()}</div></div>
+        <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
+      </div>
+      ${actions}
     </div>
   </div>`;
 }
