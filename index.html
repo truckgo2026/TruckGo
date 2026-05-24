@@ -27,6 +27,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 /* SCREENS */
 .scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transition:opacity .22s;background:var(--bg);scrollbar-width:none;}
 .scr::-webkit-scrollbar{display:none;}
+.scr-body{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;}
+.scr-body::-webkit-scrollbar{display:none;}
 .scr.on{opacity:1;pointer-events:all;}
 
 /* TOPBAR */
@@ -37,7 +39,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .tb-title{font-size:17px;font-weight:700;}
 
 /* BOTTOM NAV */
-.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;}
+.bnav{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -4px 20px rgba(29,78,216,0.08);flex-shrink:0;position:sticky;bottom:0;z-index:50;}
 .ni{flex:1;text-align:center;cursor:pointer;padding:4px 0;}
 .ni .ni-i{font-size:20px;}
 .ni .ni-l{font-size:11px;color:var(--muted);margin-top:3px;}
