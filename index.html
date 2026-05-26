@@ -225,6 +225,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .frow{display:flex;gap:10px;}
 .frow .fg{flex:1;}
 .fbt{width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;font-family:'Heebo',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(29,78,216,0.3);transition:background .2s;}
+.sch-stbtn{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;transition:all .15s;}
+.sch-stbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 .fbt:hover{background:#1e40af;}
 textarea.fi{resize:vertical;}
 
@@ -581,7 +583,7 @@ textarea.fi{resize:vertical;}
       </div>
       <div id="drv-offers-list">
         <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-          <div style="font-size:32px;margin-bottom:8px;">🚛</div>
+          <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
           <div>טוען הצעות...</div>
         </div>
       </div>
@@ -614,6 +616,7 @@ textarea.fi{resize:vertical;}
   <div class="bnav">
     <div class="ni on" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
     <div class="ni" onclick="go('s-payments')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
+    <div class="ni" onclick="goSearch()"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="ni-l">חיפוש</div></div>
     <div class="ni" onclick="go('s-profile')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="ni-l">פרופיל</div></div>
   </div>
 
@@ -707,7 +710,7 @@ textarea.fi{resize:vertical;}
   <div id="b-pend" style="padding:12px 16px 0;">
     <div id="b-pend-list">
       <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-        <div style="font-size:32px;margin-bottom:8px;">📦</div>
+        <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
         <div>טוען הזמנות...</div>
       </div>
     </div>
@@ -716,7 +719,7 @@ textarea.fi{resize:vertical;}
   <div id="b-act" style="display:none;padding:12px 16px 0;">
     <div id="b-act-list">
       <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-        <div style="font-size:32px;margin-bottom:8px;">🚛</div>
+        <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
         <div>טוען הובלות פעילות...</div>
       </div>
     </div>
@@ -725,7 +728,7 @@ textarea.fi{resize:vertical;}
   <div id="b-done" style="display:none;padding:12px 16px 0;">
     <div id="b-done-list">
       <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-        <div style="font-size:32px;margin-bottom:8px;">✅</div>
+        <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div>טוען היסטוריה...</div>
       </div>
     </div>
@@ -737,6 +740,7 @@ textarea.fi{resize:vertical;}
     <div class="ni on" onclick="go('s-broker')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="ni-l">הובלות</div></div>
     <div class="ni" onclick="go('s-neworder')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="ni-l">הזמנה חדשה</div></div>
     <div class="ni" onclick="go('s-payments')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
+    <div class="ni" onclick="goSearch()"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="ni-l">חיפוש</div></div>
     <div class="ni" onclick="go('s-profile')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="ni-l">פרופיל</div></div>
   </div>
 
@@ -924,7 +928,7 @@ textarea.fi{resize:vertical;}
       <div id="driver-selector" style="display:none;">
         <div style="position:relative;margin-bottom:10px;">
           <input id="driver-search" class="fi" type="text" placeholder="חפש לפי שם נהג או חברה..." oninput="filterDriverList(this.value)" style="margin-bottom:0;padding-right:36px;">
-          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;">🔍</span>
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         </div>
         <div id="driver-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
           <div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">טוען נהגים...</div>
@@ -996,6 +1000,131 @@ textarea.fi{resize:vertical;}
     <div class="ni" onclick="go('s-profile')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="ni-l">פרופיל</div></div>
   </div>
   <div class="toast" id="p-toast"></div>
+</div>
+
+<!--  S7: SEARCH  -->
+<div class="scr" id="s-search">
+  <div class="tb">
+    <div class="ic" onclick="goBack()" style="color:var(--accent);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="logo">Truck<b>Go</b></div>
+    <div class="ic"></div>
+  </div>
+
+  <div class="scr-body">
+    <!-- כותרת -->
+    <div style="padding:16px 16px 0;">
+      <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:2px;">חיפוש הובלות</div>
+      <div style="font-size:13px;color:var(--muted);">חפש בהיסטוריית ההובלות שלך</div>
+    </div>
+
+    <!-- טופס חיפוש -->
+    <div style="margin:14px 16px 0;">
+      <div class="fcard" style="padding:14px;gap:10px;">
+
+        <!-- שורה 1: מוצא + יעד -->
+        <div class="frow" style="gap:8px;">
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">מוצא</div>
+            <input id="sch-from" class="fi" type="text" placeholder="לדוגמא: חיפה" style="margin-bottom:0;">
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">יעד</div>
+            <input id="sch-to" class="fi" type="text" placeholder="לדוגמא: תל אביב" style="margin-bottom:0;">
+          </div>
+        </div>
+
+        <!-- שורה 2: תאריך מ - עד -->
+        <div class="frow" style="gap:8px;">
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">מתאריך</div>
+            <input id="sch-date-from" class="fi" type="date" style="margin-bottom:0;">
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">עד תאריך</div>
+            <input id="sch-date-to" class="fi" type="date" style="margin-bottom:0;">
+          </div>
+        </div>
+
+        <!-- שורה 3: טווח מחירים -->
+        <div class="frow" style="gap:8px;">
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">מחיר מינימום (₪)</div>
+            <input id="sch-price-min" class="fi" type="number" placeholder="0" style="margin-bottom:0;">
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">מחיר מקסימום (₪)</div>
+            <input id="sch-price-max" class="fi" type="number" placeholder="ללא הגבלה" style="margin-bottom:0;">
+          </div>
+        </div>
+
+        <!-- שורה 4: משקל + כמות -->
+        <div class="frow" style="gap:8px;">
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">משקל מינימום (ק"ג)</div>
+            <input id="sch-weight" class="fi" type="number" placeholder="0" style="margin-bottom:0;">
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <div class="fl">כמות (יחידות)</div>
+            <input id="sch-qty" class="fi" type="number" placeholder="כלשהו" style="margin-bottom:0;">
+          </div>
+        </div>
+
+        <!-- שורה 5: שם נהג / עמיל -->
+        <div class="fg" style="margin-bottom:0;">
+          <div class="fl" id="sch-person-label">שם נהג / חברת הובלה</div>
+          <input id="sch-person" class="fi" type="text" placeholder="חפש לפי שם..." style="margin-bottom:0;">
+        </div>
+
+        <!-- סטטוס -->
+        <div>
+          <div class="fl" style="margin-bottom:6px;">סטטוס</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;" id="sch-status-btns">
+            <button onclick="toggleSchStatus('all')"      id="sst-all"       class="sch-stbtn on">הכל</button>
+            <button onclick="toggleSchStatus('pending')"  id="sst-pending"   class="sch-stbtn">ממתין</button>
+            <button onclick="toggleSchStatus('accepted')" id="sst-accepted"  class="sch-stbtn">פעיל</button>
+            <button onclick="toggleSchStatus('delivered')" id="sst-delivered" class="sch-stbtn">נמסר</button>
+            <button onclick="toggleSchStatus('confirmed')" id="sst-confirmed" class="sch-stbtn">הושלם</button>
+            <button onclick="toggleSchStatus('cancelled')" id="sst-cancelled" class="sch-stbtn">בוטל</button>
+          </div>
+        </div>
+
+        <button onclick="runSearch()" class="fbt" style="margin-top:4px;">חפש</button>
+        <button onclick="clearSearch()" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Heebo',sans-serif;">נקה הכל</button>
+      </div>
+    </div>
+
+    <!-- תוצאות -->
+    <div style="margin:14px 16px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="sec-t" style="margin-bottom:0;">תוצאות</div>
+        <div id="sch-count" style="font-size:12px;color:var(--muted);"></div>
+      </div>
+      <div id="sch-results">
+        <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
+          <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <div>מלא פרטים ולחץ חפש</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp"></div>
+  </div><!-- end scr-body -->
+
+  <div class="bnav" id="sch-bnav-drv" style="display:none;">
+    <div class="ni" onclick="go('s-driver')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="ni-l">הובלות</div></div>
+    <div class="ni" onclick="go('s-payments')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
+    <div class="ni on"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="ni-l">חיפוש</div></div>
+    <div class="ni" onclick="go('s-profile')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="ni-l">פרופיל</div></div>
+  </div>
+
+  <div class="bnav" id="sch-bnav-brk" style="display:none;">
+    <div class="ni" onclick="go('s-broker')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="ni-l">הובלות</div></div>
+    <div class="ni" onclick="go('s-neworder')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="ni-l">הזמנה חדשה</div></div>
+    <div class="ni" onclick="go('s-payments')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><div class="ni-l">תשלומים</div></div>
+    <div class="ni on"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="ni-l">חיפוש</div></div>
+    <div class="ni" onclick="go('s-profile')"><div class="ni-i"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="ni-l">פרופיל</div></div>
+  </div>
+  <div class="toast" id="sch-toast"></div>
 </div>
 
 <!--  S8: PROFILE  -->
@@ -1436,7 +1565,7 @@ window.openRatingModal = function(shipId, targetUid, targetName, targetRole, rev
 
 window.selectStar = function(n) {
   window._selectedStar = n;
-  const labels = ['','גרוע 😞','לא טוב 😕','בסדר 😐','טוב 😊','מעולה! 🌟'];
+  const labels = ['','גרוע','לא טוב','בסדר','טוב','מעולה!'];
   const colors  = ['','#ef4444','#f97316','#eab308','#22c55e','#10b981'];
   [1,2,3,4,5].forEach(i => {
     const s = document.getElementById('rstar-'+i);
@@ -1488,6 +1617,164 @@ window.submitRating = async function() {
 window._targetMode = 'all'; // 'all' | 'select'
 window._selectedDrivers = {}; // uid -> { name, company }
 window._allDriversList = []; // cached from Firestore
+
+// ── מסך חיפוש ────────────────────────────────────────────
+window._schStatus = 'all';
+
+window.goSearch = function() {
+  const role = window.selectedRole;
+  // הצג ניווט נכון
+  document.getElementById('sch-bnav-drv').style.display = (role === 'drv') ? 'flex' : 'none';
+  document.getElementById('sch-bnav-brk').style.display = (role === 'brk') ? 'flex' : 'none';
+  // עדכן תווית "שם" לפי תפקיד
+  const lbl = document.getElementById('sch-person-label');
+  if (lbl) lbl.textContent = role === 'brk' ? 'שם נהג / חברת הובלה' : 'שם עמיל מכס';
+  go('s-search');
+};
+
+window.toggleSchStatus = function(st) {
+  window._schStatus = st;
+  ['all','pending','accepted','delivered','confirmed','cancelled'].forEach(s => {
+    const btn = document.getElementById('sst-' + s);
+    if (btn) btn.classList.toggle('on', s === st);
+  });
+};
+
+window.clearSearch = function() {
+  ['sch-from','sch-to','sch-price-min','sch-price-max','sch-weight','sch-qty','sch-person'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['sch-date-from','sch-date-to'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  window.toggleSchStatus('all');
+  document.getElementById('sch-results').innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div>מלא פרטים ולחץ חפש</div></div>';
+  document.getElementById('sch-count').textContent = '';
+};
+
+window.runSearch = async function() {
+  const uid  = window._currentUid;
+  const role = window.selectedRole;
+  if (!uid) { toast('שגיאה: לא מחובר'); return; }
+
+  const fromVal     = (document.getElementById('sch-from')?.value || '').trim().toLowerCase();
+  const toVal       = (document.getElementById('sch-to')?.value || '').trim().toLowerCase();
+  const dateFrom    = document.getElementById('sch-date-from')?.value || '';
+  const dateTo      = document.getElementById('sch-date-to')?.value || '';
+  const priceMin    = parseInt(document.getElementById('sch-price-min')?.value) || 0;
+  const priceMax    = parseInt(document.getElementById('sch-price-max')?.value) || 0;
+  const weightMin   = parseInt(document.getElementById('sch-weight')?.value) || 0;
+  const qtyVal      = parseInt(document.getElementById('sch-qty')?.value) || 0;
+  const personVal   = (document.getElementById('sch-person')?.value || '').trim().toLowerCase();
+  const statusFilter = window._schStatus;
+
+  const btn = document.querySelector('#s-search .fbt');
+  if (btn) { btn.textContent = 'מחפש...'; btn.disabled = true; }
+
+  const resultsEl = document.getElementById('sch-results');
+  resultsEl.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">מחפש...</div>';
+
+  try {
+    // שלוף לפי תפקיד
+    const field = role === 'brk' ? 'brokerUid' : 'driverUid';
+    const snap  = await window._fbSearchShipments(uid, field);
+    let results = snap;
+
+    // סינון בצד הלקוח
+    results = results.filter(d => {
+      if (fromVal   && !(d.from || '').toLowerCase().includes(fromVal))   return false;
+      if (toVal     && !(d.to   || '').toLowerCase().includes(toVal))     return false;
+      if (weightMin && (d.weight || 0) < weightMin)                       return false;
+      if (qtyVal    && (d.qty    || 0) < qtyVal)                          return false;
+      const amt = d.finalAmount || d.amount || 0;
+      if (priceMin  && amt < priceMin)  return false;
+      if (priceMax  && amt > priceMax)  return false;
+      if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+      if (personVal) {
+        const driverStr = ((d.driverName || '') + ' ' + (d.companyName || '')).toLowerCase();
+        const brokerStr = (d.brokerName || '').toLowerCase();
+        const haystack  = role === 'brk' ? driverStr : brokerStr;
+        if (!haystack.includes(personVal)) return false;
+      }
+      // סינון תאריך לפי createdAt
+      if (dateFrom || dateTo) {
+        const ts = d.createdAt?.toDate ? d.createdAt.toDate() : (d.createdAt?.seconds ? new Date(d.createdAt.seconds*1000) : null);
+        if (ts) {
+          const dateStr = ts.toISOString().slice(0,10);
+          if (dateFrom && dateStr < dateFrom) return false;
+          if (dateTo   && dateStr > dateTo)   return false;
+        }
+      }
+      return true;
+    });
+
+    // מיון: חדש ראשון
+    results.sort((a,b) => {
+      const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
+
+    document.getElementById('sch-count').textContent = `${results.length} תוצאות`;
+
+    if (results.length === 0) {
+      resultsEl.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div>לא נמצאו הובלות</div></div>';
+      return;
+    }
+
+    const stMap = { pending:'ממתין', accepted:'פעיל', delivered:'נמסר', confirmed:'הושלם', cancelled:'בוטל', pending_approval:'ממתין לאישור', offer_sent:'הצעה נשלחה' };
+    const stCls = { pending:'bb', accepted:'bg', delivered:'bam', confirmed:'bg', cancelled:'bred' };
+    const starColors = ['','#ef4444','#f97316','#eab308','#22c55e','#10b981'];
+
+    resultsEl.innerHTML = results.map((d,i) => {
+      const amt      = d.finalAmount || d.amount || 0;
+      const stTxt    = stMap[d.status] || d.status;
+      const stC      = stCls[d.status] || 'bb';
+      const person   = role === 'brk' ? (d.driverName || '—') : (d.brokerName || '—');
+      const personLbl= role === 'brk' ? 'נהג' : 'עמיל מכס';
+      const cardId   = 'sch-card-' + i;
+      return `
+        <div class="card" id="${cardId}" style="margin-bottom:8px;">
+          <div class="cm" onclick="toggleCard('${cardId}')">
+            <div class="ci ${d.status==='confirmed'?'g':d.status==='cancelled'?'':d.status==='delivered'?'am':''}"></div>
+            <div class="cinfo">
+              <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+              <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} ${d.qty?'• '+d.qty+' יח\'':''}</div>
+              ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
+            </div>
+            <div class="cr">
+              <div class="cp" style="color:${d.status==='confirmed'?'var(--green)':d.status==='cancelled'?'var(--red)':'var(--amber)'}">₪${amt.toLocaleString()}</div>
+              <div class="badge ${stC}">${stTxt}</div>
+              <div class="chev">▼</div>
+            </div>
+          </div>
+          <div class="cd">
+            <div class="dg">
+              <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
+              <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
+              <div class="dc"><div class="dcl">${personLbl}</div><div class="dcv">${esc(person)}</div></div>
+              <div class="dc"><div class="dcl">תאריך משלוח</div><div class="dcv">${esc(d.date||'—')}</div></div>
+              <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':'—'}</div></div>
+              ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
+              ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
+              <div class="dc"><div class="dcl">מחיר</div><div class="dcv">₪${amt.toLocaleString()}</div></div>
+              <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${stTxt}</div></div>
+              <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+d.contSize:'')):'חלקי'}</div></div>
+              ${d.desc ? `<div class="dc"><div class="dcl">תיאור</div><div class="dcv">${esc(d.desc)}</div></div>` : ''}
+            </div>
+            ${buildTimeline(d)}
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    resultsEl.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--red);font-size:13px;">שגיאה בחיפוש, נסה שוב</div>';
+    console.error('Search error:', e);
+  } finally {
+    if (btn) { btn.textContent = 'חפש'; btn.disabled = false; }
+  }
+};
 
 window.setTargetMode = function(mode) {
   window._targetMode = mode;
@@ -1779,6 +2066,12 @@ window._auth = auth; // חשוף auth לפונקציות חיצוניות
 window._fbGetDrivers = async function() {
   const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['drv', 'company']), where('status', '==', 'approved')));
   return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+};
+
+// ── חיפוש הובלות לפי משתמש ──────────────────────────────
+window._fbSearchShipments = async function(uid, field) {
+  const snap = await getDocs(query(collection(db, 'shipments'), where(field, '==', uid)));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
 // ── שמירת דירוג ─────────────────────────────────────────
@@ -2082,7 +2375,7 @@ function startDriverRealtime(uid) {
     if (docs.length === 0) {
       container.innerHTML = `
         <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-          <div style="font-size:32px;margin-bottom:8px;">🚛</div>
+          <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
           <div>אין הזמנות פתוחות כרגע</div>
         </div>`;
       const cnt = document.getElementById('drv-offers-count');
@@ -2411,7 +2704,7 @@ function startBrokerRealtime(uid) {
     const pendList = document.getElementById('b-pend-list');
     if (pendList) {
       if (pending.length === 0) {
-        pendList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">📦</div><div>אין הזמנות ממתינות</div></div>`;
+        pendList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div>אין הזמנות ממתינות</div></div>`;
       } else {
         pendList.innerHTML = pending.map(d => {
           const hasOffer = d.status === 'offer_sent';
@@ -2429,7 +2722,7 @@ function startBrokerRealtime(uid) {
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
               <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${(d.proposedAmount||d.amount||0).toLocaleString()}</div>
               ${d.driverRatingAvg && d.driverRatingCount >= 3
-                ? `<div style="margin-top:6px;font-size:12px;color:#92400e;">⭐ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></div>`
+                ? `<div style="margin-top:6px;font-size:12px;color:#92400e;">★ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></div>`
                 : `<div style="margin-top:6px;font-size:12px;color:var(--muted);">נהג חדש — אין ביקורות עדיין</div>`}
             </div>` : '';
           const offerBox = hasOffer ? `
@@ -2491,7 +2784,7 @@ function startBrokerRealtime(uid) {
     const actList = document.getElementById('b-act-list');
     if (actList) {
       if (active.length === 0) {
-        actList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">🚛</div><div>אין הובלות פעילות</div></div>`;
+        actList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div>אין הובלות פעילות</div></div>`;
       } else {
         actList.innerHTML = active.map(d => {
           const isDelivered = d.status === 'delivered';
@@ -2552,7 +2845,7 @@ function startBrokerRealtime(uid) {
     const doneList = document.getElementById('b-done-list');
     if (doneList) {
       if (done.length === 0) {
-        doneList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">✅</div><div>אין היסטוריה עדיין</div></div>`;
+        doneList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><polyline points="20 6 9 17 4 12"/></svg></div><div>אין היסטוריה עדיין</div></div>`;
       } else {
         doneList.innerHTML = done.map(d => `
           <div class="card" id="bdone-${d.id}">
@@ -3269,7 +3562,7 @@ async function loadProfileReviews(uid, count) {
       const avg = count >= 3
         ? (reviews.reduce((s,r) => s + r.stars, 0) / reviews.length).toFixed(1)
         : null;
-      summary.textContent = avg ? `⭐ ${avg} (${reviews.length} ביקורות)` : `${reviews.length} ביקורות`;
+      summary.textContent = avg ? `★ ${avg} (${reviews.length} ביקורות)` : `${reviews.length} ביקורות`;
     }
     if (reviews.length === 0) {
       el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;background:var(--surface2);border-radius:12px;">אין ביקורות עדיין</div>';
