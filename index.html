@@ -1317,6 +1317,12 @@ function go(id){
   }
   if (id === 's-profile') {
     if (typeof updateSwitchButton === 'function') updateSwitchButton();
+    // עדכן ניווט פרופיל לפי תפקיד
+    const role = window.selectedRole;
+    const prNavDrv = document.getElementById('pr-bnav-drv');
+    const prNavBrk = document.getElementById('pr-bnav-brk');
+    if (prNavDrv) prNavDrv.style.display = (role === 'drv' || role === 'cmp') ? 'flex' : 'none';
+    if (prNavBrk) prNavBrk.style.display = (role === 'brk') ? 'flex' : 'none';
   }
   // נקה badge כשנכנסים לדף הנהג
   if (id === 's-driver') {
