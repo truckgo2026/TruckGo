@@ -1378,11 +1378,11 @@ window.loadDriversForSelector = async function() {
   const list = document.getElementById('driver-list');
   list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">טוען נהגים...</div>';
   try {
-    const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['drv', 'company']), where('status', '==', 'approved')));
-    window._allDriversList = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    window._allDriversList = await window._fbGetDrivers();
     renderDriverList('');
   } catch(e) {
     list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);font-size:13px;">שגיאה בטעינת נהגים</div>';
+    console.error('loadDriversForSelector error:', e);
   }
 };
 
@@ -1641,6 +1641,12 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const ADMIN_UID = 'GDtYhD41Y5NcTkPw5vuJXaGR1Lr2';
 window._auth = auth; // חשוף auth לפונקציות חיצוניות
+
+// חשוף Firestore utils לפונקציות חיצוניות (פילטר נהגים)
+window._fbGetDrivers = async function() {
+  const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['drv', 'company']), where('status', '==', 'approved')));
+  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+};
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
 window._fbAddDoc = async function(data) {
@@ -1905,6 +1911,7 @@ function startDriverRealtime(uid) {
             <div class="cinfo">
               <div class="ct">${from} → ${to}</div>
               <div class="cm2">${summary} • ${cargoLabel}</div>
+              ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
             <div class="cr"><div class="cp">₪${amt.toLocaleString()}</div><div class="chev">▼</div></div>
           </div>
@@ -2222,6 +2229,7 @@ function startBrokerRealtime(uid) {
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
+                ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
               </div>
               <div class="cr"><div class="cp">₪${(hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0)).toLocaleString()}</div>${badge}<div class="chev">▼</div></div>
             </div>
