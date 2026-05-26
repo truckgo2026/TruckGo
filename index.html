@@ -772,6 +772,40 @@ textarea.fi{resize:vertical;}
       <div id="com-list"></div>
     </div>
   </div>
+  <!-- RATING MODAL -->
+  <div class="so" id="rating-modal" onclick="if(event.target===this&&!window._ratingRequired)this.classList.remove('on')">
+    <div class="sh" style="max-height:90%;overflow-y:auto;">
+      <div class="shandle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="stitle" style="margin-bottom:0;">דרג את ההובלה</div>
+        <button id="rating-skip-btn" onclick="if(!window._ratingRequired)document.getElementById('rating-modal').classList.remove('on')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">דלג 2715</button>
+      </div>
+      <div class="ssub" id="rating-subtitle">איך היה?</div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin:12px 0;display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;" id="rating-avatar">?</div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--text);" id="rating-target-name">—</div><div style="font-size:12px;color:var(--muted);" id="rating-target-role">—</div></div>
+      </div>
+      <div style="text-align:center;margin:16px 0 8px;">
+        <div style="display:flex;justify-content:center;gap:10px;" id="rating-stars">
+          <div onclick="selectStar(1)" id="rstar-1" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
+          <div onclick="selectStar(2)" id="rstar-2" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
+          <div onclick="selectStar(3)" id="rstar-3" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
+          <div onclick="selectStar(4)" id="rstar-4" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
+          <div onclick="selectStar(5)" id="rstar-5" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px;" id="rating-label-text">בחר דירוג</div>
+      </div>
+      <div id="rating-reason-wrap" style="display:none;margin-top:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px;">26a0Fe0f נדרשת סיבה לדירוג נמוך</div>
+        <textarea id="rating-reason" rows="3" placeholder="תאר מה הלך לא טוב..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:'Heebo',sans-serif;resize:none;outline:none;"></textarea>
+      </div>
+      <button id="rating-submit-btn" onclick="submitRating()" style="width:100%;margin-top:14px;padding:14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;opacity:.4;pointer-events:none;">שלח דירוג</button>
+      <input type="hidden" id="rating-shipment-id">
+      <input type="hidden" id="rating-target-uid">
+      <input type="hidden" id="rating-reviewer-role">
+    </div>
+  </div>
+
   <!-- SUCCESS -->
   <div class="ov ov-success" id="brk-succ">
     <div class="ov-i"></div>
@@ -1013,6 +1047,17 @@ textarea.fi{resize:vertical;}
       <div class="ir" onclick="toast(' שינוי סיסמה')"><div class="iii"></div><div class="ic2"><div class="iv">שינוי סיסמה</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="toast(' 03-1234567')"><div class="iii"></div><div class="ic2"><div class="iv">תמיכה</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="fbLogout()"><div class="iii"></div><div class="ic2"><div class="iv" style="color:var(--red)">התנתקות</div></div><span style="color:var(--muted)">←</span></div>
+    </div>
+  </div>
+
+  <!-- ביקורות -->
+  <div style="margin:14px 16px 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="sec-t" style="margin-bottom:0;">ביקורות</div>
+      <div id="profile-rating-summary" style="font-size:13px;color:var(--muted);"></div>
+    </div>
+    <div id="profile-reviews-list">
+      <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">טוען ביקורות...</div>
     </div>
   </div>
 
@@ -1361,6 +1406,85 @@ function bConfSlot(ok){
 }
 function submitOrder(){document.getElementById('no-succ').classList.add('on');}
 // ── פילטר נהגים ─────────────────────────────────────────
+// ── מערכת דירוגים ────────────────────────────────────────
+window._selectedStar = 0;
+const RATING_LABELS = ['','גרוע','לא טוב','בסדר','טוב','מעולה!'];
+
+window.openRatingModal = function(shipId, targetUid, targetName, targetRole, reviewerRole) {
+  window._selectedStar = 0;
+  window._ratingRequired = false;
+  document.getElementById('rating-shipment-id').value = shipId;
+  document.getElementById('rating-target-uid').value  = targetUid;
+  document.getElementById('rating-reviewer-role').value = reviewerRole;
+  document.getElementById('rating-target-name').textContent = targetName || '—';
+  document.getElementById('rating-target-role').textContent = targetRole || '—';
+  document.getElementById('rating-avatar').textContent = (targetName||'?')[0].toUpperCase();
+  document.getElementById('rating-subtitle').textContent =
+    reviewerRole === 'brk' ? 'דרג את הנהג / חברת ההובלה' : 'דרג את עמיל המכס';
+  document.getElementById('rating-reason-wrap').style.display = 'none';
+  document.getElementById('rating-reason').value = '';
+  document.getElementById('rating-label-text').textContent = 'בחר דירוג';
+  document.getElementById('rating-label-text').style.color = 'var(--muted)';
+  [1,2,3,4,5].forEach(i => {
+    const s = document.getElementById('rstar-'+i);
+    if(s){ s.textContent='☆'; s.style.color='var(--muted)'; s.style.transform='scale(1)'; }
+  });
+  const btn = document.getElementById('rating-submit-btn');
+  btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+  document.getElementById('rating-modal').classList.add('on');
+};
+
+window.selectStar = function(n) {
+  window._selectedStar = n;
+  const labels = ['','גרוע 😞','לא טוב 😕','בסדר 😐','טוב 😊','מעולה! 🌟'];
+  const colors  = ['','#ef4444','#f97316','#eab308','#22c55e','#10b981'];
+  [1,2,3,4,5].forEach(i => {
+    const s = document.getElementById('rstar-'+i);
+    if(!s) return;
+    s.textContent = i <= n ? '★' : '☆';
+    s.style.color = i <= n ? colors[n] : 'var(--muted)';
+    s.style.transform = i === n ? 'scale(1.25)' : 'scale(1)';
+  });
+  document.getElementById('rating-label-text').textContent = labels[n];
+  document.getElementById('rating-label-text').style.color = colors[n];
+  // דירוג נמוך — חובה סיבה
+  const wrap = document.getElementById('rating-reason-wrap');
+  if (n <= 3) {
+    wrap.style.display = 'block';
+    window._ratingRequired = true;
+  } else {
+    wrap.style.display = 'none';
+    window._ratingRequired = false;
+  }
+  // הפעל כפתור שליחה
+  const btn = document.getElementById('rating-submit-btn');
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+};
+
+window.submitRating = async function() {
+  const stars     = window._selectedStar;
+  const shipId    = document.getElementById('rating-shipment-id').value;
+  const targetUid = document.getElementById('rating-target-uid').value;
+  const revRole   = document.getElementById('rating-reviewer-role').value;
+  const reason    = document.getElementById('rating-reason').value.trim();
+  if (!stars) { toast('בחר דירוג'); return; }
+  if (stars <= 3 && !reason) {
+    document.getElementById('rating-reason').style.border = '2px solid var(--red)';
+    toast('נדרשת סיבה לדירוג נמוך');
+    return;
+  }
+  const btn = document.getElementById('rating-submit-btn');
+  btn.textContent = 'שולח...'; btn.style.opacity = '.6'; btn.style.pointerEvents = 'none';
+  try {
+    await window._fbSubmitRating({ shipId, targetUid, stars, reason, revRole });
+    document.getElementById('rating-modal').classList.remove('on');
+    toast('הדירוג נשלח, תודה!');
+  } catch(e) {
+    toast('שגיאה, נסה שוב');
+    btn.textContent = 'שלח דירוג'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  }
+};
+
 window._targetMode = 'all'; // 'all' | 'select'
 window._selectedDrivers = {}; // uid -> { name, company }
 window._allDriversList = []; // cached from Firestore
@@ -1655,6 +1779,77 @@ window._auth = auth; // חשוף auth לפונקציות חיצוניות
 window._fbGetDrivers = async function() {
   const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['drv', 'company']), where('status', '==', 'approved')));
   return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+};
+
+// ── שמירת דירוג ─────────────────────────────────────────
+window._fbSubmitRating = async function({ shipId, targetUid, stars, reason, revRole }) {
+  const reviewer = auth.currentUser;
+  if (!reviewer) throw new Error('not logged in');
+
+  // בדוק שלא דירג כבר
+  const existing = await getDocs(query(
+    collection(db, 'reviews'),
+    where('shipmentId', '==', shipId),
+    where('reviewerUid', '==', reviewer.uid)
+  ));
+  if (!existing.empty) throw new Error('already_rated');
+
+  const reviewerSnap = await getDoc(doc(db, 'users', reviewer.uid));
+  const reviewerName = reviewerSnap.exists() ? (reviewerSnap.data().name || reviewerSnap.data().fullName || '—') : '—';
+
+  // שמור ב-reviews collection
+  await addDoc(collection(db, 'reviews'), {
+    shipmentId:   shipId,
+    targetUid,
+    reviewerUid:  reviewer.uid,
+    reviewerName,
+    reviewerRole: revRole,
+    stars,
+    reason:       reason || null,
+    createdAt:    serverTimestamp(),
+  });
+
+  // עדכן ממוצע דירוג ב-users
+  const userSnap = await getDoc(doc(db, 'users', targetUid));
+  if (userSnap.exists()) {
+    const data = userSnap.data();
+    const oldAvg   = data.ratingAvg   || 0;
+    const oldCount = data.ratingCount || 0;
+    const newCount = oldCount + 1;
+    const newAvg   = Math.round(((oldAvg * oldCount) + stars) / newCount * 10) / 10;
+    await updateDoc(doc(db, 'users', targetUid), {
+      ratingAvg:   newAvg,
+      ratingCount: newCount,
+    });
+  }
+
+  // אם דירוג נמוך — שלח התראה לאדמין + לנהג/עמיל
+  if (stars <= 3) {
+    const targetSnap = await getDoc(doc(db, 'users', targetUid));
+    const targetName = targetSnap.exists() ? (targetSnap.data().name || targetSnap.data().fullName || '—') : '—';
+    // שמור התראה לאדמין
+    await addDoc(collection(db, 'adminAlerts'), {
+      type: 'low_rating',
+      stars,
+      reason,
+      reviewerUid: reviewer.uid,
+      reviewerName,
+      targetUid,
+      targetName,
+      shipmentId: shipId,
+      createdAt: serverTimestamp(),
+    });
+  }
+};
+
+// ── טעינת ביקורות לפרופיל ───────────────────────────────
+window._fbLoadReviews = async function(uid) {
+  const snap = await getDocs(query(
+    collection(db, 'reviews'),
+    where('targetUid', '==', uid),
+    orderBy('createdAt', 'desc')
+  ));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
@@ -2151,11 +2346,24 @@ function startMyOrdersRealtime(uid) {
     snapshot.docChanges().forEach(change => {
       if (change.type === 'modified' && !snapshot.metadata.hasPendingWrites) {
         const d = change.doc.data();
+        const shipId = change.doc.id;
         if (d.status === 'accepted') {
-          showPushNotification('✅ אושרת!', `${esc(d.from)} → ${esc(d.to)} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + change.doc.id);
+          showPushNotification('✅ אושרת!', `${esc(d.from)} → ${esc(d.to)} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + shipId);
           addNotifBadge(1);
           toast('ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
           drvTab('mine');
+        }
+        // תשלום שוחרר — פתח מודל דירוג לנהג
+        if (d.status === 'confirmed' && d.brokerUid && d.brokerName) {
+          setTimeout(() => {
+            openRatingModal(
+              shipId,
+              d.brokerUid,
+              d.brokerName,
+              'עמיל מכס',
+              'drv'
+            );
+          }, 1000);
         }
       }
     });
@@ -2215,6 +2423,9 @@ function startBrokerRealtime(uid) {
               ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(d.driverPhone)}</div>` : ''}
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
               <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${(d.proposedAmount||d.amount||0).toLocaleString()}</div>
+              ${d.driverRatingAvg && d.driverRatingCount >= 3
+                ? `<div style="margin-top:6px;font-size:12px;color:#92400e;">⭐ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></div>`
+                : `<div style="margin-top:6px;font-size:12px;color:var(--muted);">נהג חדש — אין ביקורות עדיין</div>`}
             </div>` : '';
           const offerBox = hasOffer ? `
             <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
@@ -3030,6 +3241,54 @@ function loadProfile(d, user) {
     if (companyRow) companyRow.style.display = 'flex';
     if (brokerRow) brokerRow.style.display = 'flex';
   }
+
+  // עדכן דירוג בפרופיל
+  const avg   = d.ratingAvg   || 0;
+  const count = d.ratingCount || 0;
+  const si2v = document.querySelector('#s-profile .si2v');
+  if (si2v) si2v.textContent = count >= 3 ? avg.toFixed(1) : '—';
+
+  // טען ביקורות
+  if (user) loadProfileReviews(user.uid, count);
+}
+
+async function loadProfileReviews(uid, count) {
+  const el = document.getElementById('profile-reviews-list');
+  const summary = document.getElementById('profile-rating-summary');
+  if (!el) return;
+  if (!window._fbLoadReviews) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">טוען...</div>';
+  try {
+    const reviews = await window._fbLoadReviews(uid);
+    if (summary) {
+      const avg = count >= 3
+        ? (reviews.reduce((s,r) => s + r.stars, 0) / reviews.length).toFixed(1)
+        : null;
+      summary.textContent = avg ? `⭐ ${avg} (${reviews.length} ביקורות)` : `${reviews.length} ביקורות`;
+    }
+    if (reviews.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;background:var(--surface2);border-radius:12px;">אין ביקורות עדיין</div>';
+      return;
+    }
+    const stars = n => '★'.repeat(n) + '☆'.repeat(5-n);
+    const starColors = ['','#ef4444','#f97316','#eab308','#22c55e','#10b981'];
+    el.innerHTML = reviews.map(r => {
+      const t = r.createdAt ? fmtTS(r.createdAt) : '';
+      return `
+        <div style="background:var(--surface2);border-radius:12px;padding:13px 14px;margin-bottom:8px;border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="color:${starColors[r.stars]};font-size:15px;letter-spacing:1px;">${stars(r.stars)}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(r.reviewerName)}</span>
+            </div>
+            <span style="font-size:11px;color:var(--muted);">${t}</span>
+          </div>
+          ${r.reason ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;">"${esc(r.reason)}"</div>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">שגיאה בטעינת ביקורות</div>';
+  }
 }
 
 function setEl(id, val) {
@@ -3215,12 +3474,27 @@ window.driverConfirmDelivery = async function(shipId) {
 window.brokerConfirmReceipt = async function(shipId) {
   if (!confirm('לאשר קבלת המשלוח ולשחרר את התשלום לנהג?')) return;
   try {
+    // קבל פרטי ההובלה קודם
+    const shipSnap = await getDoc(doc(db, 'shipments', shipId));
+    const shipData = shipSnap.exists() ? shipSnap.data() : {};
     await updateDoc(doc(db, 'shipments', shipId), {
       status: 'confirmed',
       confirmedAt: serverTimestamp()
     });
     toast('תשלום שוחרר לנהג בהצלחה!');
     loadPaymentsScreen();
+    // פתח מודל דירוג
+    if (shipData.driverUid && shipData.driverName) {
+      setTimeout(() => {
+        openRatingModal(
+          shipId,
+          shipData.driverUid,
+          shipData.driverName,
+          shipData.companyName ? 'חברת הובלה' : 'נהג',
+          'brk'
+        );
+      }, 800);
+    }
   } catch(e) { toast('שגיאה, נסה שוב'); }
 };
 
@@ -3299,6 +3573,15 @@ window.driverConfirmDelivery = async function(shipId) {
 window.brokerApproveDriver = async function(shipId, driverUid, driverName, driverPhone, amt, slot) {
   if(!confirm('לאשר את ' + driverName + ' על ₪' + Number(amt).toLocaleString() + '?')) return;
   try {
+    // קבל דירוג נהג עדכני
+    let driverRatingAvg = 0, driverRatingCount = 0;
+    try {
+      const dSnap = await getDoc(doc(db, 'users', driverUid));
+      if (dSnap.exists()) {
+        driverRatingAvg   = dSnap.data().ratingAvg   || 0;
+        driverRatingCount = dSnap.data().ratingCount || 0;
+      }
+    } catch(e) {}
     await updateDoc(doc(db,'shipments',shipId), {
       status:      'accepted',
       driverUid,
@@ -3307,6 +3590,8 @@ window.brokerApproveDriver = async function(shipId, driverUid, driverName, drive
       finalAmount: Number(amt),
       slot:        slot||'',
       acceptedAt:  serverTimestamp(),
+      driverRatingAvg,
+      driverRatingCount,
     });
     document.getElementById('brk-succ-s').textContent = driverName+' יבצע את ההובלה!\n₪'+Number(amt).toLocaleString();
     document.getElementById('brk-succ').classList.add('on');
