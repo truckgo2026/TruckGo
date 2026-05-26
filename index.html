@@ -1846,10 +1846,15 @@ window._fbSubmitRating = async function({ shipId, targetUid, stars, reason, revR
 window._fbLoadReviews = async function(uid) {
   const snap = await getDocs(query(
     collection(db, 'reviews'),
-    where('targetUid', '==', uid),
-    orderBy('createdAt', 'desc')
+    where('targetUid', '==', uid)
   ));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => {
+      const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return tb - ta;
+    });
 };
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
