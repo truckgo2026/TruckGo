@@ -1043,6 +1043,15 @@ function fmtTS(ts) {
   if (!ts) return null;
   const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds * 1000) : null);
   if (!d) return null;
+  const diffMs  = Date.now() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 120) {
+    if (diffMin < 1)  return 'לפני פחות מדקה';
+    if (diffMin < 60) return `לפני ${diffMin} דקות`;
+    const h = Math.floor(diffMin / 60);
+    const m = diffMin % 60;
+    return m === 0 ? `לפני שעה${h > 1 ? ' ' + h : ''}` : `לפני ${h === 1 ? 'שעה' : h + ' שעות'} ו-${m} דקות`;
+  }
   const date = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const time = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
   return `${date} • ${time}`;
