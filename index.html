@@ -880,6 +880,25 @@ textarea.fi{resize:vertical;}
       <div class="fg" style="margin-bottom:0;"><div class="fl">מחיר מוצע (₪)</div><input id="order-price" class="fi" type="number" placeholder="0" value="" style="margin-bottom:0;"></div>
     </div>
 
+    <!-- פילטר נהגים -->
+    <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:14px 0 10px;">לאילו נהגים לשלוח?</div>
+    <div class="fcard" style="padding:14px;">
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <button id="tgt-btn-all" onclick="setTargetMode('all')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">כל הנהגים</button>
+        <button id="tgt-btn-select" onclick="setTargetMode('select')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;">בחר ספציפית</button>
+      </div>
+      <div id="driver-selector" style="display:none;">
+        <div style="position:relative;margin-bottom:10px;">
+          <input id="driver-search" class="fi" type="text" placeholder="חפש לפי שם נהג או חברה..." oninput="filterDriverList(this.value)" style="margin-bottom:0;padding-right:36px;">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;">🔍</span>
+        </div>
+        <div id="driver-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
+          <div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">טוען נהגים...</div>
+        </div>
+        <div id="selected-drivers-summary" style="margin-top:8px;font-size:12px;color:var(--muted);display:none;"></div>
+      </div>
+    </div>
+
     <button class="fbt" style="margin-top:16px;" onclick="typeof window.submitOrderReal==='function'?window.submitOrderReal():submitOrder()">פרסם הובלה</button>
   </div>
   </div><!-- end scr-body -->
@@ -1017,6 +1036,46 @@ function esc(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ── עזר: המרת Firestore Timestamp לתאריך + שעה בעברית ──
+function fmtTS(ts) {
+  if (!ts) return null;
+  const d = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds * 1000) : null);
+  if (!d) return null;
+  const date = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const time = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  return `${date} • ${time}`;
+}
+
+// ── ציר זמן: מחזיר HTML של ציר האירועים להובלה ──
+function buildTimeline(d) {
+  const events = [];
+  if (d.createdAt)   events.push({ label: 'הזמנה פורסמה על ידי עמיל המכס', ts: d.createdAt, color: '#6366f1' });
+  if (d.acceptedAt)  events.push({ label: 'הובלה אושרה על ידי נהג / חברת הובלה', ts: d.acceptedAt, color: '#10b981' });
+  if (d.deliveredAt) events.push({ label: 'נהג אישר מסירה', ts: d.deliveredAt, color: '#f59e0b' });
+  if (d.confirmedAt) events.push({ label: 'עמיל המכס אישר קבלה ושחרר תשלום', ts: d.confirmedAt, color: '#10b981' });
+  if (events.length === 0) return '';
+  const rows = events.map((e, i) => {
+    const t = fmtTS(e.ts);
+    const isLast = i === events.length - 1;
+    return `
+      <div style="display:flex;gap:10px;align-items:flex-start;position:relative;">
+        <div style="display:flex;flex-direction:column;align-items:center;min-width:20px;">
+          <div style="width:14px;height:14px;border-radius:50%;background:${e.color};flex-shrink:0;margin-top:2px;"></div>
+          ${!isLast ? `<div style="width:2px;flex:1;min-height:18px;background:var(--border);margin-top:3px;"></div>` : ''}
+        </div>
+        <div style="padding-bottom:${isLast?'0':'14px'};flex:1;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${e.label}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">${t || '—'}</div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">ציר זמן</div>
+      ${rows}
+    </div>`;
 }
 
 // ── אבטחה: cache פרטי הצעות נגדיות (במקום window[key]) ──
@@ -1292,6 +1351,105 @@ function bConfSlot(ok){
   // legacy - not used with Firebase flow
 }
 function submitOrder(){document.getElementById('no-succ').classList.add('on');}
+// ── פילטר נהגים ─────────────────────────────────────────
+window._targetMode = 'all'; // 'all' | 'select'
+window._selectedDrivers = {}; // uid -> { name, company }
+window._allDriversList = []; // cached from Firestore
+
+window.setTargetMode = function(mode) {
+  window._targetMode = mode;
+  const btnAll    = document.getElementById('tgt-btn-all');
+  const btnSelect = document.getElementById('tgt-btn-select');
+  const selector  = document.getElementById('driver-selector');
+  if (mode === 'all') {
+    btnAll.style.cssText    = 'flex:1;padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;';
+    btnSelect.style.cssText = 'flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;';
+    selector.style.display  = 'none';
+  } else {
+    btnSelect.style.cssText = 'flex:1;padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;';
+    btnAll.style.cssText    = 'flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;';
+    selector.style.display  = 'block';
+    loadDriversForSelector();
+  }
+};
+
+window.loadDriversForSelector = async function() {
+  if (window._allDriversList.length > 0) { renderDriverList(''); return; }
+  const list = document.getElementById('driver-list');
+  list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">טוען נהגים...</div>';
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['drv', 'company']), where('status', '==', 'approved')));
+    window._allDriversList = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    renderDriverList('');
+  } catch(e) {
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);font-size:13px;">שגיאה בטעינת נהגים</div>';
+  }
+};
+
+window.filterDriverList = function(q) { renderDriverList(q); };
+
+function renderDriverList(q) {
+  const list = document.getElementById('driver-list');
+  const term = (q || '').trim().toLowerCase();
+  const filtered = term
+    ? window._allDriversList.filter(d => {
+        const name    = (d.name    || d.fullName || '').toLowerCase();
+        const company = (d.company || d.firmName || '').toLowerCase();
+        return name.includes(term) || company.includes(term);
+      })
+    : window._allDriversList;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);font-size:13px;">לא נמצאו נהגים</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(d => {
+    const uid      = d.uid;
+    const name     = esc(d.name || d.fullName || 'ללא שם');
+    const company  = esc(d.company || d.firmName || '');
+    const checked  = window._selectedDrivers[uid] ? true : false;
+    return `
+      <div onclick="toggleDriverSelect('${uid}','${(d.name||d.fullName||'').replace(/'/g,'')}','${(d.company||d.firmName||'').replace(/'/g,'')}')"
+           style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;${checked?'background:var(--accent-bg,#eef2ff);':''}"
+           id="drow-${uid}">
+        <div style="width:20px;height:20px;border-radius:6px;border:2px solid ${checked?'var(--accent)':'var(--border)'};background:${checked?'var(--accent)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">
+          ${checked?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${name}</div>
+          ${company ? `<div style="font-size:12px;color:var(--muted);">${company}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window.toggleDriverSelect = function(uid, name, company) {
+  if (window._selectedDrivers[uid]) {
+    delete window._selectedDrivers[uid];
+  } else {
+    window._selectedDrivers[uid] = { name, company };
+  }
+  // עדכן שורה ספציפית
+  const row = document.getElementById('drow-' + uid);
+  const checked = !!window._selectedDrivers[uid];
+  if (row) {
+    row.style.background = checked ? 'var(--accent-bg,#eef2ff)' : '';
+    const box = row.querySelector('div');
+    if (box) {
+      box.style.borderColor  = checked ? 'var(--accent)' : 'var(--border)';
+      box.style.background   = checked ? 'var(--accent)' : 'transparent';
+      box.innerHTML = checked ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+    }
+  }
+  // עדכן סיכום
+  const cnt = Object.keys(window._selectedDrivers).length;
+  const summary = document.getElementById('selected-drivers-summary');
+  if (summary) {
+    summary.style.display = cnt > 0 ? 'block' : 'none';
+    summary.textContent   = cnt > 0 ? `נבחרו ${cnt} נהג${cnt > 1 ? 'ים' : ''}` : '';
+  }
+};
+
 window.submitOrderReal = async function() {
   const btn = document.querySelector('#s-neworder .fbt');
   if(btn){ btn.textContent='שולח...'; btn.disabled=true; }
@@ -1312,6 +1470,9 @@ window.submitOrderReal = async function() {
     if(!amt || amt <= 0) { toast(' הכנס מחיר'); return; }
 
     if(typeof window._fbAddDoc === 'function') {
+      const targetDrivers = window._targetMode === 'select'
+        ? Object.keys(window._selectedDrivers)
+        : null; // null = כולם
       await window._fbAddDoc({
         from, to, date, weight, qty, volume, desc,
         amount: amt,
@@ -1324,6 +1485,7 @@ window.submitOrderReal = async function() {
         hazCode: window.isHaz ? (document.getElementById('order-haz-code')?.value?.trim() || '') : '',
         needPorters: window._extras?.porters || false,
         needRamp: window._extras?.ramp || false,
+        targetDrivers: targetDrivers, // null = כולם, מערך = ספציפיים
       });
     }
     // נקה טופס
@@ -1336,6 +1498,12 @@ window.submitOrderReal = async function() {
     window.isHaz = false;
     window.cargoType = 'bulk';
     window.contSize = '20';
+    // אפס פילטר נהגים
+    window._targetMode = 'all';
+    window._selectedDrivers = {};
+    setTargetMode('all');
+    const dSearch = document.getElementById('driver-search');
+    if (dSearch) dSearch.value = '';
     ['opt-porters','opt-ramp'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.style.cssText='flex:1;padding:11px 8px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;';
@@ -1686,10 +1854,15 @@ function startDriverRealtime(uid) {
     if (!container) return;
 
     // מיון בצד הלקוח: הכי חדש ראשון
-    const docs = [...snapshot.docs].sort((a,b) => {
+    const allDocs = [...snapshot.docs].sort((a,b) => {
       const ta = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
       const tb = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
       return tb - ta;
+    });
+    // פילטר: רק הובלות ציבוריות (targetDrivers=null) או שהנהג בתוך הרשימה
+    const docs = allDocs.filter(docSnap => {
+      const td = docSnap.data().targetDrivers;
+      return !td || td.length === 0 || td.includes(uid);
     });
     if (docs.length === 0) {
       container.innerHTML = `
@@ -1907,6 +2080,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
                 <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName)}</div></div>
               </div>
+              ${buildTimeline(d)}
               ${!isDelivered ? `<div class="brow"><button class="btn bgr" onclick="driverConfirmDelivery('${d.id}')">אשר מסירה</button></div>` : `
               <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
                 ממתין לאישור קבלה מהעמיל לשחרור תשלום
@@ -1924,8 +2098,8 @@ function startMyOrdersRealtime(uid) {
         doneEl.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--muted);font-size:14px;">אין היסטוריה עדיין</div>';
       } else {
         doneEl.innerHTML = done.map(d => `
-          <div class="card">
-            <div class="cm">
+          <div class="card" id="ddone-${d.id}">
+            <div class="cm" onclick="toggleCard('ddone-${d.id}')">
               <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
@@ -1934,7 +2108,11 @@ function startMyOrdersRealtime(uid) {
               <div class="cr">
                 <div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div>
                 <div class="badge bg">הושלם</div>
+                <div class="chev">▼</div>
               </div>
+            </div>
+            <div class="cd">
+              ${buildTimeline(d)}
             </div>
           </div>`).join('');
       }
@@ -2124,6 +2302,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel2}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel2}</div></div>
               </div>
+              ${buildTimeline(d)}
               ${isDelivered ? `
               <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--amber);">
                 הנהג אישר מסירה — אשר קבלה לשחרור תשלום
@@ -2143,11 +2322,20 @@ function startBrokerRealtime(uid) {
         doneList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="font-size:32px;margin-bottom:8px;">✅</div><div>אין היסטוריה עדיין</div></div>`;
       } else {
         doneList.innerHTML = done.map(d => `
-          <div class="card">
-            <div class="cm">
-              <div class="ci g">
+          <div class="card" id="bdone-${d.id}">
+            <div class="cm" onclick="toggleCard('bdone-${d.id}')">
+              <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div class="cinfo"><div class="ct">${esc(d.from)} → ${esc(d.to)}</div><div class="cm2">${esc(d.date)} • ${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''}</div></div>
-              <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div></div>
+              <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div><div class="chev">▼</div></div>
+            </div>
+            <div class="cd">
+              <div class="dg">
+                <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
+                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
+                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
+                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div></div>
+              </div>
+              ${buildTimeline(d)}
             </div>
           </div>`).join('');
       }
@@ -2981,6 +3169,7 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
       </div>
       ${actions}
+      ${buildTimeline(d)}
     </div>
   </div>`;
 }
