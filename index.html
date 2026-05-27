@@ -337,6 +337,96 @@ textarea.fi{resize:vertical;}
 </div>
 
 <!--  S-PENDING: ממתין לאישור מנהל  -->
+<!-- ══ מסך ברוכים הבאים ══ -->
+<div class="scr" id="s-onboard" style="background:linear-gradient(160deg,#1d4ed8 0%,#1e40af 40%,#0f172a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:0;overflow:hidden;">
+  <!-- אנימציית רקע -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+    <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.04);top:-80px;right:-80px;"></div>
+    <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.04);bottom:100px;left:-60px;"></div>
+    <div style="position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.06);bottom:40px;right:40px;"></div>
+  </div>
+
+  <!-- תוכן הסליידים -->
+  <div style="width:100%;max-width:430px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:0 28px;box-sizing:border-box;">
+
+    <!-- לוגו -->
+    <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:48px;font-family:'Heebo',sans-serif;">
+      Truck<span style="color:#60a5fa;">Go</span>
+    </div>
+
+    <!-- סליידים -->
+    <div id="ob-slides" style="width:100%;overflow:hidden;">
+      <!-- סלייד 1 -->
+      <div class="ob-slide" style="text-align:center;animation:obFadeIn .5s ease;">
+        <div style="font-size:72px;margin-bottom:24px;">🚛</div>
+        <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;" id="ob-title1">ברוכים הבאים!</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;" id="ob-desc1">
+          פלטפורמה חכמה לניהול הובלות<br/>בין נהגים, חברות הובלה ועמילי מכס.
+        </div>
+      </div>
+
+      <!-- סלייד 2 -->
+      <div class="ob-slide" style="text-align:center;display:none;">
+        <div style="font-size:72px;margin-bottom:24px;">📋</div>
+        <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">הזמנות בקליק</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
+          עמיל מכס מעלה הזמנה,<br/>נהגים מקבלים הצעה מיידית<br/>ומאשרים ישירות מהטלפון.
+        </div>
+      </div>
+
+      <!-- סלייד 3 -->
+      <div class="ob-slide" style="text-align:center;display:none;">
+        <div style="font-size:72px;margin-bottom:24px;">💳</div>
+        <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">תשלום בטוח ומאובטח</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
+          התשלום משוחרר רק לאחר<br/>אישור מסירה על ידי שני הצדדים.<br/>שקיפות מלאה בכל שלב.
+        </div>
+      </div>
+
+      <!-- סלייד 4 -->
+      <div class="ob-slide" style="text-align:center;display:none;">
+        <div style="font-size:72px;margin-bottom:24px;">⭐</div>
+        <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">מוכן להתחיל?</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
+          החשבון שלך פעיל ומוכן.<br/>בוא נצא לדרך! 🚀
+        </div>
+      </div>
+    </div>
+
+    <!-- נקודות ניווט -->
+    <div style="display:flex;gap:8px;margin-top:36px;margin-bottom:40px;" id="ob-dots">
+      <div class="ob-dot active" onclick="obGo(0)"></div>
+      <div class="ob-dot" onclick="obGo(1)"></div>
+      <div class="ob-dot" onclick="obGo(2)"></div>
+      <div class="ob-dot" onclick="obGo(3)"></div>
+    </div>
+
+    <!-- כפתורים -->
+    <div style="width:100%;display:flex;flex-direction:column;gap:12px;">
+      <button id="ob-next-btn" onclick="obNext()" style="width:100%;padding:16px;background:#fff;color:#1d4ed8;border:none;border-radius:16px;font-size:16px;font-weight:800;font-family:'Heebo',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+        הבא →
+      </button>
+      <button onclick="obSkip()" style="width:100%;padding:12px;background:transparent;color:rgba(255,255,255,0.6);border:none;font-size:14px;font-weight:600;font-family:'Heebo',sans-serif;cursor:pointer;">
+        דלג
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.ob-dot {
+  width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.3);cursor:pointer;transition:all .3s;
+}
+.ob-dot.active {
+  width:24px;border-radius:4px;background:#fff;
+}
+@keyframes obFadeIn {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.ob-slide { animation:obFadeIn .4s ease; }
+</style>
+
 <div class="scr" id="s-pending">
   <div class="auth-wrap" style="padding:32px 24px;text-align:center;">
     <div class="a-logo" style="font-size:22px;margin-bottom:8px;">TruckGo</div>
@@ -547,6 +637,9 @@ textarea.fi{resize:vertical;}
     <div class="logo">Truck<b>Go</b></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div class="ot on" id="drv-ot" onclick="toggleDrvOnline()"><div class="od"></div><span id="drv-ol">מחובר</span></div>
+      <div class="ic refresh-btn" onclick="refreshCurrentScreen()" title="רענן" style="cursor:pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
       <div class="ic" id="drv-bell" onclick="clearNotifBadge();toast(' עדכונים נקראו')" style="position:relative;"></div>
     </div>
   </div>
@@ -685,7 +778,12 @@ textarea.fi{resize:vertical;}
 <div class="scr" id="s-broker">
   <div class="tb">
     <div class="logo">Truck<b>Go</b></div>
-    <div class="ic" onclick="toast(' 2 עדכונים')"></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="ic refresh-btn" onclick="refreshCurrentScreen()" title="רענן" style="cursor:pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
+      <div class="ic" onclick="toast(' 2 עדכונים')"></div>
+    </div>
   </div>
 
   <div class="hb">
@@ -2395,9 +2493,17 @@ function startDriverRealtime(uid) {
     });
     if (docs.length === 0) {
       container.innerHTML = `
-        <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;">
-          <div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
-          <div>אין הזמנות פתוחות כרגע</div>
+        <div style="text-align:center;padding:48px 24px 32px;display:flex;flex-direction:column;align-items:center;gap:0;">
+          <div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#dbeafe);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 4px 20px rgba(29,78,216,0.08);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הזמנות פתוחות כרגע</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6;font-family:'Heebo',sans-serif;max-width:220px;">
+            כשיתווסף מטען חדש בקרבתך — הוא יופיע כאן באופן אוטומטי 🔔
+          </div>
         </div>`;
       const cnt = document.getElementById('drv-offers-count');
       if (cnt) cnt.textContent = '';
@@ -2551,7 +2657,13 @@ function startMyOrdersRealtime(uid) {
     const pendingEl = document.getElementById('drv-mine-pending');
     if (pendingEl) {
       if (pending.length === 0) {
-        pendingEl.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--muted);font-size:14px;">אין הובלות ממתינות לאישור</div>';
+        pendingEl.innerHTML = `<div style="text-align:center;padding:32px 16px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#fffbeb,#fef3c7);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">אין הובלות ממתינות לאישור</div>
+          <div style="font-size:13px;color:var(--muted);">הובלות שתאשר יופיעו כאן</div>
+        </div>`;
       } else {
         pendingEl.innerHTML = pending.map(d => `
           <div class="card">
@@ -2574,7 +2686,13 @@ function startMyOrdersRealtime(uid) {
     const activeEl = document.getElementById('drv-mine-active');
     if (activeEl) {
       if (active.length === 0) {
-        activeEl.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--muted);font-size:14px;">אין הובלות פעילות</div>';
+        activeEl.innerHTML = `<div style="text-align:center;padding:32px 16px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">אין הובלות פעילות</div>
+          <div style="font-size:13px;color:var(--muted);">הובלות בדרך יופיעו כאן 🚛</div>
+        </div>`;
       } else {
         activeEl.innerHTML = active.map(d => {
           const isDelivered = d.status === 'delivered';
@@ -2805,7 +2923,16 @@ function startBrokerRealtime(uid) {
     const actList = document.getElementById('b-act-list');
     if (actList) {
       if (active.length === 0) {
-        actList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div>אין הובלות פעילות</div></div>`;
+        actList.innerHTML = `<div style="text-align:center;padding:48px 24px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#dbeafe);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 4px 20px rgba(29,78,216,0.08);">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הובלות פעילות</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6;font-family:'Heebo',sans-serif;max-width:220px;">לחץ על "הזמנה חדשה" כדי לפרסם את ההובלה הראשונה שלך 🚀</div>
+        </div>`;
       } else {
         actList.innerHTML = active.map(d => {
           const isDelivered = d.status === 'delivered';
@@ -3365,6 +3492,53 @@ function updateSwitchButton() {
 }
 
 // ── ניתוב לפי סטטוס משתמש ──────────────────────────
+// ── Onboarding ──────────────────────────────────────
+let _obCurrent = 0;
+let _obTarget = null; // מסך היעד אחרי האונבורדינג
+
+function obGo(idx) {
+  const slides = document.querySelectorAll('.ob-slide');
+  const dots   = document.querySelectorAll('.ob-dot');
+  if (!slides[idx]) return;
+  slides.forEach(s => s.style.display = 'none');
+  dots.forEach(d => d.classList.remove('active'));
+  slides[idx].style.display = 'block';
+  dots[idx].classList.add('active');
+  _obCurrent = idx;
+  const btn = document.getElementById('ob-next-btn');
+  if (btn) btn.textContent = idx === slides.length - 1 ? 'בוא נתחיל! 🚀' : 'הבא →';
+}
+
+function obNext() {
+  const total = document.querySelectorAll('.ob-slide').length;
+  if (_obCurrent < total - 1) {
+    obGo(_obCurrent + 1);
+  } else {
+    obFinish();
+  }
+}
+
+function obSkip() { obFinish(); }
+
+function obFinish() {
+  // שמור שהמשתמש ראה את האונבורדינג
+  try { localStorage.setItem('tg_onboard_done', '1'); } catch(e) {}
+  if (_obTarget) go(_obTarget);
+}
+
+function showOnboarding(targetScreen) {
+  const done = localStorage.getItem('tg_onboard_done');
+  if (done) {
+    go(targetScreen);
+    return;
+  }
+  _obTarget = targetScreen;
+  _obCurrent = 0;
+  go('s-onboard');
+  // reset slides
+  setTimeout(() => obGo(0), 50);
+}
+
 function routeByStatus(d, user) {
   // אדמין — בחירת מסך
   if (user.uid === ADMIN_UID) {
@@ -3373,12 +3547,12 @@ function routeByStatus(d, user) {
   }
   // עמיל מכס — נכנס תמיד
   if (d.role === 'brk') {
-    go('s-broker');
+    showOnboarding('s-broker');
     return;
   }
   // נהג / חברה — בודק אישור
   if (d.status === 'approved') {
-    go('s-driver');
+    showOnboarding('s-driver');
   } else {
     go('s-pending');
   }
@@ -3971,6 +4145,88 @@ window.brokerRejectOffer = async function(shipId, offerId) {
     window.openCounterOffers(shipId);
   } catch(e) { toast('שגיאה: '+e.message); }
 };
+
+// ── רענון נתונים ────────────────────────────────────
+function refreshCurrentScreen() {
+  const uid = auth?.currentUser?.uid;
+  if (!uid) return;
+  const role = window.selectedRole;
+
+  // אנימציה על כפתור הרענון
+  document.querySelectorAll('.refresh-btn').forEach(btn => {
+    btn.style.transform = 'rotate(360deg)';
+    btn.style.transition = 'transform 0.5s ease';
+    setTimeout(() => { btn.style.transform = ''; btn.style.transition = ''; }, 500);
+  });
+
+  if (role === 'brk') {
+    startBrokerRealtime(uid);
+    toast('מרענן נתונים...');
+  } else if (role === 'drv' || role === 'cmp') {
+    startDriverRealtime(uid);
+    startMyOrdersRealtime(uid);
+    toast('מרענן נתונים...');
+  }
+  if (typeof loadPaymentsScreen === 'function') {
+    const payEl = document.getElementById('s-payments');
+    if (payEl && payEl.classList.contains('on')) loadPaymentsScreen();
+  }
+}
+
+// ── Pull to Refresh ──────────────────────────────────
+(function initPullToRefresh() {
+  let startY = 0;
+  let pulling = false;
+  let indicator = null;
+
+  function getIndicator() {
+    if (!indicator) {
+      indicator = document.createElement('div');
+      indicator.id = 'ptr-indicator';
+      indicator.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+      indicator.style.cssText = `
+        position:fixed;top:-60px;left:50%;transform:translateX(-50%);
+        width:48px;height:48px;border-radius:50%;background:var(--surface);
+        box-shadow:0 4px 16px rgba(0,0,0,0.15);display:flex;align-items:center;
+        justify-content:center;z-index:9999;transition:top .2s ease;pointer-events:none;
+      `;
+      document.body.appendChild(indicator);
+    }
+    return indicator;
+  }
+
+  document.addEventListener('touchstart', e => {
+    const scr = document.querySelector('.scr.on');
+    if (scr && scr.scrollTop === 0) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 10 && dy < 120) {
+      const ind = getIndicator();
+      const progress = Math.min(dy / 80, 1);
+      ind.style.top = (dy * 0.4 - 60 + 20) + 'px';
+      ind.style.opacity = progress;
+      ind.querySelector('svg').style.transform = `rotate(${progress * 270}deg)`;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!pulling) return;
+    const dy = e.changedTouches[0].clientY - startY;
+    const ind = getIndicator();
+    ind.style.top = '-60px';
+    ind.style.opacity = '0';
+    if (dy > 70) {
+      refreshCurrentScreen();
+    }
+    pulling = false;
+  }, { passive: true });
+})();
 
 </script>
 </div>
