@@ -648,7 +648,9 @@ textarea.fi{resize:vertical;}
       <div class="ic refresh-btn" onclick="refreshCurrentScreen()" title="רענן" style="cursor:pointer;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
       </div>
-      <div class="ic" id="drv-bell" onclick="clearNotifBadge();toast(' עדכונים נקראו')" style="position:relative;"></div>
+      <div class="ic" id="drv-bell" onclick="clearNotifBadge();toast(' עדכונים נקראו')" style="position:relative;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
     </div>
   </div>
 
@@ -2510,7 +2512,7 @@ function startDriverRealtime(uid) {
           </div>
           <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הזמנות פתוחות כרגע</div>
           <div style="font-size:14px;color:var(--muted);line-height:1.6;font-family:'Heebo',sans-serif;max-width:220px;">
-            כשיתווסף מטען חדש בקרבתך — הוא יופיע כאן באופן אוטומטי 🔔
+            כשיתווסף מטען חדש בקרבתך — הוא יופיע כאן באופן אוטומטי
           </div>
         </div>`;
       const cnt = document.getElementById('drv-offers-count');
@@ -2699,7 +2701,7 @@ function startMyOrdersRealtime(uid) {
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           </div>
           <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">אין הובלות פעילות</div>
-          <div style="font-size:13px;color:var(--muted);">הובלות בדרך יופיעו כאן 🚛</div>
+          <div style="font-size:13px;color:var(--muted);">הובלות בדרך יופיעו כאן</div>
         </div>`;
       } else {
         activeEl.innerHTML = active.map(d => {
@@ -2939,7 +2941,7 @@ function startBrokerRealtime(uid) {
             </svg>
           </div>
           <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הובלות פעילות</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.6;font-family:'Heebo',sans-serif;max-width:220px;">לחץ על "הזמנה חדשה" כדי לפרסם את ההובלה הראשונה שלך 🚀</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6;font-family:'Heebo',sans-serif;max-width:220px;">לחץ על "הזמנה חדשה" כדי לפרסם את ההובלה הראשונה שלך</div>
         </div>`;
       } else {
         actList.innerHTML = active.map(d => {
