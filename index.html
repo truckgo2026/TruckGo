@@ -358,16 +358,20 @@ textarea.fi{resize:vertical;}
     <div id="ob-slides" style="width:100%;overflow:hidden;">
       <!-- סלייד 1 -->
       <div class="ob-slide" style="text-align:center;animation:obFadeIn .5s ease;">
-        <div style="font-size:72px;margin-bottom:24px;">🚛</div>
-        <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;" id="ob-title1">ברוכים הבאים!</div>
-        <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;" id="ob-desc1">
+        <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">ברוכים הבאים!</div>
+        <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
           פלטפורמה חכמה לניהול הובלות<br/>בין נהגים, חברות הובלה ועמילי מכס.
         </div>
       </div>
 
       <!-- סלייד 2 -->
       <div class="ob-slide" style="text-align:center;display:none;">
-        <div style="font-size:72px;margin-bottom:24px;">📋</div>
+        <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
         <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">הזמנות בקליק</div>
         <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
           עמיל מכס מעלה הזמנה,<br/>נהגים מקבלים הצעה מיידית<br/>ומאשרים ישירות מהטלפון.
@@ -376,7 +380,9 @@ textarea.fi{resize:vertical;}
 
       <!-- סלייד 3 -->
       <div class="ob-slide" style="text-align:center;display:none;">
-        <div style="font-size:72px;margin-bottom:24px;">💳</div>
+        <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </div>
         <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">תשלום בטוח ומאובטח</div>
         <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
           התשלום משוחרר רק לאחר<br/>אישור מסירה על ידי שני הצדדים.<br/>שקיפות מלאה בכל שלב.
@@ -385,10 +391,12 @@ textarea.fi{resize:vertical;}
 
       <!-- סלייד 4 -->
       <div class="ob-slide" style="text-align:center;display:none;">
-        <div style="font-size:72px;margin-bottom:24px;">⭐</div>
+        <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
         <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;font-family:'Heebo',sans-serif;">מוכן להתחיל?</div>
         <div style="font-size:15px;color:rgba(255,255,255,0.75);line-height:1.7;font-family:'Heebo',sans-serif;">
-          החשבון שלך פעיל ומוכן.<br/>בוא נצא לדרך! 🚀
+          החשבון שלך פעיל ומוכן.<br/>בוא נצא לדרך!
         </div>
       </div>
     </div>
@@ -3494,7 +3502,7 @@ function updateSwitchButton() {
 // ── ניתוב לפי סטטוס משתמש ──────────────────────────
 // ── Onboarding ──────────────────────────────────────
 let _obCurrent = 0;
-let _obTarget = null; // מסך היעד אחרי האונבורדינג
+let _obTarget = null;
 
 function obGo(idx) {
   const slides = document.querySelectorAll('.ob-slide');
@@ -3506,7 +3514,7 @@ function obGo(idx) {
   dots[idx].classList.add('active');
   _obCurrent = idx;
   const btn = document.getElementById('ob-next-btn');
-  if (btn) btn.textContent = idx === slides.length - 1 ? 'בוא נתחיל! 🚀' : 'הבא →';
+  if (btn) btn.textContent = idx === slides.length - 1 ? 'בוא נתחיל!' : 'הבא →';
 }
 
 function obNext() {
@@ -3521,10 +3529,13 @@ function obNext() {
 function obSkip() { obFinish(); }
 
 function obFinish() {
-  // שמור שהמשתמש ראה את האונבורדינג
   try { localStorage.setItem('tg_onboard_done', '1'); } catch(e) {}
   if (_obTarget) go(_obTarget);
 }
+
+window.obGo  = obGo;
+window.obNext = obNext;
+window.obSkip = obSkip;
 
 function showOnboarding(targetScreen) {
   const done = localStorage.getItem('tg_onboard_done');
