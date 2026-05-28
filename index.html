@@ -3530,8 +3530,12 @@ function obNext() {
 
 function obSkip() { obFinish(); }
 
-function obFinish() {
-  try { localStorage.setItem('tg_onboard_done', '1'); } catch(e) {}
+async function obFinish() {
+  try {
+    if (currentUser) {
+      await updateDoc(doc(db, 'users', currentUser.uid), { onboardDone: true });
+    }
+  } catch(e) {}
   if (_obTarget) go(_obTarget);
 }
 
@@ -3539,16 +3543,19 @@ window.obGo  = obGo;
 window.obNext = obNext;
 window.obSkip = obSkip;
 
-function showOnboarding(targetScreen) {
-  const done = localStorage.getItem('tg_onboard_done');
-  if (done) {
-    go(targetScreen);
-    return;
-  }
+async function showOnboarding(targetScreen) {
   _obTarget = targetScreen;
+  try {
+    if (currentUser) {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (snap.exists() && snap.data().onboardDone) {
+        go(targetScreen);
+        return;
+      }
+    }
+  } catch(e) {}
   _obCurrent = 0;
   go('s-onboard');
-  // reset slides
   setTimeout(() => obGo(0), 50);
 }
 
