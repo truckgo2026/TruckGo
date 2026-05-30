@@ -1,12 +1,13 @@
 {
-  "name": "TruckGo — הובלות מטענים",
+  "name": "TruckGo - פלטפורמת הובלות",
   "short_name": "TruckGo",
   "description": "פלטפורמת הובלות מטענים חכמה",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#1d4ed8",
+  "background_color": "#0a1628",
   "theme_color": "#1d4ed8",
+  "orientation": "portrait",
   "lang": "he",
   "dir": "rtl",
   "icons": [
@@ -23,13 +24,12 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
+  "categories": ["business", "logistics"],
+  "shortcuts": [
     {
-      "src": "screenshot.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "name": "הובלות",
+      "url": "/",
+      "description": "פתח את TruckGo"
     }
-  ],
-  "categories": ["logistics", "business", "transportation"]
+  ]
 }
