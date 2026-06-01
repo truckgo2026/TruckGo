@@ -658,10 +658,10 @@ textarea.fi{resize:vertical;}
     <div class="hb-hi">שלום,</div>
     <div class="hb-name" id="drv-greeting"></div>
     <div class="stats">
-      <div class="si"><div class="si-v">₪0</div><div class="si-l">היום</div></div>
-      <div class="si"><div class="si-v">0</div><div class="si-l">הובלות</div></div>
-      <div class="si"><div class="si-v">—</div><div class="si-l">דירוג</div></div>
-      <div class="si"><div class="si-v">0</div><div class="si-l">סה"כ</div></div>
+      <div class="si"><div class="si-v" id="drv-cnt-earn">₪0</div><div class="si-l">היום</div></div>
+      <div class="si"><div class="si-v" id="drv-cnt-trips">0</div><div class="si-l">הובלות</div></div>
+      <div class="si"><div class="si-v" id="drv-cnt-rating">—</div><div class="si-l">דירוג</div></div>
+      <div class="si"><div class="si-v" id="drv-cnt-total">0</div><div class="si-l">סה"כ</div></div>
     </div>
   </div>
 
@@ -800,10 +800,10 @@ textarea.fi{resize:vertical;}
     <div class="hb-hi">שלום,</div>
     <div class="hb-name" id="brk-greeting"></div>
     <div class="stats">
-      <div class="si"><div class="si-v">0</div><div class="si-l">פעילות</div></div>
-      <div class="si"><div class="si-v">0</div><div class="si-l">ממתינות</div></div>
-      <div class="si"><div class="si-v">0</div><div class="si-l">הושלמו</div></div>
-      <div class="si"><div class="si-v">—</div><div class="si-l">דירוג</div></div>
+      <div class="si"><div class="si-v" id="brk-cnt-act">0</div><div class="si-l">פעילות</div></div>
+      <div class="si"><div class="si-v" id="brk-cnt-pend">0</div><div class="si-l">ממתינות</div></div>
+      <div class="si"><div class="si-v" id="brk-cnt-done">0</div><div class="si-l">הושלמו</div></div>
+      <div class="si"><div class="si-v" id="brk-cnt-rating">—</div><div class="si-l">דירוג</div></div>
     </div>
   </div>
 
@@ -2733,6 +2733,17 @@ function startMyOrdersRealtime(uid) {
     const active  = all.filter(d => ['accepted','delivered'].includes(d.status));
     const done    = all.filter(d => d.status === 'confirmed');
 
+    // עדכן מונים למעלה
+    const todayStr = new Date().toISOString().slice(0,10);
+    const todayEarn = done
+      .filter(d => d.createdAt?.toDate ? d.createdAt.toDate().toISOString().slice(0,10) === todayStr : false)
+      .reduce((s, d) => s + (d.finalAmount || d.amount || 0), 0);
+    const totalTrips = done.length;
+    const el = id => document.getElementById(id);
+    if (el('drv-cnt-earn'))  el('drv-cnt-earn').textContent  = '₪' + todayEarn.toLocaleString();
+    if (el('drv-cnt-trips')) el('drv-cnt-trips').textContent = active.length + pending.length;
+    if (el('drv-cnt-total')) el('drv-cnt-total').textContent = totalTrips;
+
     // badge
     const badge = document.getElementById('drv-mine-badge');
     const count = pending.length + active.length;
@@ -2927,6 +2938,14 @@ function startBrokerRealtime(uid) {
     const pending   = all.filter(d => d.status === 'pending' || d.status === 'offer_sent' || d.status === 'pending_approval');
     const active    = all.filter(d => d.status === 'accepted' || d.status === 'in_transit' || d.status === 'delivered');
     const done      = all.filter(d => d.status === 'confirmed' || d.status === 'cancelled');
+
+    // עדכן מונים למעלה
+    const cAct  = document.getElementById('brk-cnt-act');
+    const cPend = document.getElementById('brk-cnt-pend');
+    const cDone = document.getElementById('brk-cnt-done');
+    if (cAct)  cAct.textContent  = active.length;
+    if (cPend) cPend.textContent = pending.length;
+    if (cDone) cDone.textContent = done.length;
 
     // עדכן רשימת ממתינות
     const pendList = document.getElementById('b-pend-list');
