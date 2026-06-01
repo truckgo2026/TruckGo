@@ -698,19 +698,19 @@ textarea.fi{resize:vertical;}
     <div class="sec">
       <div class="sec-h"><div class="sec-t">ממתינות לאישור</div></div>
       <div id="drv-mine-pending">
-        <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">אין הובלות ממתינות</div>
+        <div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;">⏳ אין הובלות ממתינות</div>
       </div>
     </div>
     <div class="sec">
       <div class="sec-h"><div class="sec-t">פעילות / אושרו</div></div>
       <div id="drv-mine-active">
-        <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">אין הובלות פעילות</div>
+        <div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;">🚛 אין הובלות פעילות</div>
       </div>
     </div>
     <div class="sec">
       <div class="sec-h"><div class="sec-t">הושלמו</div></div>
       <div id="drv-mine-done">
-        <div style="text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">אין היסטוריה עדיין</div>
+        <div style="text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;">✅ אין היסטוריה עדיין</div>
       </div>
     </div>
   </div>
@@ -1259,7 +1259,7 @@ textarea.fi{resize:vertical;}
       <div>
         <div class="pname" id="p-name">טוען...</div>
         <div class="prole" id="p-role-v">—</div>
-        <div id="p-status-badge" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;background:rgba(253,230,138,0.2);color:#fde68a;">⏳ ממתין לאישור</div>
+
       </div>
     </div>
     <div class="srow">
@@ -1283,7 +1283,7 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
-  <div style="margin:14px 16px 0;">
+  <div style="margin:14px 16px 0;" id="p-docs-section">
     <div class="sec-t">מסמכים</div>
     <div class="dcard apend"><div class="dic"></div><div class="dinfo"><div class="dn">מסמכים שהועלו</div><div class="ds">ממתינים לאישור</div></div><div class="badge bam">ממתין</div></div>
   </div>
@@ -2149,17 +2149,9 @@ function saveEdit(){
 //  TOAST 
 // ── פרופיל: באדג' סטטוס ──────────────────────────────────
 function updateStatusBadge(approved) {
-  const badge = document.getElementById('p-status-badge');
-  if (!badge) return;
-  if (approved) {
-    badge.textContent = '✓ משתמש מאושר';
-    badge.style.background = 'rgba(187,247,208,0.2)';
-    badge.style.color = '#bbf7d0';
-  } else {
-    badge.textContent = '⏳ ממתין לאישור';
-    badge.style.background = 'rgba(253,230,138,0.15)';
-    badge.style.color = '#fde68a';
-  }
+  // מסמכים: מוסתר לכל מי שמחובר (= מאושר)
+  const docsSection = document.getElementById('p-docs-section');
+  if (docsSection) docsSection.style.display = 'none';
 }
 
 // ── שינוי סיסמה ──────────────────────────────────────────
@@ -2593,18 +2585,12 @@ function startDriverRealtime(uid) {
       return !td || td.length === 0 || td.includes(uid);
     });
     if (docs.length === 0) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:48px 24px 32px;display:flex;flex-direction:column;align-items:center;gap:0;">
-          <div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#dbeafe);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 4px 20px rgba(29,78,216,0.08);">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/>
-              <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-            </svg>
+      container.innerHTML = `<div style="text-align:center;padding:56px 24px 40px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#dbeafe);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 32px rgba(29,78,216,0.12);">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           </div>
-          <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הזמנות פתוחות כרגע</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.6;font-family:'Heebo',sans-serif;max-width:220px;">
-            כשיתווסף מטען חדש בקרבתך — הוא יופיע כאן באופן אוטומטי
-          </div>
+          <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הזמנות פתוחות כרגע</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;font-family:'Heebo',sans-serif;max-width:210px;">כשיפורסם מטען חדש — הוא יופיע כאן אוטומטית</div>
         </div>`;
       const cnt = document.getElementById('drv-offers-count');
       if (cnt) cnt.textContent = '';
@@ -2946,7 +2932,13 @@ function startBrokerRealtime(uid) {
     const pendList = document.getElementById('b-pend-list');
     if (pendList) {
       if (pending.length === 0) {
-        pendList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div>אין הזמנות ממתינות</div></div>`;
+        pendList.innerHTML = `<div style="text-align:center;padding:56px 24px 40px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#eff6ff,#dbeafe);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 32px rgba(29,78,216,0.12);">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין הזמנות ממתינות</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;font-family:'Heebo',sans-serif;max-width:210px;">הזמנות שפרסמת יופיעו כאן. לחץ + הזמנה חדשה כדי להתחיל</div>
+        </div>`;
       } else {
         pendList.innerHTML = pending.map(d => {
           const hasOffer = d.status === 'offer_sent';
@@ -3098,7 +3090,13 @@ function startBrokerRealtime(uid) {
     const doneList = document.getElementById('b-done-list');
     if (doneList) {
       if (done.length === 0) {
-        doneList.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px;"><div style="margin-bottom:8px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><polyline points="20 6 9 17 4 12"/></svg></div><div>אין היסטוריה עדיין</div></div>`;
+        doneList.innerHTML = `<div style="text-align:center;padding:56px 24px 40px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 32px rgba(29,78,216,0.12);">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px;font-family:'Heebo',sans-serif;">אין היסטוריה עדיין</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;font-family:'Heebo',sans-serif;max-width:210px;">הובלות שהושלמו יופיעו כאן</div>
+        </div>`;
       } else {
         doneList.innerHTML = done.map(d => `
           <div class="card" id="bdone-${d.id}">
