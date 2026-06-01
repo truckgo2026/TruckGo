@@ -2939,7 +2939,9 @@ function startBrokerRealtime(uid) {
     const active    = all.filter(d => d.status === 'accepted' || d.status === 'in_transit' || d.status === 'delivered');
     const done      = all.filter(d => d.status === 'confirmed' || d.status === 'cancelled');
 
-    // עדכן מונים למעלה
+    // DEBUG - יסיר אחרי בדיקה
+    console.log('[TruckGo] כל הסטטוסים:', all.map(d => d.status));
+    console.log('[TruckGo] ממתינות:', pending.length, 'פעילות:', active.length, 'הושלמו:', done.length);
     const cAct  = document.getElementById('brk-cnt-act');
     const cPend = document.getElementById('brk-cnt-pend');
     const cDone = document.getElementById('brk-cnt-done');
