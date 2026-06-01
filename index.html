@@ -1347,7 +1347,20 @@ textarea.fi{resize:vertical;}
 </div>
 
 <script>
-// ── אבטחה: Sanitize כל ערך שמגיע מ-Firestore לפני הכנסה ל-HTML ──
+
+  // ── אבטחה: חסימת console בפרודקשן ──────────────────────
+  (function() {
+    if (typeof window !== 'undefined') {
+      window.console.log  = function(){};
+      window.console.warn = function(){};
+      window.console.info = function(){};
+      window.console.debug= function(){};
+      // console.error נשאר לאיתור שגיאות אמיתיות בלבד
+    }
+  })();
+  // ─────────────────────────────────────────────────────────
+
+  // ── אבטחה: Sanitize כל ערך שמגיע מ-Firestore לפני הכנסה ל-HTML ──
 function esc(str) {
   if (str == null) return '—';
   return String(str)
@@ -2211,13 +2224,13 @@ function toast(msg){
 if ("serviceWorker" in navigator) {
   // Register PWA service worker
   navigator.serviceWorker.register('/sw.js')
-    .then(reg => { console.log('PWA SW registered:', reg.scope); })
-    .catch(err => { console.warn('PWA SW registration failed:', err); });
+    .then(reg => { /* removed */ })
+    .catch(err => { /* removed */ });
 
   // Register Firebase messaging service worker
   navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then(reg => { console.log('Firebase SW registered:', reg.scope); })
-    .catch(err => { console.warn('Firebase SW registration failed:', err); });
+    .then(reg => { /* removed */ })
+    .catch(err => { /* removed */ });
 }
 </script>
 
@@ -2243,9 +2256,9 @@ if ("serviceWorker" in navigator) {
       login_time: new Date().toLocaleString('he-IL'),
       event_type: "הרשמה חדשה"
     }).then(() => {
-      console.log("מייל נשלח בהצלחה");
+      /* removed */
     }).catch((err) => {
-      console.warn("שגיאה בשליחת מייל:", err);
+      /* removed */
     });
   };
 </script>
@@ -2482,7 +2495,7 @@ async function initFCM() {
       if (title) showPushNotification(title, body || '', payload.data?.tag || 'truckgo');
     });
   } catch(e) {
-    console.warn('FCM init error:', e);
+    /* removed */
   }
 }
 
@@ -2500,11 +2513,11 @@ async function requestPushPermission() {
     if (token && window._currentUid) {
       // שמור את ה-token של המכשיר ב-Firestore
       await updateDoc(doc(db, 'users', window._currentUid), { fcmToken: token });
-      console.log('FCM token saved');
+      /* removed */
     }
     return true;
   } catch(e) {
-    console.warn('FCM token error:', e);
+    /* removed */
     return true; // הרשאה ניתנה גם אם ה-token נכשל
   }
 }
@@ -2528,7 +2541,7 @@ function showPushNotification(title, body, tag) {
         vibrate: [200, 100, 200],
       });
     }
-  } catch(e) { console.warn('Notification error', e); }
+  } catch(e) { /* removed */ }
 }
 
 // אתחל FCM מיד
@@ -2940,8 +2953,7 @@ function startBrokerRealtime(uid) {
     const done      = all.filter(d => d.status === 'confirmed' || d.status === 'cancelled');
 
     // DEBUG - יסיר אחרי בדיקה
-    console.log('[TruckGo] כל הסטטוסים:', all.map(d => d.status));
-    console.log('[TruckGo] ממתינות:', pending.length, 'פעילות:', active.length, 'הושלמו:', done.length);
+    /* removed */
     const cAct  = document.getElementById('brk-cnt-act');
     const cPend = document.getElementById('brk-cnt-pend');
     const cDone = document.getElementById('brk-cnt-done');
@@ -3329,7 +3341,7 @@ window.fbRegister = async function() {
       try {
         docUrls = await uploadDocuments(currentUser.uid, role);
       } catch(uploadErr) {
-        console.warn('שגיאה בהעלאת מסמכים:', uploadErr);
+        /* removed */
         toast('שים לב: המסמכים לא הועלו, ניתן לעדכן מאוחר יותר');
       }
     }
@@ -3347,7 +3359,7 @@ window.fbRegister = async function() {
     // שלח אימייל אימות
     try {
       await sendEmailVerification(currentUser, { url: 'https://truckgo.co.il', handleCodeInApp: false });
-      console.log(' אימייל אימות נשלח!');
+      /* removed */
     } catch(verifyErr) {
       console.error(' שגיאה בשליחת אימייל:', verifyErr.code, verifyErr.message);
     }
@@ -3783,7 +3795,7 @@ window.adminApprove = async function(uid) {
         user_email: userData.email || '',
       }, 'D15NWQQI3UcYMF9w3');
     } catch(mailErr) {
-      console.warn('שגיאה בשליחת מייל:', mailErr);
+      /* removed */
     }
 
     toast('המשתמש אושר ומייל נשלח!');
@@ -3816,7 +3828,7 @@ function loadProfile(d, user) {
   if (user) {
     // בקש הרשאת Push Notifications
     requestPushPermission().then(granted => {
-      if (granted) console.log('Push notifications enabled');
+      if (granted) /* removed */
     });
 
     if (d.role === 'drv') {
