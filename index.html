@@ -1026,6 +1026,15 @@ textarea.fi{resize:vertical;}
       <div class="fg" style="margin-bottom:0;"><div class="fl">מחיר מוצע (₪)</div><input id="order-price" class="fi" type="number" placeholder="0" value="" style="margin-bottom:0;"></div>
     </div>
 
+    <!-- הערות למוביל -->
+    <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:14px 0 10px;">הערות למוביל</div>
+    <div class="fcard">
+      <div class="fg" style="margin-bottom:0;">
+        <div class="fl">הערות נוספות לנהג / חברת הובלה (אופציונלי)</div>
+        <textarea id="order-notes" class="fi" rows="3" placeholder="לדוגמא: יש להגיע עם מלגזה, כניסה מהשער הצדדי, יש ליצור קשר לפני ההגעה..." style="resize:none;line-height:1.5;font-family:'Heebo',sans-serif;"></textarea>
+      </div>
+    </div>
+
     <!-- פילטר נהגים -->
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin:14px 0 10px;">לאילו נהגים לשלוח?</div>
     <div class="fcard" style="padding:14px;">
@@ -2013,6 +2022,7 @@ window.submitOrderReal = async function() {
     const volume = parseFloat(document.getElementById('order-volume')?.value) || 0;
     const desc   = document.getElementById('order-desc')?.value?.trim() || '';
     const amt   = parseInt(document.getElementById('order-price')?.value) || 0;
+    const notes = document.getElementById('order-notes')?.value?.trim() || '';
 
     if(!from)  { toast(' הכנס כתובת מוצא'); return; }
     if(!to)    { toast(' הכנס כתובת יעד'); return; }
@@ -2025,6 +2035,7 @@ window.submitOrderReal = async function() {
       await window._fbAddDoc({
         from, to, date, weight, qty, volume, desc,
         amount: amt,
+        notes: notes,
         brokerUid: user.uid,
         brokerName: document.getElementById('p-name-v')?.textContent || '',
         status: 'pending',
@@ -2038,7 +2049,7 @@ window.submitOrderReal = async function() {
       });
     }
     // נקה טופס
-    ['order-from','order-to','order-date','order-weight','order-qty','order-volume','order-desc','order-price'].forEach(id => {
+    ['order-from','order-to','order-date','order-weight','order-qty','order-volume','order-desc','order-price','order-notes'].forEach(id => {
       const el = document.getElementById(id);
       if(el) el.value = '';
     });
@@ -2570,6 +2581,7 @@ function startDriverRealtime(uid) {
               ${qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qty}</div></div>` : ''}
               <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
               <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${desc}</div></div>
+              ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
               <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel}${hazCode ? ' — ' + hazCode : ''}</div></div>
               <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
               <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
@@ -2738,6 +2750,7 @@ function startMyOrdersRealtime(uid) {
                 ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${esc(d.qty)} יח'</div></div>` : ''}
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+esc(d.contSize):'')):'חלקי'}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
+                ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
                 <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
@@ -2916,6 +2929,7 @@ function startBrokerRealtime(uid) {
                 ${qtyLabel ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qtyLabel}</div></div>` : ''}
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
+                ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
                 <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${esc(hazLabel)}${hazCode ? ' — ' + esc(hazCode) : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
@@ -2988,6 +3002,7 @@ function startBrokerRealtime(uid) {
                 ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel2}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
+                ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
                 <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel2}${hazCode2 ? ' — ' + hazCode2 : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel2}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel2}</div></div>
@@ -3958,6 +3973,7 @@ function renderPaymentCard(d, role) {
         ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${esc(d.qty)} יח'</div></div>` : ''}
         <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+esc(d.contSize):'')):'חלקי'}</div></div>
         <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc||'—')}</div></div>
+        ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes||'')}</div></div>` : ''}
         <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
         <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
         <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
