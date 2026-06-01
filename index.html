@@ -1259,7 +1259,7 @@ textarea.fi{resize:vertical;}
       <div>
         <div class="pname" id="p-name">טוען...</div>
         <div class="prole" id="p-role-v">—</div>
-        <div style="font-size:12px;color:#bbf7d0;margin-top:4px;">מאומת ופעיל</div>
+        <div id="p-status-badge" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:50px;background:rgba(253,230,138,0.2);color:#fde68a;">⏳ ממתין לאישור</div>
       </div>
     </div>
     <div class="srow">
@@ -1291,10 +1291,24 @@ textarea.fi{resize:vertical;}
   <div style="margin:14px 16px 0;">
     <div class="sec-t">הגדרות</div>
     <div class="icard">
-      <div class="ir" onclick="toast(' התראות')"><div class="iii"></div><div class="ic2"><div class="iv">התראות ועדכונים</div></div><span style="color:var(--muted)">←</span></div>
-      <div class="ir" onclick="toast(' שינוי סיסמה')"><div class="iii"></div><div class="ic2"><div class="iv">שינוי סיסמה</div></div><span style="color:var(--muted)">←</span></div>
-      <div class="ir" onclick="toast(' 03-1234567')"><div class="iii"></div><div class="ic2"><div class="iv">תמיכה</div></div><span style="color:var(--muted)">←</span></div>
+      <div class="ir" onclick="openChangePassword()"><div class="iii"></div><div class="ic2"><div class="iv">שינוי סיסמה</div></div><span style="color:var(--muted)">←</span></div>
+      <div class="ir" onclick="openSupportEmail()"><div class="iii"></div><div class="ic2"><div class="iv">תמיכה</div><div class="il" style="margin-top:2px;">support@truckgo.co.il</div></div><span style="color:var(--muted)">←</span></div>
       <div class="ir" onclick="fbLogout()"><div class="iii"></div><div class="ic2"><div class="iv" style="color:var(--red)">התנתקות</div></div><span style="color:var(--muted)">←</span></div>
+    </div>
+  </div>
+
+  <!-- Change Password Overlay -->
+  <div class="ov" id="chpw-ov" style="z-index:200;">
+    <div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:340px;margin:0 16px;">
+      <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;text-align:right;">שינוי סיסמה</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;text-align:right;">הסיסמה החדשה חייבת להכיל לפחות 6 תווים</div>
+      <div class="fl">סיסמה חדשה</div>
+      <input id="chpw-new" class="fi" type="password" placeholder="הכנס סיסמה חדשה" style="margin-bottom:10px;">
+      <div class="fl">אימות סיסמה</div>
+      <input id="chpw-confirm" class="fi" type="password" placeholder="הכנס שוב את הסיסמה" style="margin-bottom:18px;">
+      <div id="chpw-err" style="color:var(--red);font-size:13px;text-align:right;margin-bottom:10px;display:none;"></div>
+      <button class="ab" onclick="doChangePassword()" style="margin-bottom:10px;">עדכן סיסמה</button>
+      <button onclick="document.getElementById('chpw-ov').classList.remove('on')" style="width:100%;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:15px;font-family:'Heebo',sans-serif;cursor:pointer;">ביטול</button>
     </div>
   </div>
 
@@ -2133,6 +2147,66 @@ function saveEdit(){
 }
 
 //  TOAST 
+// ── פרופיל: באדג' סטטוס ──────────────────────────────────
+function updateStatusBadge(approved) {
+  const badge = document.getElementById('p-status-badge');
+  if (!badge) return;
+  if (approved) {
+    badge.textContent = '✓ משתמש מאושר';
+    badge.style.background = 'rgba(187,247,208,0.2)';
+    badge.style.color = '#bbf7d0';
+  } else {
+    badge.textContent = '⏳ ממתין לאישור';
+    badge.style.background = 'rgba(253,230,138,0.15)';
+    badge.style.color = '#fde68a';
+  }
+}
+
+// ── שינוי סיסמה ──────────────────────────────────────────
+function openChangePassword() {
+  document.getElementById('chpw-new').value = '';
+  document.getElementById('chpw-confirm').value = '';
+  document.getElementById('chpw-err').style.display = 'none';
+  document.getElementById('chpw-ov').classList.add('on');
+}
+
+async function doChangePassword() {
+  const newPw = document.getElementById('chpw-new').value;
+  const confirmPw = document.getElementById('chpw-confirm').value;
+  const errEl = document.getElementById('chpw-err');
+  errEl.style.display = 'none';
+
+  if (!newPw || newPw.length < 6) {
+    errEl.textContent = 'הסיסמה חייבת להכיל לפחות 6 תווים';
+    errEl.style.display = 'block'; return;
+  }
+  if (newPw !== confirmPw) {
+    errEl.textContent = 'הסיסמאות אינן תואמות';
+    errEl.style.display = 'block'; return;
+  }
+  const user = window._auth?.currentUser;
+  if (!user) { errEl.textContent = 'שגיאה: לא מחובר'; errEl.style.display = 'block'; return; }
+
+  try {
+    const { updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await updatePassword(user, newPw);
+    document.getElementById('chpw-ov').classList.remove('on');
+    toast('✓ הסיסמה עודכנה בהצלחה');
+  } catch(e) {
+    if (e.code === 'auth/requires-recent-login') {
+      errEl.textContent = 'לאבטחתך, יש להתנתק ולהתחבר מחדש לפני שינוי הסיסמה';
+    } else {
+      errEl.textContent = 'שגיאה בעדכון הסיסמה: ' + (e.message || '');
+    }
+    errEl.style.display = 'block';
+  }
+}
+
+// ── תמיכה ────────────────────────────────────────────────
+function openSupportEmail() {
+  window.location.href = 'mailto:support@truckgo.co.il?subject=פנייה לתמיכה - TruckGo';
+}
+
 function toast(msg){
   const active=document.querySelector('.scr.on');
   const t=active?active.querySelector('.toast'):null;
@@ -3757,6 +3831,9 @@ function loadProfile(d, user) {
   // תפקיד
   const roleMap = { drv: 'נהג פרטי', cmp: 'חברת הובלה', brk: 'עמיל מכס' };
   setEl('p-role-v', roleMap[d.role] || '');
+
+  // סטטוס אישור
+  updateStatusBadge(d.status === 'approved');
 
   // פרטים נוספים לפי סוג
   const companyRow = document.getElementById('p-company-row');
