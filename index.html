@@ -3828,7 +3828,7 @@ function loadProfile(d, user) {
   if (user) {
     // בקש הרשאת Push Notifications
     requestPushPermission().then(granted => {
-      if (granted) /* removed */
+      if (granted) { /* push enabled */ }
     });
 
     if (d.role === 'drv') {
