@@ -1120,10 +1120,10 @@ textarea.fi{resize:vertical;}
     <div class="ps" id="pay-sub">טוען נתונים...</div>
     <div class="pbts" id="pay-btns-drv" style="display:none">
       <button class="pbt pr" onclick="toast(' משיכה — בקרוב')"> משוך כסף</button>
-      <button class="pbt ps2" onclick="exportPaymentsCSV()">ייצוא CSV</button>
+      <button class="pbt ps2" onclick="exportPaymentsPDF()">ייצוא PDF</button>
     </div>
     <div id="pay-btns-brk" style="display:none;margin-top:10px;">
-      <button class="pbt ps2" onclick="exportPaymentsCSV()" style="width:100%;">ייצוא CSV</button>
+      <button class="pbt ps2" onclick="exportPaymentsPDF()" style="width:100%;">ייצוא PDF</button>
     </div>
   </div>
 
@@ -4326,31 +4326,91 @@ window.filterPayments = function(status) {
 };
 
 // ── ייצוא CSV ─────────────────────────────────────
-window.exportPaymentsCSV = function() {
+window.exportPaymentsPDF = function() {
   const docs = window._payDocs || [];
   const role = window._payRole || 'drv';
   if (docs.length === 0) { toast('אין נתונים לייצוא'); return; }
 
   const statusMap = { pending:'ממתין', accepted:'פעיל', delivered:'נמסר', confirmed:'שוחרר', cancelled:'בוטל' };
-  const rows = [['תאריך','מוצא','יעד','סכום ברוטו','עמלה 5%','נטו','סטטוס', role==='drv'?'עמיל':'נהג']];
+  const today = new Date().toLocaleDateString('he-IL');
+  const roleLabel = role === 'drv' ? 'נהג' : 'עמיל מכס';
+
+  let totalGross = 0, totalFee = 0, totalNet = 0;
   docs.forEach(d => {
+    if (d.status === 'confirmed') {
+      const amt = d.finalAmount || d.amount || 0;
+      totalGross += amt;
+      totalFee += Math.round(amt * 0.05);
+      totalNet += amt - Math.round(amt * 0.05);
+    }
+  });
+
+  const rows = docs.map((d, i) => {
     const amt = d.finalAmount || d.amount || 0;
     const fee = Math.round(amt * 0.05);
     const net = amt - fee;
-    const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '';
-    const other = role === 'drv' ? (d.brokerName||'') : (d.driverName||'');
-    rows.push([date, d.from||'', d.to||'', amt, fee, net, statusMap[d.status]||d.status, other]);
-  });
+    const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
+    const other = role === 'drv' ? (d.brokerName||'—') : (d.driverName||'—');
+    const st = statusMap[d.status] || d.status;
+    const stColor = d.status==='confirmed' ? '#16a34a' : d.status==='cancelled' ? '#dc2626' : '#d97706';
+    return `<tr style="background:${i%2===0?'#f9fafb':'#fff'}">
+      <td>${date}</td><td>${d.from||'—'} → ${d.to||'—'}</td><td>${other}</td>
+      <td style="text-align:left">₪${amt.toLocaleString()}</td>
+      <td style="text-align:left;color:#dc2626">-₪${fee.toLocaleString()}</td>
+      <td style="text-align:left;color:#16a34a;font-weight:700">₪${net.toLocaleString()}</td>
+      <td style="color:${stColor};font-weight:700">${st}</td>
+    </tr>`;
+  }).join('');
 
-  const csv = '﻿' + rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'truckgo_payments_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('הדוח הורד בהצלחה');
+  const html = `<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="UTF-8">
+<title>דוח תשלומים TruckGo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Heebo',sans-serif; color:#1e293b; padding:32px; direction:rtl; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; border-bottom:2px solid #1d4ed8; padding-bottom:16px; }
+  .logo { font-size:28px; font-weight:900; color:#1e3a8a; }
+  .logo b { color:#3b82f6; }
+  .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px; }
+  .scard { background:#f1f5f9; border-radius:10px; padding:14px; text-align:center; }
+  .scard .val { font-size:20px; font-weight:900; color:#1e3a8a; }
+  .scard .lbl { font-size:12px; color:#64748b; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#1d4ed8; color:#fff; padding:10px 8px; text-align:right; font-weight:700; }
+  td { padding:9px 8px; border-bottom:1px solid #e2e8f0; }
+  .footer { margin-top:24px; font-size:11px; color:#94a3b8; text-align:center; border-top:1px solid #e2e8f0; padding-top:12px; }
+  @media print { body { padding:16px; } }
+</style></head><body>
+<div class="header">
+  <div><div class="logo">Truck<b>Go</b></div><div style="font-size:13px;color:#64748b;margin-top:4px;">פלטפורמת הובלות מטענים חכמה</div></div>
+  <div style="font-size:13px;color:#64748b;text-align:left">
+    <div><strong>דוח תשלומים</strong></div>
+    <div>תאריך הפקה: ${today}</div>
+    <div>סוג חשבון: ${roleLabel}</div>
+    <div>סה"כ הובלות: ${docs.length}</div>
+  </div>
+</div>
+<div class="summary">
+  <div class="scard"><div class="val">₪${totalGross.toLocaleString()}</div><div class="lbl">סה"כ ברוטו</div></div>
+  <div class="scard"><div class="val" style="color:#dc2626">-₪${totalFee.toLocaleString()}</div><div class="lbl">עמלות פלטפורמה 5%</div></div>
+  <div class="scard"><div class="val" style="color:#16a34a">₪${totalNet.toLocaleString()}</div><div class="lbl">סה"כ נטו</div></div>
+</div>
+<table>
+  <thead><tr>
+    <th>תאריך</th><th>מסלול</th><th>${role==='drv'?'עמיל':'נהג'}</th>
+    <th>ברוטו</th><th>עמלה</th><th>נטו</th><th>סטטוס</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">דוח זה הופק אוטומטית על ידי מערכת TruckGo • truckgo.co.il • ${today}</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { toast('אפשר פתיחת חלונות חדשים בדפדפן'); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => { win.print(); }, 800);
+  toast('הדוח נפתח — שמור כ-PDF מתיבת ההדפסה');
 };
 
 function renderDemoPayments(role) {
