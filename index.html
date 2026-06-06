@@ -3715,7 +3715,7 @@ async function showOnboarding(targetScreen) {
   setTimeout(() => obGo(0), 50);
 }
 
-function routeByStatus(d, user) {
+async function routeByStatus(d, user) {
   // אדמין — בחירת מסך
   if (user.uid === ADMIN_UID) {
     go('s-admin-select');
