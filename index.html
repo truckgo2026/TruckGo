@@ -1489,7 +1489,7 @@ async function goBack(){
   go(role === 'brk' ? 's-broker' : 's-driver');
 }
 function go(id){
-  hideSplash();
+  if (typeof hideSplash === 'function') hideSplash();
   document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById(id);
   el.classList.add('on');
@@ -3616,6 +3616,8 @@ function hideSplash() {
 }
 
 showSplash();
+// fallback — אם Firebase לא הגיב תוך 4 שניות, מסתיר בכל מקרה
+setTimeout(() => { if (typeof hideSplash === 'function') hideSplash(); }, 4000);
 
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
