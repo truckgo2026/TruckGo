@@ -297,6 +297,14 @@ textarea.fi{resize:vertical;}
 </style>
 </head>
 <body>
+<div id="s-splash" style="position:fixed;inset:0;background:linear-gradient(160deg,#1d4ed8 0%,#1e3a8a 50%,#0a1628 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:'Heebo',sans-serif;">
+  <div id="splash-logo" style="font-size:48px;font-weight:900;color:#fff;letter-spacing:-1px;opacity:0;transform:translateY(16px);transition:opacity 0.8s ease,transform 0.8s ease;">Truck<b style="color:#60a5fa;">Go</b></div>
+  <div id="splash-tag" style="font-size:15px;color:rgba(255,255,255,0.6);margin-top:10px;opacity:0;transform:translateY(16px);transition:opacity 0.8s 0.3s ease,transform 0.8s 0.3s ease;">פלטפורמת הובלות מטענים חכמה</div>
+  <div id="splash-bar-wrap" style="margin-top:48px;width:120px;height:3px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden;opacity:0;transition:opacity 0.8s 0.5s ease;">
+    <div id="splash-bar" style="height:100%;width:0%;background:#60a5fa;border-radius:4px;transition:width 2s 0.8s ease;"></div>
+  </div>
+</div>
+
 <div class="phone">
 
 <!--  S1: LOGIN  -->
@@ -1481,6 +1489,7 @@ async function goBack(){
   go(role === 'brk' ? 's-broker' : 's-driver');
 }
 function go(id){
+  hideSplash();
   document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById(id);
   el.classList.add('on');
@@ -3582,6 +3591,32 @@ function showActionError(msg) {
 }
 
 //  AUTO LOGIN CHECK 
+// ── Splash Screen ──────────────────────────────────
+function showSplash() {
+  const splash = document.getElementById('s-splash');
+  if (!splash) return;
+  setTimeout(() => {
+    document.getElementById('splash-logo').style.opacity = '1';
+    document.getElementById('splash-logo').style.transform = 'translateY(0)';
+    document.getElementById('splash-tag').style.opacity = '1';
+    document.getElementById('splash-tag').style.transform = 'translateY(0)';
+    document.getElementById('splash-bar-wrap').style.opacity = '1';
+    setTimeout(() => {
+      document.getElementById('splash-bar').style.width = '100%';
+    }, 100);
+  }, 100);
+}
+
+function hideSplash() {
+  const splash = document.getElementById('s-splash');
+  if (!splash) return;
+  splash.style.transition = 'opacity 0.5s ease';
+  splash.style.opacity = '0';
+  setTimeout(() => { splash.style.display = 'none'; }, 500);
+}
+
+showSplash();
+
 auth.onAuthStateChanged(async (user) => {
   if (isRegistering) return;
   if (user) {
