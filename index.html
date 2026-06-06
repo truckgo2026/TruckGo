@@ -1120,20 +1120,65 @@ textarea.fi{resize:vertical;}
     <div class="ps" id="pay-sub">טוען נתונים...</div>
     <div class="pbts" id="pay-btns-drv" style="display:none">
       <button class="pbt pr" onclick="toast(' משיכה — בקרוב')"> משוך כסף</button>
-      <button class="pbt ps2" onclick="toast(' מוריד דוח')"> דוח</button>
+      <button class="pbt ps2" onclick="exportPaymentsCSV()">ייצוא CSV</button>
+    </div>
+    <div id="pay-btns-brk" style="display:none;margin-top:10px;">
+      <button class="pbt ps2" onclick="exportPaymentsCSV()" style="width:100%;">ייצוא CSV</button>
     </div>
   </div>
 
+  <!-- כרטיסי סיכום -->
   <div class="sumrow" id="pay-summary">
     <div class="scard"><div class="sv" id="pay-released" style="color:var(--green)">₪0</div><div class="sl">שוחרר</div></div>
     <div class="scard"><div class="sv" id="pay-escrow" style="color:var(--amber)">₪0</div><div class="sl">נעול</div></div>
     <div class="scard"><div class="sv" id="pay-pending" style="color:var(--muted)">₪0</div><div class="sl">ממתין</div></div>
   </div>
 
+  <!-- סיכום חודשי ושנתי -->
+  <div style="margin:0 16px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">החודש</div>
+      <div id="pay-month" style="font-size:18px;font-weight:800;color:var(--text);">₪0</div>
+      <div id="pay-month-count" style="font-size:11px;color:var(--muted);">0 הובלות</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">השנה</div>
+      <div id="pay-year" style="font-size:18px;font-weight:800;color:var(--text);">₪0</div>
+      <div id="pay-year-count" style="font-size:11px;color:var(--muted);">0 הובלות</div>
+    </div>
+  </div>
+
+  <!-- עמלת פלטפורמה -->
+  <div style="margin:0 16px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);">עמלת פלטפורמה (5%)</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;">
+      <div style="font-size:12px;color:var(--muted);">סה״כ עמלות ששולמו</div>
+      <div id="pay-total-fee" style="font-size:13px;font-weight:700;color:var(--red);">₪0</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+      <div style="font-size:12px;color:var(--muted);">סה״כ נטו</div>
+      <div id="pay-total-net" style="font-size:13px;font-weight:700;color:var(--green);">₪0</div>
+    </div>
+  </div>
+
   <!-- הסבר Escrow -->
   <div style="margin:0 16px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--muted);line-height:1.7;">
     <strong style="color:var(--text)">מערכת תשלום מוגן (Escrow)</strong><br>
     הכסף נעול באפליקציה עד שהנהג מאשר מסירה והעמיל מאשר קבלה. רק אז הכסף משוחרר לנהג.
+  </div>
+
+  <!-- סינון לפי סטטוס -->
+  <div style="padding:0 16px 12px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button onclick="filterPayments('all')"       id="pf-all"       class="sch-stbtn on">הכל</button>
+      <button onclick="filterPayments('confirmed')" id="pf-confirmed" class="sch-stbtn">שוחרר</button>
+      <button onclick="filterPayments('accepted')"  id="pf-accepted"  class="sch-stbtn">פעיל</button>
+      <button onclick="filterPayments('delivered')" id="pf-delivered" class="sch-stbtn">נמסר</button>
+      <button onclick="filterPayments('pending')"   id="pf-pending"   class="sch-stbtn">ממתין</button>
+      <button onclick="filterPayments('cancelled')" id="pf-cancelled" class="sch-stbtn">בוטל</button>
+    </div>
   </div>
 
   <!-- רשימת הובלות ותשלומים -->
@@ -4143,11 +4188,45 @@ window.loadPaymentsScreen = async function() {
       else if (d.status === 'pending') pending += amt;
     });
 
+    // חישוב סיכומים חודשי ושנתי
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    let monthTotal = 0, monthCount = 0, yearTotal = 0, yearCount = 0, totalFee = 0, totalNet = 0;
+
+    docs.forEach(d => {
+      if (d.status !== 'confirmed') return;
+      const amt = d.finalAmount || d.amount || 0;
+      const fee = Math.round(amt * 0.05);
+      const net = amt - fee;
+      totalFee += fee;
+      totalNet += net;
+      const dt = d.confirmedAt?.toDate ? d.confirmedAt.toDate() : (d.createdAt?.toDate ? d.createdAt.toDate() : null);
+      if (dt) {
+        if (dt.getFullYear() === thisYear) { yearTotal += amt; yearCount++; }
+        if (dt.getFullYear() === thisYear && dt.getMonth() === thisMonth) { monthTotal += amt; monthCount++; }
+      }
+    });
+
     setEl('pay-released', '₪' + released.toLocaleString());
     setEl('pay-escrow', '₪' + escrow.toLocaleString());
     setEl('pay-pending', '₪' + pending.toLocaleString());
     setEl('pay-balance', role === 'drv' ? '₪' + released.toLocaleString() : '₪' + escrow.toLocaleString());
     setEl('pay-sub', `${docs.length} הובלות • עודכן עכשיו`);
+    setEl('pay-month', '₪' + monthTotal.toLocaleString());
+    setEl('pay-month-count', monthCount + ' הובלות');
+    setEl('pay-year', '₪' + yearTotal.toLocaleString());
+    setEl('pay-year-count', yearCount + ' הובלות');
+    setEl('pay-total-fee', '-₪' + totalFee.toLocaleString());
+    setEl('pay-total-net', '₪' + totalNet.toLocaleString());
+
+    // כפתור ייצוא לפי תפקיד
+    const brkBtns = document.getElementById('pay-btns-brk');
+    if (brkBtns) brkBtns.style.display = role === 'brk' ? 'block' : 'none';
+
+    // שמור docs גלובלית לסינון וייצוא
+    window._payDocs = docs;
+    window._payRole = role;
 
     if (docs.length === 0) {
       list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:14px;">אין הובלות עדיין</div>';
@@ -4228,6 +4307,51 @@ function renderPaymentCard(d, role) {
     </div>
   </div>`;
 }
+
+// ── סינון לפי סטטוס ───────────────────────────────
+window.filterPayments = function(status) {
+  document.querySelectorAll('[id^="pf-"]').forEach(b => b.classList.remove('on'));
+  const btn = document.getElementById('pf-' + status);
+  if (btn) btn.classList.add('on');
+
+  const docs = window._payDocs || [];
+  const role = window._payRole || 'drv';
+  const filtered = status === 'all' ? docs : docs.filter(d => d.status === status);
+  const list = document.getElementById('pay-list');
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px 0;font-size:14px;">אין הובלות בסטטוס זה</div>';
+  } else {
+    list.innerHTML = filtered.map(d => renderPaymentCard(d, role)).join('');
+  }
+};
+
+// ── ייצוא CSV ─────────────────────────────────────
+window.exportPaymentsCSV = function() {
+  const docs = window._payDocs || [];
+  const role = window._payRole || 'drv';
+  if (docs.length === 0) { toast('אין נתונים לייצוא'); return; }
+
+  const statusMap = { pending:'ממתין', accepted:'פעיל', delivered:'נמסר', confirmed:'שוחרר', cancelled:'בוטל' };
+  const rows = [['תאריך','מוצא','יעד','סכום ברוטו','עמלה 5%','נטו','סטטוס', role==='drv'?'עמיל':'נהג']];
+  docs.forEach(d => {
+    const amt = d.finalAmount || d.amount || 0;
+    const fee = Math.round(amt * 0.05);
+    const net = amt - fee;
+    const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '';
+    const other = role === 'drv' ? (d.brokerName||'') : (d.driverName||'');
+    rows.push([date, d.from||'', d.to||'', amt, fee, net, statusMap[d.status]||d.status, other]);
+  });
+
+  const csv = '﻿' + rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'truckgo_payments_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('הדוח הורד בהצלחה');
+};
 
 function renderDemoPayments(role) {
   return `<div style="background:var(--surface2);border-radius:14px;padding:20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.8;">
