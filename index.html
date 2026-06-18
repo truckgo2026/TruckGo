@@ -4047,9 +4047,15 @@ window.loadAdminTransfers = async function() {
   try {
     // שלוף את כל ההובלות שהושלמו (שני הצדדים אישרו)
     const snap = await getDocs(
-      query(collection(db, 'shipments'), where('status', '==', 'confirmed'), orderBy('confirmedAt', 'desc'))
+      query(collection(db, 'shipments'), where('status', '==', 'confirmed'))
     );
-    window._allTransferShipments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    window._allTransferShipments = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        const ta = a.confirmedAt?.toDate ? a.confirmedAt.toDate().getTime() : 0;
+        const tb = b.confirmedAt?.toDate ? b.confirmedAt.toDate().getTime() : 0;
+        return tb - ta;
+      });
     window._renderAdminTransfers();
   } catch(e) {
     if (list) list.innerHTML = `<div style="color:var(--red);padding:16px;text-align:center;">שגיאה: ${e.message}</div>`;
