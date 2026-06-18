@@ -2057,7 +2057,7 @@ window.runSearch = async function() {
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
             <div class="cr">
-              <div class="cp" style="color:${d.status==='confirmed'?'var(--green)':d.status==='cancelled'?'var(--red)':'var(--amber)'}">₪${amt.toLocaleString()}</div>
+              <div class="cp" style="color:${d.status==='confirmed'?'var(--green)':d.status==='cancelled'?'var(--red)':'var(--amber)'}">₪${role==='brk'?Math.round(amt*1.05).toLocaleString():Math.round(amt*0.95).toLocaleString()}</div>
               <div class="badge ${stC}">${stTxt}</div>
               <div class="chev">▼</div>
             </div>
@@ -2071,7 +2071,7 @@ window.runSearch = async function() {
               <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':'—'}</div></div>
               ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
               ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
-              <div class="dc"><div class="dcl">מחיר</div><div class="dcv">₪${amt.toLocaleString()}</div></div>
+              <div class="dc"><div class="dcl">מחיר</div><div class="dcv">₪${role==='brk'?Math.round(amt*1.05).toLocaleString():Math.round(amt*0.95).toLocaleString()}</div></div>
               <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${stTxt}</div></div>
               <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+d.contSize:'')):'חלקי'}</div></div>
               ${d.desc ? `<div class="dc"><div class="dcl">תיאור</div><div class="dcv">${esc(d.desc)}</div></div>` : ''}
@@ -2947,7 +2947,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:var(--amber)">₪${(d.lastCounterAmount||d.amount||0).toLocaleString()}</div>
+                <div class="cp" style="color:var(--amber)">₪${Math.round((d.lastCounterAmount||d.amount||0)*0.95).toLocaleString()}</div>
                 <div class="badge bam">ממתין</div>
               </div>
             </div>
@@ -3028,7 +3028,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">${esc(d.date)} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div>
+                <div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*0.95).toLocaleString()}</div>
                 <div class="badge bg">הושלם</div>
                 <div class="chev">▼</div>
               </div>
@@ -3148,7 +3148,7 @@ function startBrokerRealtime(uid) {
               <div style="font-size:15px;font-weight:800;color:var(--accent);">${esc(d.driverName)}</div>
               ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(d.driverPhone)}</div>` : ''}
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
-              <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${(d.proposedAmount||d.amount||0).toLocaleString()}</div>
+              <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${Math.round((d.proposedAmount||d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:#92400e;">כולל עמלה</span></div>
               ${d.driverRatingAvg && d.driverRatingCount >= 3
                 ? `<div style="margin-top:6px;font-size:12px;color:#92400e;">★ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></div>`
                 : `<div style="margin-top:6px;font-size:12px;color:var(--muted);">נהג חדש — אין ביקורות עדיין</div>`}
@@ -3156,7 +3156,7 @@ function startBrokerRealtime(uid) {
           const offerBox = hasOffer ? `
             <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
               <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;">הצעה אחרונה</div>
-              <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${(d.lastCounterAmount||0).toLocaleString()}</div>
+              <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${Math.round((d.lastCounterAmount||0)*1.05).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
               <div style="font-size:12px;color:var(--muted);">מ: ${esc(d.lastCounterDriverName)}</div>
             </div>` : '';
           const cargoLabel = d.cargoType === 'cont'
@@ -3193,7 +3193,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${esc(hazLabel)}${hazCode ? ' — ' + esc(hazCode) : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
-                <div class="dc"><div class="dcl">מחיר שפורסם</div><div class="dcv">₪${(d.amount||0).toLocaleString()}</div></div>
+                <div class="dc"><div class="dcl">מחיר שפורסם</div><div class="dcv">₪${Math.round((d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
               </div>
               ${approvalBox}
               ${offerBox}
@@ -3304,7 +3304,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
-                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div></div>
+                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${Math.round((d.finalAmount||d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
               </div>
               ${buildTimeline(d)}
             </div>
@@ -4608,7 +4608,7 @@ function renderPaymentCard(d, role) {
         <div class="cm2">${date} • ${role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג')}</div>
       </div>
       <div class="cr">
-        <div class="cp" style="color:${isConfirmed ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${amt.toLocaleString()}</div>
+        <div class="cp" style="color:${isConfirmed ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${role==='drv'?Math.round(amt*0.95).toLocaleString():Math.round(amt*1.05).toLocaleString()}</div>
         <div class="badge ${st.cls}">${st.txt}</div>
         <div class="chev">▼</div>
       </div>
@@ -4815,7 +4815,9 @@ window.openCounterOffers = async function(shipmentId) {
     const uniqueOffers = Array.from(seenDrivers.values());
     document.getElementById('com-list').innerHTML = uniqueOffers.map((d,idx) => {
       const o = d.data();
-      const diff = (o.proposedAmount||0) - origAmt;
+      const brokerProposed = Math.round((o.proposedAmount||0)*1.05);
+      const brokerOrig = Math.round(origAmt*1.05);
+      const diff = brokerProposed - brokerOrig;
       const diffClr = diff <= 0 ? 'var(--green)' : 'var(--amber)';
       const diffTxt = diff===0?'':(diff<0?'▼ זול ב-':'▲ יקר ב-')+'₪'+Math.abs(diff).toLocaleString();
       const isPending = !o.status || o.status==='pending';
@@ -4837,7 +4839,7 @@ window.openCounterOffers = async function(shipmentId) {
             ${o.slot?`<div style="font-size:12px;color:var(--muted);">טווח: ${esc(o.slot)}</div>`:''}
           </div>
           <div style="text-align:left;">
-            <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${(o.proposedAmount||0).toLocaleString()}</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${Math.round((o.proposedAmount||0)*1.05).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
             ${diffTxt?`<div style="font-size:11px;font-weight:700;color:${diffClr};">${diffTxt}</div>`:''}
           </div>
         </div>
