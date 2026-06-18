@@ -4134,7 +4134,7 @@ window._renderAdminTransfers = function() {
     if (d.confirmedAt?.seconds) return new Date(d.confirmedAt.seconds * 1000);
     return null;
   }
-  function commission(d) { return Math.round((d.finalAmount || d.amount || 0) * 0.05); }
+  function commission(d) { return Math.round((d.finalAmount || d.amount || 0) * 0.10); } // 5% מעמיל + 5% מנהג
 
   const profitDay   = all.filter(d => { const dt = getConfirmedDate(d); return dt && dt.toISOString().slice(0,10) === todayStr; }).reduce((s,d) => s+commission(d), 0);
   const profitMonth = all.filter(d => { const dt = getConfirmedDate(d); return dt && (dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')) === thisMonth; }).reduce((s,d) => s+commission(d), 0);
@@ -4149,7 +4149,7 @@ window._renderAdminTransfers = function() {
   if (summary) summary.innerHTML = `
     <!-- כרטיס רווח TruckGo -->
     <div style="background:linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%);border-radius:16px;padding:18px;margin-bottom:12px;color:#fff;">
-      <div style="font-size:12px;font-weight:700;opacity:0.8;margin-bottom:10px;letter-spacing:0.5px;">הרווח שלי — עמלת TruckGo (5%)</div>
+      <div style="font-size:12px;font-weight:700;opacity:0.8;margin-bottom:10px;letter-spacing:0.5px;">הרווח שלי — 5% מעמיל + 5% מנהג</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;text-align:center;">
           <div style="font-size:10px;opacity:0.8;margin-bottom:4px;">היום</div>
@@ -4204,9 +4204,11 @@ window._renderAdminTransfers = function() {
   }
 
   list.innerHTML = filtered.map(d => {
-    const gross      = d.finalAmount || d.amount || 0;
-    const myProfit   = Math.round(gross * 0.05);
-    const net        = gross - myProfit;
+    const gross        = d.finalAmount || d.amount || 0;
+    const brokerPays   = Math.round(gross * 1.05);   // מה שילם העמיל
+    const driverGets   = Math.round(gross * 0.95);   // מה מקבל הנהג
+    const myProfit     = brokerPays - driverGets;    // הרווח שלי = 10% מהבסיס
+    const net          = driverGets;
     const isDone     = d.transferStatus === 'done';
     const transferredDate = d.transferredAt ? fmtDT(d.transferredAt) : null;
     const recipientName  = d.driverName  || d.companyName || '—';
@@ -4270,25 +4272,38 @@ window._renderAdminTransfers = function() {
       <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:12px;">
         <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">פירוט כספי</div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-size:13px;color:var(--muted);">סכום ברוטו (שולם על ידי עמיל)</div>
-          <div style="font-size:13px;font-weight:700;">₪${gross.toLocaleString()}</div>
+          <div style="font-size:13px;color:var(--muted);">שולם על ידי עמיל מכס</div>
+          <div style="font-size:13px;font-weight:700;">₪${brokerPays.toLocaleString()}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <div style="font-size:11px;color:var(--muted);">מחיר בסיס</div>
+          <div style="font-size:11px;color:var(--muted);">₪${gross.toLocaleString()}</div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:11px;color:var(--muted);">עמלה על עמיל (5%)</div>
+          <div style="font-size:11px;color:var(--muted);">+ ₪${Math.round(gross*0.05).toLocaleString()}</div>
+        </div>
+        <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
           <div style="font-size:13px;color:var(--muted);">לנהג / חברת הובלה</div>
-          <div style="font-size:13px;font-weight:700;color:var(--red);">- ₪${net.toLocaleString()}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);">- ₪${driverGets.toLocaleString()}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:11px;color:var(--muted);">עמלה על נהג (5%)</div>
+          <div style="font-size:11px;color:var(--muted);">- ₪${Math.round(gross*0.05).toLocaleString()}</div>
         </div>
         <div style="height:1px;background:var(--border);margin:8px 0;"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-size:13px;font-weight:800;color:var(--accent);">הרווח שלי (5%)</div>
-            <div style="font-size:10px;color:var(--muted);">עמלת TruckGo</div>
+            <div style="font-size:13px;font-weight:800;color:var(--accent);">הרווח שלי (10%)</div>
+            <div style="font-size:10px;color:var(--muted);">5% מעמיל + 5% מנהג</div>
           </div>
           <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${myProfit.toLocaleString()}</div>
         </div>
         <div style="height:1px;background:var(--border);margin:8px 0;"></div>
         <div style="display:flex;justify-content:space-between;">
           <div style="font-size:13px;font-weight:800;">להעביר לנהג/חברה</div>
-          <div style="font-size:18px;font-weight:900;color:var(--green);">₪${net.toLocaleString()}</div>
+          <div style="font-size:18px;font-weight:900;color:var(--green);">₪${driverGets.toLocaleString()}</div>
         </div>
       </div>
 
@@ -4297,7 +4312,7 @@ window._renderAdminTransfers = function() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         הועבר${transferredDate ? ' ב-' + transferredDate : ''}
       </div>` : `
-      <button class="btn bgr" onclick="markTransferred('${d.id}','${esc(recipientName)}',${net})" style="width:100%;font-size:15px;padding:14px;">
+      <button class="btn bgr" onclick="markTransferred('${d.id}','${esc(recipientName)}',${driverGets})" style="width:100%;font-size:15px;padding:14px;">
         סמן כהועבר — ₪${net.toLocaleString()} לנהג
       </button>`}
     </div>`;
