@@ -824,7 +824,7 @@ textarea.fi{resize:vertical;}
       <div class="shandle"></div>
       <div class="stitle">הצעת מחיר נגדית</div>
       <div class="ssub" id="cnt-sub">המחיר המקורי: ₪0</div>
-      <div id="cnt-disp" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;font-size:30px;font-weight:900;color:var(--accent);margin-bottom:12px;">₪0</div>
+      <div id="cnt-disp" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;font-size:30px;font-weight:900;color:var(--accent);margin-bottom:6px;">₪0</div><div id="cnt-net-display" style="text-align:center;font-size:13px;font-weight:700;color:var(--green);margin-bottom:10px;min-height:20px;"></div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
         <button onclick="ck('1')" style="padding:14px;font-size:18px;font-weight:700;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-family:'Heebo',sans-serif;">1</button>
         <button onclick="ck('2')" style="padding:14px;font-size:18px;font-weight:700;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-family:'Heebo',sans-serif;">2</button>
@@ -1743,7 +1743,7 @@ function toggleDrvOnline(){
 let cntCard='',cntVal='';
 function openCounter(card,price){
   cntCard=card; cntVal='';
-  document.getElementById('cnt-sub').textContent='המחיר המקורי: ₪'+price.toLocaleString();
+  document.getElementById('cnt-sub').textContent='המחיר שהעמיל מציע: ₪'+price.toLocaleString()+' — הזן את הצעתך (סכום בסיס)';
   updCnt();
   openSheet('cnt-sh');
 }
@@ -1754,7 +1754,11 @@ function ck(k){
   updCnt();
 }
 function updCnt(){
-  document.getElementById('cnt-disp').textContent=cntVal?'₪'+parseInt(cntVal).toLocaleString():'₪0';
+  const base = parseInt(cntVal) || 0;
+  const net  = base ? Math.round(base * 0.95) : 0;
+  document.getElementById('cnt-disp').textContent = base ? '₪'+base.toLocaleString() : '₪0';
+  const netEl = document.getElementById('cnt-net-display');
+  if(netEl) netEl.textContent = net ? 'תקבל: ₪'+net.toLocaleString()+' (לאחר עמלה 5%)' : '';
 }
 function sendCnt(){
   if(!cntVal||parseInt(cntVal)<=0){toast('הכנס סכום תקין');return;}
@@ -2561,6 +2565,7 @@ window._fbDoAccept = async function(slotStr) {
 window._fbDoCounter = async function(slotStr) {
   const p = window._pendingCounter;
   if(!p) { toast('שגיאה פנימית — נסה שוב'); return; }
+  if(!p.docId) { toast('שגיאה: לא נמצא מזהה הובלה'); return; }
   window._pendingCounter = null;
 
   const waitEl = document.getElementById('drv-wait');
@@ -2568,10 +2573,12 @@ window._fbDoCounter = async function(slotStr) {
   if(waitEl){ waitS.textContent = 'שולח הצעה ₪' + p.proposedAmt.toLocaleString() + '...'; waitEl.classList.add('on'); }
 
   try {
-    const driverName = document.getElementById('p-name-v')?.textContent || '';
+    const rawName = document.getElementById('p-name-v')?.textContent || '';
+    const driverName = (rawName === '—' || rawName === '') ? (currentUser?.displayName || currentUser?.email || '') : rawName;
 
     // 1. שמור הצעה ב-sub-collection
     await addDoc(collection(db, 'shipments', p.docId, 'counterOffers'), {
+      authorUid:      currentUser.uid,
       driverUid:      currentUser.uid,
       driverName,
       driverPhone:    window._currentPhone || '',
@@ -2783,7 +2790,7 @@ function startDriverRealtime(uid) {
               <div class="cm2">${summary} • ${cargoLabel}</div>
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
-            <div class="cr"><div class="cp">₪${amt.toLocaleString()}</div><div class="chev">▼</div></div>
+            <div class="cr"><div><div class="cp">₪${Math.round(amt*0.95).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">לאחר עמלה</div></div><div class="chev">▼</div></div>
           </div>
           <div class="cd">
             <div class="dg">
@@ -2959,7 +2966,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">${isDelivered?'נמסר — ממתין לאישור קבלה':'הובלה פעילה'} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
+                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${Math.round(finalAmt*0.95).toLocaleString()}<div style="font-size:10px;color:var(--muted);">סכום ההובלה שלך</div></div>
                 <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
                 <div class="chev">▼</div>
               </div>
@@ -2979,7 +2986,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
-                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
+                <div class="dc"><div class="dcl">סכום ההובלה שלך</div><div class="dcv">₪${Math.round(finalAmt*0.95).toLocaleString()} <span style="font-size:10px;color:var(--muted);">לאחר עמלה</span></div></div>
                 <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName)}</div></div>
               </div>
               ${buildTimeline(d)}
@@ -3157,7 +3164,7 @@ function startBrokerRealtime(uid) {
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
                 ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
               </div>
-              <div class="cr"><div class="cp">₪${(hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0)).toLocaleString()}</div>${badge}<div class="chev">▼</div></div>
+              <div class="cr"><div><div class="cp">₪${Math.round((hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0))*1.05).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div>${badge}<div class="chev">▼</div></div>
             </div>
             <div class="cd">
               <div class="dg">
@@ -3223,7 +3230,7 @@ function startBrokerRealtime(uid) {
                 <div class="cm2">${isDelivered?'ממתין לאישורך':'בדרך'} • ${esc(d.driverName)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${finalAmt.toLocaleString()}</div>
+                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${Math.round(finalAmt*1.05).toLocaleString()}<div style="font-size:10px;color:var(--muted);">סכום לתשלום שלך</div></div>
                 <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
                 <div class="chev">▼</div>
               </div>
@@ -3233,7 +3240,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
                 <div class="dc"><div class="dcl">טלפון נהג</div><div class="dcv">${esc(d.driverPhone)}</div></div>
                 <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot)}</div></div>
-                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${finalAmt.toLocaleString()}</div></div>
+                <div class="dc"><div class="dcl">סכום לתשלום</div><div class="dcv">₪${Math.round(finalAmt*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
@@ -3277,7 +3284,7 @@ function startBrokerRealtime(uid) {
             <div class="cm" onclick="toggleCard('bdone-${d.id}')">
               <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div class="cinfo"><div class="ct">${esc(d.from)} → ${esc(d.to)}</div><div class="cm2">${esc(d.date)} • ${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''}</div></div>
-              <div class="cr"><div class="cp" style="color:var(--green)">₪${(d.finalAmount||d.amount||0).toLocaleString()}</div><div class="badge bg">הושלם</div><div class="chev">▼</div></div>
+              <div class="cr"><div><div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*1.05).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div><div class="badge bg">הושלם</div><div class="chev">▼</div></div>
             </div>
             <div class="cd">
               <div class="dg">
