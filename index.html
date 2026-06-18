@@ -1762,6 +1762,8 @@ function updCnt(){
 }
 function sendCnt(){
   if(!cntVal||parseInt(cntVal)<=0){toast('הכנס סכום תקין');return;}
+  const sendBtn = document.querySelector('.sbt[onclick="sendCnt()"]');
+  if(sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.5'; }
   closeSheet('cnt-sh');
   // שמור פרטי הצעה נגדית - docId מתוך cardId "dof-DOCID"
   const docId = cntCard.startsWith('dof-') ? cntCard.slice(4) : '';
@@ -2575,6 +2577,17 @@ window._fbDoCounter = async function(slotStr) {
   try {
     const rawName = document.getElementById('p-name-v')?.textContent || '';
     const driverName = (rawName === '—' || rawName === '') ? (currentUser?.displayName || currentUser?.email || '') : rawName;
+
+    // בדיקה: כבר שלח הצעה לאותה הובלה?
+    const existingOffers = await getDocs(
+      query(collection(db, 'shipments', p.docId, 'counterOffers'),
+            where('driverUid', '==', currentUser.uid))
+    );
+    if (!existingOffers.empty) {
+      if(waitEl) waitEl.classList.remove('on');
+      toast('כבר שלחת הצעה להובלה זו. ממתין לתשובת העמיל.');
+      return;
+    }
 
     // 1. שמור הצעה ב-sub-collection
     await addDoc(collection(db, 'shipments', p.docId, 'counterOffers'), {
@@ -4793,7 +4806,14 @@ window.openCounterOffers = async function(shipmentId) {
       document.getElementById('com-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">אין הצעות עדיין</div>';
       return;
     }
-    document.getElementById('com-list').innerHTML = offersSnap.docs.map((d,idx) => {
+    // ── ניקוי כפולות: לכל נהג שומרים רק את ההצעה האחרונה שלו ──
+    const seenDrivers = new Map();
+    offersSnap.docs.forEach(d => {
+      const uid = d.data().driverUid || d.data().authorUid || d.id;
+      if(!seenDrivers.has(uid)) seenDrivers.set(uid, d); // orderBy desc → ראשון = הכי חדש
+    });
+    const uniqueOffers = Array.from(seenDrivers.values());
+    document.getElementById('com-list').innerHTML = uniqueOffers.map((d,idx) => {
       const o = d.data();
       const diff = (o.proposedAmount||0) - origAmt;
       const diffClr = diff <= 0 ? 'var(--green)' : 'var(--amber)';
