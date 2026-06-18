@@ -623,6 +623,16 @@ textarea.fi{resize:vertical;}
            <span id="drv-license-label">בחר קובץ</span>
         </label>
         <input type="file" id="drv-license" accept="image/*,application/pdf" style="display:none" onchange="setFileLabel(this,'drv-license-label')">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:18px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:4px;">פרטי חשבון בנק</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">לצורך העברת תשלום לאחר ביצוע הובלה — הפרטים מאובטחים ולא יוצגו לאחרים</div>
+          <div class="fl">שם הבנק</div>
+          <input class="fi" id="drv-bank-name" type="text" placeholder="לדוגמא: בנק הפועלים">
+          <div class="fl">מספר סניף</div>
+          <input class="fi" id="drv-bank-branch" type="text" inputmode="numeric" placeholder="3 ספרות">
+          <div class="fl">מספר חשבון</div>
+          <input class="fi" id="drv-bank-account" type="text" inputmode="numeric" placeholder="מספר חשבון">
+        </div>
       </div>
 
       <!-- חברת הובלה -->
@@ -645,6 +655,16 @@ textarea.fi{resize:vertical;}
            <span id="cmp-biz-label">בחר קובץ</span>
         </label>
         <input type="file" id="cmp-biz" accept="image/*,application/pdf" style="display:none" onchange="setFileLabel(this,'cmp-biz-label')">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:18px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:4px;">פרטי חשבון בנק</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">לצורך העברת תשלום לאחר ביצוע הובלה — הפרטים מאובטחים ולא יוצגו לאחרים</div>
+          <div class="fl">שם הבנק</div>
+          <input class="fi" id="cmp-bank-name" type="text" placeholder="לדוגמא: בנק לאומי">
+          <div class="fl">מספר סניף</div>
+          <input class="fi" id="cmp-bank-branch" type="text" inputmode="numeric" placeholder="3 ספרות">
+          <div class="fl">מספר חשבון</div>
+          <input class="fi" id="cmp-bank-account" type="text" inputmode="numeric" placeholder="מספר חשבון">
+        </div>
       </div>
 
       <!-- עמיל מכס -->
@@ -3422,7 +3442,11 @@ window.fbRegister = async function() {
     if (!fname || !lname) { toast('הכנס שם פרטי ושם משפחה'); return; }
     if (!id || id.length < 8) { toast('הכנס תעודת זהות תקינה'); return; }
     if (!phone) { toast('הכנס מספר טלפון'); return; }
-    profileData = { ...profileData, name: fname + ' ' + lname, firstName: fname, lastName: lname, idNumber: id, phone };
+    const drvBankName    = document.getElementById('drv-bank-name').value.trim();
+    const drvBankBranch  = document.getElementById('drv-bank-branch').value.trim();
+    const drvBankAccount = document.getElementById('drv-bank-account').value.trim();
+    if (!drvBankName || !drvBankBranch || !drvBankAccount) { toast('הכנס פרטי חשבון בנק מלאים'); return; }
+    profileData = { ...profileData, name: fname + ' ' + lname, firstName: fname, lastName: lname, idNumber: id, phone, bankName: drvBankName, bankBranch: drvBankBranch, bankAccount: drvBankAccount };
   } else if (role === 'cmp') {
     const cname   = document.getElementById('cmp-name').value.trim();
     const hp      = document.getElementById('cmp-hp').value.trim();
@@ -3432,7 +3456,11 @@ window.fbRegister = async function() {
     if (!hp || hp.length < 8) { toast('הכנס מספר ח.פ תקין'); return; }
     if (!contact) { toast('הכנס שם איש קשר'); return; }
     if (!phone) { toast('הכנס מספר טלפון'); return; }
-    profileData = { ...profileData, name: cname, companyName: cname, hp, contactPerson: contact, phone };
+    const cmpBankName    = document.getElementById('cmp-bank-name').value.trim();
+    const cmpBankBranch  = document.getElementById('cmp-bank-branch').value.trim();
+    const cmpBankAccount = document.getElementById('cmp-bank-account').value.trim();
+    if (!cmpBankName || !cmpBankBranch || !cmpBankAccount) { toast('הכנס פרטי חשבון בנק מלאים'); return; }
+    profileData = { ...profileData, name: cname, companyName: cname, hp, contactPerson: contact, phone, bankName: cmpBankName, bankBranch: cmpBankBranch, bankAccount: cmpBankAccount };
   } else if (role === 'brk') {
     const company = document.getElementById('brk-company').value.trim();
     const lic     = document.getElementById('brk-license').value.trim();
@@ -4067,107 +4095,186 @@ window._renderAdminTransfers = function() {
   const summary = document.getElementById('admin-transfers-summary');
   if (!list) return;
 
-  const all      = window._allTransferShipments || [];
-  const f        = window._adminTransferFilter || 'pending';
+  const all = window._allTransferShipments || [];
+  const f   = window._adminTransferFilter || 'pending';
   const filtered = all.filter(d => {
     if (f === 'pending') return !d.transferStatus || d.transferStatus === 'pending';
     if (f === 'done')    return d.transferStatus === 'done';
     return true;
   });
 
-  // סיכום
+  // ── חישוב רווחים לפי תקופה ──
+  const now       = new Date();
+  const todayStr  = now.toISOString().slice(0,10);
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const thisYear  = String(now.getFullYear());
+
+  function getConfirmedDate(d) {
+    if (d.confirmedAt?.toDate) return d.confirmedAt.toDate();
+    if (d.confirmedAt?.seconds) return new Date(d.confirmedAt.seconds * 1000);
+    return null;
+  }
+  function commission(d) { return Math.round((d.finalAmount || d.amount || 0) * 0.05); }
+
+  const profitDay   = all.filter(d => { const dt = getConfirmedDate(d); return dt && dt.toISOString().slice(0,10) === todayStr; }).reduce((s,d) => s+commission(d), 0);
+  const profitMonth = all.filter(d => { const dt = getConfirmedDate(d); return dt && (dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')) === thisMonth; }).reduce((s,d) => s+commission(d), 0);
+  const profitYear  = all.filter(d => { const dt = getConfirmedDate(d); return dt && String(dt.getFullYear()) === thisYear; }).reduce((s,d) => s+commission(d), 0);
+  const profitTotal = all.reduce((s,d) => s+commission(d), 0);
+
+  // ── סיכום/כרטיסי מצב ──
   const pendingItems = all.filter(d => !d.transferStatus || d.transferStatus === 'pending');
-  const pendingTotal = pendingItems.reduce((s, d) => s + (d.finalAmount || d.amount || 0), 0);
-  const pendingNet   = pendingItems.reduce((s, d) => {
-    const gross = d.finalAmount || d.amount || 0;
-    return s + Math.round(gross * 0.95);
-  }, 0);
-  const doneItems  = all.filter(d => d.transferStatus === 'done');
-  const doneTotal  = doneItems.reduce((s, d) => s + (d.finalAmount || d.amount || 0), 0);
+  const pendingNet   = pendingItems.reduce((s,d) => { const g = d.finalAmount||d.amount||0; return s+Math.round(g*0.95); }, 0);
+  const doneItems    = all.filter(d => d.transferStatus === 'done');
 
   if (summary) summary.innerHTML = `
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:120px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:12px;padding:12px;text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px;">ממתין להעברה</div>
-        <div style="font-size:22px;font-weight:900;color:var(--amber);">${pendingItems.length}</div>
-        <div style="font-size:12px;color:var(--amber);font-weight:700;">הובלות</div>
-        <div style="font-size:14px;font-weight:900;color:var(--text);margin-top:6px;">₪${pendingNet.toLocaleString()}</div>
-        <div style="font-size:10px;color:var(--muted);">לאחר עמלה (5%)</div>
+    <!-- כרטיס רווח TruckGo -->
+    <div style="background:linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%);border-radius:16px;padding:18px;margin-bottom:12px;color:#fff;">
+      <div style="font-size:12px;font-weight:700;opacity:0.8;margin-bottom:10px;letter-spacing:0.5px;">הרווח שלי — עמלת TruckGo (5%)</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:10px;opacity:0.8;margin-bottom:4px;">היום</div>
+          <div style="font-size:18px;font-weight:900;">₪${profitDay.toLocaleString()}</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:10px;opacity:0.8;margin-bottom:4px;">החודש</div>
+          <div style="font-size:18px;font-weight:900;">₪${profitMonth.toLocaleString()}</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:10px;opacity:0.8;margin-bottom:4px;">השנה</div>
+          <div style="font-size:18px;font-weight:900;">₪${profitYear.toLocaleString()}</div>
+        </div>
       </div>
-      <div style="flex:1;min-width:120px;background:var(--green-bg);border:1px solid var(--green);border-radius:12px;padding:12px;text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px;">הועבר</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;">
+        <div style="font-size:13px;opacity:0.85;">סה"כ רווח מצטבר</div>
+        <div style="font-size:22px;font-weight:900;">₪${profitTotal.toLocaleString()}</div>
+      </div>
+    </div>
+    <!-- כרטיסי מצב העברות -->
+    <div style="display:flex;gap:10px;">
+      <div style="flex:1;background:var(--amber-bg);border:1px solid var(--amber);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:4px;">ממתין להעברה</div>
+        <div style="font-size:22px;font-weight:900;color:var(--amber);">${pendingItems.length}</div>
+        <div style="font-size:11px;color:var(--amber);">הובלות</div>
+        <div style="font-size:13px;font-weight:900;color:var(--text);margin-top:5px;">₪${pendingNet.toLocaleString()}</div>
+        <div style="font-size:9px;color:var(--muted);">נטו לנהגים</div>
+      </div>
+      <div style="flex:1;background:var(--green-bg);border:1px solid var(--green);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:4px;">הועבר</div>
         <div style="font-size:22px;font-weight:900;color:var(--green);">${doneItems.length}</div>
-        <div style="font-size:12px;color:var(--green);font-weight:700;">הובלות</div>
-        <div style="font-size:14px;font-weight:900;color:var(--text);margin-top:6px;">₪${doneTotal.toLocaleString()}</div>
-        <div style="font-size:10px;color:var(--muted);">סה"כ ברוטו</div>
+        <div style="font-size:11px;color:var(--green);">הובלות</div>
+        <div style="font-size:13px;font-weight:900;color:var(--text);margin-top:5px;">₪${doneItems.reduce((s,d)=>s+(d.finalAmount||d.amount||0),0).toLocaleString()}</div>
+        <div style="font-size:9px;color:var(--muted);">ברוטו</div>
       </div>
     </div>
   `;
 
   if (filtered.length === 0) {
     list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px 0;">
-      <div style="font-size:32px;margin-bottom:12px;">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      </div>
+      <div style="margin-bottom:12px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
       <div style="font-size:15px;font-weight:700;">${f === 'pending' ? 'אין העברות ממתינות' : f === 'done' ? 'אין העברות שבוצעו' : 'אין הובלות שהושלמו'}</div>
     </div>`;
     return;
   }
 
+  function fmtDT(ts) {
+    if (!ts) return null;
+    const dt = ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds*1000) : null);
+    if (!dt) return null;
+    return dt.toLocaleDateString('he-IL') + ' ' + dt.toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
+  }
+
   list.innerHTML = filtered.map(d => {
     const gross      = d.finalAmount || d.amount || 0;
-    const commission = Math.round(gross * 0.05);
-    const net        = gross - commission;
+    const myProfit   = Math.round(gross * 0.05);
+    const net        = gross - myProfit;
     const isDone     = d.transferStatus === 'done';
-    const confirmedDate = d.confirmedAt?.toDate ? d.confirmedAt.toDate().toLocaleDateString('he-IL') : '—';
-    const transferredDate = d.transferredAt?.toDate ? d.transferredAt.toDate().toLocaleDateString('he-IL') : null;
+    const transferredDate = d.transferredAt ? fmtDT(d.transferredAt) : null;
     const recipientName  = d.driverName  || d.companyName || '—';
     const recipientPhone = d.driverPhone || d.companyPhone || '';
 
+    // ── ציר זמן ──
+    const events = [];
+    if (d.createdAt)   events.push({ label:'הזמנה פורסמה על ידי עמיל המכס',          ts: fmtDT(d.createdAt),   dot:'#6366f1' });
+    if (d.acceptedAt)  events.push({ label:'הובלה אושרה על ידי נהג / חברת הובלה',      ts: fmtDT(d.acceptedAt),  dot:'#3b82f6' });
+    if (d.deliveredAt) events.push({ label:'נהג אישר מסירה',                           ts: fmtDT(d.deliveredAt), dot:'#f59e0b' });
+    if (d.confirmedAt) events.push({ label:'עמיל המכס אישר קבלה — תשלום שוחרר',       ts: fmtDT(d.confirmedAt), dot:'#10b981' });
+    if (d.transferredAt) events.push({ label:'TruckGo העבירה כסף לנהג/חברה',          ts: fmtDT(d.transferredAt), dot:'#1d4ed8' });
+
+    const timelineHtml = events.map((e, i) => `
+      <div style="display:flex;gap:10px;align-items:flex-start;${i < events.length-1 ? 'margin-bottom:0;' : ''}">
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${e.dot};flex-shrink:0;margin-top:3px;box-shadow:0 0 0 2px rgba(255,255,255,0.8);"></div>
+          ${i < events.length-1 ? `<div style="width:2px;flex:1;background:var(--border);min-height:18px;"></div>` : ''}
+        </div>
+        <div style="padding-bottom:${i < events.length-1 ? '12px' : '0'};">
+          <div style="font-size:12px;font-weight:700;color:var(--text);">${e.label}</div>
+          <div style="font-size:11px;color:var(--muted);">${e.ts || '—'}</div>
+        </div>
+      </div>`).join('');
+
     return `
     <div style="background:var(--surface);border:1px solid ${isDone ? 'var(--green)' : 'var(--amber)'};border-right:4px solid ${isDone ? 'var(--green)' : 'var(--amber)'};border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow);">
-      <!-- שורת סטטוס + תאריך -->
+      <!-- כותרת -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div class="badge ${isDone ? 'bg' : 'bam'}" style="font-size:12px;">${isDone ? 'הועבר' : 'ממתין להעברה'}</div>
-        <div style="font-size:12px;color:var(--muted);">אושר: ${confirmedDate}</div>
+        <div style="font-size:11px;color:var(--muted);">#${d.id.slice(-6).toUpperCase()}</div>
       </div>
       <!-- מסלול -->
-      <div style="font-size:15px;font-weight:800;margin-bottom:10px;color:var(--text);">${esc(d.from || '—')} ← ${esc(d.to || '—')}</div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:12px;color:var(--text);">${esc(d.from || '—')} ← ${esc(d.to || '—')}</div>
+
       <!-- מקבל התשלום -->
       <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;">מקבל התשלום</div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">מקבל התשלום</div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-size:15px;font-weight:800;">${esc(recipientName)}</div>
             ${recipientPhone ? `<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(recipientPhone)}</div>` : ''}
-            <div style="font-size:12px;color:var(--muted);">תאריך הובלה: ${esc(d.date || '—')}</div>
+            <div style="font-size:11px;color:var(--muted);">תאריך הובלה: ${esc(d.date || '—')}</div>
+            ${d.bankName ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:4px;">
+              🏦 ${esc(d.bankName)} | סניף ${esc(d.bankBranch||'—')} | חשבון ${esc(d.bankAccount||'—')}
+            </div>` : '<div style="font-size:11px;color:var(--red);margin-top:4px;">⚠ פרטי בנק חסרים</div>'}
           </div>
-          ${recipientPhone ? `
-          <a href="tel:${esc(recipientPhone)}" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--green-bg);border:1px solid var(--green);border-radius:50%;text-decoration:none;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.44 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+          ${recipientPhone ? `<a href="tel:${esc(recipientPhone)}" style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;background:var(--green-bg);border:1px solid var(--green);border-radius:50%;text-decoration:none;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.44 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
           </a>` : ''}
         </div>
       </div>
+
+      <!-- ציר זמן -->
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">ציר זמן ההובלה</div>
+        ${timelineHtml}
+      </div>
+
       <!-- פירוט כספי -->
-      <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">פירוט כספי</div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <div style="font-size:13px;color:var(--muted);">סכום ברוטו</div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">פירוט כספי</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:13px;color:var(--muted);">סכום ברוטו (שולם על ידי עמיל)</div>
           <div style="font-size:13px;font-weight:700;">₪${gross.toLocaleString()}</div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <div style="font-size:13px;color:var(--muted);">עמלת TruckGo (5%)</div>
-          <div style="font-size:13px;font-weight:700;color:var(--red);">- ₪${commission.toLocaleString()}</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:13px;color:var(--muted);">לנהג / חברת הובלה</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);">- ₪${net.toLocaleString()}</div>
         </div>
-        <div style="height:1px;background:var(--border);margin:6px 0;"></div>
+        <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--accent);">הרווח שלי (5%)</div>
+            <div style="font-size:10px;color:var(--muted);">עמלת TruckGo</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${myProfit.toLocaleString()}</div>
+        </div>
+        <div style="height:1px;background:var(--border);margin:8px 0;"></div>
         <div style="display:flex;justify-content:space-between;">
-          <div style="font-size:14px;font-weight:800;">לניהג/חברה להעביר</div>
+          <div style="font-size:13px;font-weight:800;">להעביר לנהג/חברה</div>
           <div style="font-size:18px;font-weight:900;color:var(--green);">₪${net.toLocaleString()}</div>
         </div>
       </div>
+
       ${isDone ? `
-      <div style="text-align:center;font-size:12px;color:var(--green);font-weight:700;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px;"><polyline points="20 6 9 17 4 12"/></svg>
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;background:var(--green-bg);border:1px solid var(--green);border-radius:10px;padding:10px;font-size:13px;color:var(--green);font-weight:700;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         הועבר${transferredDate ? ' ב-' + transferredDate : ''}
       </div>` : `
       <button class="btn bgr" onclick="markTransferred('${d.id}','${esc(recipientName)}',${net})" style="width:100%;font-size:15px;padding:14px;">
