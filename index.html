@@ -2064,6 +2064,7 @@ window.runSearch = async function() {
           </div>
           <div class="cd">
             <div class="dg">
+              <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
               <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
               <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
               <div class="dc"><div class="dcl">${personLbl}</div><div class="dcv">${esc(person)}</div></div>
@@ -2414,7 +2415,7 @@ if ("serviceWorker" in navigator) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
 // אין צורך להסתיר - האבטחה מתבצעת דרך Firebase Rules + הגבלת דומיין
@@ -2524,7 +2525,20 @@ window._fbLoadReviews = async function(uid) {
 
 // חשוף addDoc לפונקציה submitOrderReal שבחוץ
 window._fbAddDoc = async function(data) {
-  return await addDoc(collection(db, 'shipments'), { ...data, createdAt: serverTimestamp() });
+  // מספור הזמנות רץ — TG-1001, TG-1002... מתעדכן אטומית כדי למנוע כפילויות
+  const counterRef = doc(db, 'counters', 'orders');
+  const orderNumber = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(counterRef);
+    const current = snap.exists() ? (snap.data().value || 1000) : 1000;
+    const next = current + 1;
+    tx.set(counterRef, { value: next }, { merge: true });
+    return next;
+  });
+  return await addDoc(collection(db, 'shipments'), {
+    ...data,
+    orderNumber: `TG-${orderNumber}`,
+    createdAt: serverTimestamp()
+  });
 };
 
 // ─────────────────────────────────────────────────────────
@@ -2807,6 +2821,7 @@ function startDriverRealtime(uid) {
           </div>
           <div class="cd">
             <div class="dg">
+              <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${d.orderNumber||'—'}</div></div>
               <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${from}</div></div>
               <div class="dc"><div class="dcl">יעד</div><div class="dcv">${to}</div></div>
               <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${date}</div></div>
@@ -2944,7 +2959,7 @@ function startMyOrdersRealtime(uid) {
               <div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
-                <div class="cm2">ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
+                <div class="cm2">${esc(d.orderNumber||'')} • ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
               </div>
               <div class="cr">
                 <div class="cp" style="color:var(--amber)">₪${Math.round((d.lastCounterAmount||d.amount||0)*0.95).toLocaleString()}</div>
@@ -2986,6 +3001,7 @@ function startMyOrdersRealtime(uid) {
             </div>
             <div class="cd">
               <div class="dg">
+                <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
@@ -3025,7 +3041,7 @@ function startMyOrdersRealtime(uid) {
               <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
-                <div class="cm2">${esc(d.date)} • ${esc(d.slot)}</div>
+                <div class="cm2">${esc(d.orderNumber||'')} • ${esc(d.date)} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
                 <div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*0.95).toLocaleString()}</div>
@@ -3181,6 +3197,7 @@ function startBrokerRealtime(uid) {
             </div>
             <div class="cd">
               <div class="dg">
+                <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
@@ -3250,6 +3267,7 @@ function startBrokerRealtime(uid) {
             </div>
             <div class="cd">
               <div class="dg">
+                <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
                 <div class="dc"><div class="dcl">טלפון נהג</div><div class="dcv">${esc(d.driverPhone)}</div></div>
                 <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot)}</div></div>
@@ -3301,6 +3319,7 @@ function startBrokerRealtime(uid) {
             </div>
             <div class="cd">
               <div class="dg">
+                <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
@@ -4631,6 +4650,7 @@ function renderPaymentCard(d, role) {
     <div class="cd">
       ${escrowBar}
       <div class="dg">
+        <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
         <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from||'—')}</div></div>
         <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to||'—')}</div></div>
         <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date||'—')}</div></div>
