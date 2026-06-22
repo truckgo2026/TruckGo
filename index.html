@@ -4529,6 +4529,19 @@ function generateInvoiceNumber(shipId) {
   return 'INV-' + num;
 }
 
+window.openInvoiceById = async function(shipId) {
+  document.getElementById('invoice-content').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">טוען חשבונית...</div>';
+  document.getElementById('invoice-modal').style.display = 'flex';
+  try {
+    const snap = await getDoc(doc(db, 'shipments', shipId));
+    if (!snap.exists()) { document.getElementById('invoice-content').innerHTML = 'לא נמצאה הובלה'; return; }
+    const d = { id: snap.id, ...snap.data() };
+    openInvoiceModal(d);
+  } catch(e) {
+    document.getElementById('invoice-content').innerHTML = 'שגיאה בטעינת החשבונית';
+  }
+};
+
 window.openInvoiceModal = async function(d) {
   document.getElementById('invoice-content').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">טוען חשבונית...</div>';
   document.getElementById('invoice-modal').style.display = 'flex';
@@ -4635,42 +4648,48 @@ window.printInvoice = function() {
   const data = window._currentInvoiceData;
   if (!data) return;
   const w = window.open('', '_blank');
-  w.document.write(`
-    <!DOCTYPE html>
-    <html dir="rtl" lang="he">
-    <head>
-      <meta charset="UTF-8">
-      <title>חשבונית ${data.invNum}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Heebo, sans-serif; background: #fff; direction: rtl; padding: 40px; }
-        @page { size: A4; margin: 20mm; }
-        @media print {
-          body { padding: 0; }
-          button { display: none !important; }
-        }
-        .print-btn {
-          display: block;
-          margin: 24px auto 0;
-          padding: 12px 32px;
-          background: #1d4ed8;
-          color: #fff;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 700;
-          cursor: pointer;
-          font-family: Heebo, sans-serif;
-        }
-      </style>
-    </head>
-    <body>
-      ${data.html}
-      <button class="print-btn" onclick="window.print()">הדפס / שמור PDF</button>
-    </body>
-    </html>
-  `);
+  w.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>חשבונית ${data.invNum}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Heebo,sans-serif;background:#fff;direction:rtl;color:#1e293b;}
+    .page{width:210mm;min-height:297mm;margin:0 auto;padding:20mm 18mm;background:#fff;}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10mm;}
+    .logo{font-size:32px;font-weight:900;color:#1d4ed8;line-height:1;}
+    .logo-sub{font-size:11px;color:#64748b;margin-top:2px;}
+    .inv-meta{text-align:left;}
+    .inv-num{font-size:16px;font-weight:800;color:#1e293b;}
+    .inv-date{font-size:12px;color:#64748b;margin-top:3px;}
+    .divider{height:3px;background:#1d4ed8;border-radius:2px;margin-bottom:8mm;}
+    .to-label{font-size:11px;color:#64748b;margin-bottom:3px;}
+    .to-name{font-size:17px;font-weight:800;margin-bottom:1mm;}
+    .to-sub{font-size:12px;color:#475569;margin-bottom:6mm;}
+    .section{background:#f8fafc;border-radius:8px;padding:5mm 6mm;margin-bottom:5mm;}
+    .section-title{font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:4mm;padding-bottom:2mm;border-bottom:1px solid #e2e8f0;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    td{padding:2.5px 0;}
+    td:last-child{text-align:left;font-weight:600;}
+    td:first-child{color:#64748b;}
+    .total-row{display:flex;justify-content:space-between;font-size:18px;font-weight:900;margin-top:3mm;padding-top:3mm;border-top:2px solid #cbd5e1;}
+    .total-amount{color:#1d4ed8;}
+    .vat-note{font-size:10px;color:#94a3b8;margin-top:1mm;}
+    .footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:8mm;padding-top:4mm;border-top:1px solid #e2e8f0;}
+    .print-btn{display:block;margin:8mm auto 0;padding:12px 40px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;}
+    @media print{.print-btn{display:none;} body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+    @page{size:A4;margin:0;}
+  </style>
+</head>
+<body>
+<div class="page">
+  ${data.html}
+  <button class="print-btn" onclick="window.print()">הדפס / שמור PDF</button>
+</div>
+</body>
+</html>`);
   w.document.close();
 };
 
@@ -4843,7 +4862,7 @@ function renderPaymentCard(d, role) {
       ${actions}
       ${(role === 'brk' && isConfirmed) ? `
       <div class="brow" style="margin-top:10px;">
-        <button class="btn" onclick="openInvoiceModal(${JSON.stringify({id:d.id,from:d.from,to:d.to,amount:d.amount,finalAmount:d.finalAmount,brokerName:d.brokerName,driverName:d.driverName,date:d.date,orderNumber:d.orderNumber,confirmedAt:d.confirmedAt?.seconds?{seconds:d.confirmedAt.seconds}:null}).replace(/"/g,'&quot;')})" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;">
+        <button class="btn" onclick="openInvoiceById('${d.id}')" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;">
           צפה בחשבונית
         </button>
       </div>` : ''}
