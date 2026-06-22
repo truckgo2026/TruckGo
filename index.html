@@ -4780,7 +4780,7 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
       </div>
       ${actions}
-      ${(role === 'brk' && isConfirmed && d.transferStatus === 'done') ? `
+      ${(role === 'brk' && isConfirmed) ? `
       <div class="brow" style="margin-top:10px;">
         <button class="btn" onclick="openInvoiceModal(${JSON.stringify({id:d.id,from:d.from,to:d.to,amount:d.amount,finalAmount:d.finalAmount,brokerName:d.brokerName,driverName:d.driverName,date:d.date,orderNumber:d.orderNumber,confirmedAt:d.confirmedAt?.seconds?{seconds:d.confirmedAt.seconds}:null}).replace(/"/g,'&quot;')})" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;">
           צפה בחשבונית
