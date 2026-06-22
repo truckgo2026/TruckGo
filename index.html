@@ -4637,7 +4637,7 @@ window.openInvoiceModal = async function(d) {
   `;
 
   document.getElementById('invoice-content').innerHTML = html;
-  window._currentInvoiceData = { html, invNum, brokerName: d.brokerName };
+  window._currentInvoiceData = { html, invNum, date, brokerName: d.brokerName, brokerCompany, brokerIdNumber, shipment: d };
 };
 
 window.closeInvoiceModal = function() {
@@ -4647,51 +4647,115 @@ window.closeInvoiceModal = function() {
 window.printInvoice = function() {
   const data = window._currentInvoiceData;
   if (!data) return;
+  const d = data.shipment;
   const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html>
+  const amt = d.finalAmount || d.amount || 0;
+  const brokerPays = Math.round(amt * 1.05);
+  const fee = Math.round(amt * 0.05);
+  const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
+  const rows = [
+    ['מספר הזמנה', d.orderNumber || '—'],
+    ['מוצא', d.from || '—'],
+    ['יעד', d.to || '—'],
+    d.date   ? ['תאריך הובלה', d.date] : null,
+    d.slot   ? ['טווח זמן', d.slot] : null,
+    ['נהג / מוביל', d.driverName || '—'],
+    ['סוג מטען', cargoLabel],
+    d.weight ? ['משקל', Number(d.weight).toLocaleString() + ' ק"ג'] : null,
+    d.volume ? ['נפח', d.volume + ' מ"ק'] : null,
+    d.qty    ? ['כמות', d.qty + " יח'"] : null,
+    d.desc   ? ['תיאור טובין', d.desc] : null,
+    d.isHazardous ? ['חומר מסוכן', 'כן' + (d.hazCode ? ' — ' + d.hazCode : '')] : null,
+    d.needPorters ? ['סבלים', 'נדרש'] : null,
+    d.needRamp    ? ['רמפית', 'נדרש'] : null,
+  ].filter(Boolean);
+  const html = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
-  <meta charset="UTF-8">
-  <title>חשבונית ${data.invNum}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:Heebo,sans-serif;background:#fff;direction:rtl;color:#1e293b;}
-    .page{width:210mm;min-height:297mm;margin:0 auto;padding:20mm 18mm;background:#fff;}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10mm;}
-    .logo{font-size:32px;font-weight:900;color:#1d4ed8;line-height:1;}
-    .logo-sub{font-size:11px;color:#64748b;margin-top:2px;}
-    .inv-meta{text-align:left;}
-    .inv-num{font-size:16px;font-weight:800;color:#1e293b;}
-    .inv-date{font-size:12px;color:#64748b;margin-top:3px;}
-    .divider{height:3px;background:#1d4ed8;border-radius:2px;margin-bottom:8mm;}
-    .to-label{font-size:11px;color:#64748b;margin-bottom:3px;}
-    .to-name{font-size:17px;font-weight:800;margin-bottom:1mm;}
-    .to-sub{font-size:12px;color:#475569;margin-bottom:6mm;}
-    .section{background:#f8fafc;border-radius:8px;padding:5mm 6mm;margin-bottom:5mm;}
-    .section-title{font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:4mm;padding-bottom:2mm;border-bottom:1px solid #e2e8f0;}
-    table{width:100%;border-collapse:collapse;font-size:12px;}
-    td{padding:2.5px 0;}
-    td:last-child{text-align:left;font-weight:600;}
-    td:first-child{color:#64748b;}
-    .total-row{display:flex;justify-content:space-between;font-size:18px;font-weight:900;margin-top:3mm;padding-top:3mm;border-top:2px solid #cbd5e1;}
-    .total-amount{color:#1d4ed8;}
-    .vat-note{font-size:10px;color:#94a3b8;margin-top:1mm;}
-    .footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:8mm;padding-top:4mm;border-top:1px solid #e2e8f0;}
-    .print-btn{display:block;margin:8mm auto 0;padding:12px 40px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;}
-    @media print{.print-btn{display:none;} body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-    @page{size:A4;margin:0;}
-  </style>
+<meta charset="UTF-8">
+<title>חשבונית ${data.invNum}</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html{background:#e5e7eb;}
+body{font-family:Heebo,sans-serif;direction:rtl;color:#1e293b;background:#e5e7eb;padding:20px;}
+.page{width:210mm;min-height:297mm;background:#fff;margin:0 auto;padding:16mm 14mm;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;}
+.logo{font-size:28pt;font-weight:900;color:#1d4ed8;line-height:1;}
+.logo-sub{font-size:9pt;color:#64748b;margin-top:1mm;}
+.inv-right{text-align:left;}
+.inv-num{font-size:13pt;font-weight:800;}
+.inv-date{font-size:9pt;color:#64748b;margin-top:1mm;}
+.divider{height:2px;background:#1d4ed8;margin:5mm 0;border-radius:2px;}
+.to-label{font-size:9pt;color:#64748b;margin-bottom:1mm;}
+.to-name{font-size:15pt;font-weight:800;}
+.to-sub{font-size:10pt;color:#475569;margin-top:1mm;}
+.to-section{margin-bottom:7mm;}
+.section{background:#f8fafc;border-radius:6px;padding:5mm 6mm;margin-bottom:5mm;}
+.section-title{font-size:11pt;font-weight:800;color:#1d4ed8;padding-bottom:2mm;margin-bottom:4mm;border-bottom:1px solid #e2e8f0;}
+table{width:100%;border-collapse:collapse;}
+td{padding:2mm 0;font-size:10pt;vertical-align:top;}
+td:first-child{color:#64748b;width:45%;}
+td:last-child{font-weight:600;text-align:left;}
+.pay-row{display:flex;justify-content:space-between;font-size:10pt;padding:1.5mm 0;}
+.pay-label{color:#64748b;}
+.pay-val{font-weight:600;}
+.pay-divider{height:1px;background:#cbd5e1;margin:2mm 0;}
+.total-row{display:flex;justify-content:space-between;font-size:15pt;font-weight:900;padding-top:2mm;}
+.total-amt{color:#1d4ed8;}
+.vat{font-size:8pt;color:#94a3b8;margin-top:1mm;}
+.footer{text-align:center;font-size:8pt;color:#94a3b8;margin-top:6mm;padding-top:3mm;border-top:1px solid #e2e8f0;}
+.btn{display:block;margin:6mm auto 0;padding:10px 36px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:12pt;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;}
+@media print{
+  html,body{background:#fff;padding:0;}
+  .page{width:100%;min-height:100%;padding:12mm 10mm;margin:0;}
+  .btn{display:none!important;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+}
+@page{size:A4 portrait;margin:0;}
+</style>
 </head>
 <body>
 <div class="page">
-  ${data.html}
-  <button class="print-btn" onclick="window.print()">הדפס / שמור PDF</button>
+  <div class="header">
+    <div>
+      <div class="logo">TruckGo</div>
+      <div class="logo-sub">פלטפורמת הובלות חכמה</div>
+      <div class="logo-sub">truckgo.co.il</div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-num">${data.invNum}</div>
+      <div class="inv-date">תאריך הנפקה: ${data.date}</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="to-section">
+    <div class="to-label">לכבוד:</div>
+    <div class="to-name">${d.brokerName || '—'}</div>
+    ${data.brokerCompany ? `<div class="to-sub">${data.brokerCompany}</div>` : ''}
+    ${data.brokerIdNumber ? `<div class="to-sub">${data.brokerCompany ? 'ח.פ' : 'ת"ז'}: ${data.brokerIdNumber}</div>` : ''}
+  </div>
+  <div class="section">
+    <div class="section-title">פרטי ההובלה</div>
+    <table>${rows.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+  </div>
+  <div class="section">
+    <div class="section-title">פירוט תשלום</div>
+    <div class="pay-row"><span class="pay-label">שירות הובלה</span><span class="pay-val">₪${amt.toLocaleString()}</span></div>
+    <div class="pay-row"><span class="pay-label">עמלת פלטפורמה (5%)</span><span class="pay-val">₪${fee.toLocaleString()}</span></div>
+    <div class="pay-divider"></div>
+    <div class="total-row"><span>סה"כ לתשלום</span><span class="total-amt">₪${brokerPays.toLocaleString()}</span></div>
+    <div class="vat">כולל מע"מ</div>
+  </div>
+  <div class="footer">TruckGo — פלטפורמת תיווך בלבד. אינה נושאת באחריות על ביצוע ההובלה.</div>
 </div>
+<button class="btn" onclick="window.print()">הדפס / שמור PDF</button>
 </body>
-</html>`);
+</html>`;
+  w.document.write(html);
   w.document.close();
 };
+
 
 window.loadPaymentsScreen = async function() {
   if (!currentUser) return;
