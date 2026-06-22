@@ -350,6 +350,21 @@ textarea.fi{resize:vertical;}
   </div>
 </div>
 
+<!-- מודל חשבונית -->
+<div class="modal-overlay" id="invoice-modal" onclick="if(event.target===this)closeInvoiceModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:24px;width:92%;max-width:480px;max-height:90vh;overflow-y:auto;direction:rtl;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:18px;font-weight:900;color:#1d4ed8;">חשבונית מס</div>
+      <button onclick="closeInvoiceModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;">✕</button>
+    </div>
+    <div id="invoice-content"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button onclick="printInvoice()" style="flex:1;padding:14px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">הדפס / שמור PDF</button>
+      <button onclick="closeInvoiceModal()" style="flex:1;padding:14px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">סגור</button>
+    </div>
+  </div>
+</div>
+
 <!--  S-ADMIN-TRANSFERS: מרכז העברות כספים  -->
 <div class="scr" id="s-admin-transfers">
   <div class="tb">
@@ -4352,6 +4367,9 @@ window.markTransferred = async function(shipId, recipientName, netAmount) {
       window._allTransferShipments[idx].transferredAt  = { toDate: () => new Date() };
     }
     toast('ההעברה סומנה בהצלחה!');
+    // פתח חשבונית אוטומטית
+    const ship = window._allTransferShipments.find(s => s.id === shipId);
+    if (ship) setTimeout(() => openInvoiceModal(ship), 500);
     window._renderAdminTransfers();
   } catch(e) { toast('שגיאה: ' + e.message); }
 };
@@ -4505,6 +4523,96 @@ const ESCROW_LABEL = {
 };
 
 // טען מסך תשלומים לפי תפקיד
+// ── חשבוניות ────────────────────────────────────────
+function generateInvoiceNumber(shipId) {
+  const num = (shipId || '').slice(-6).toUpperCase();
+  return 'INV-' + num;
+}
+
+window.openInvoiceModal = function(d) {
+  const amt       = d.finalAmount || d.amount || 0;
+  const brokerPays = Math.round(amt * 1.05);
+  const fee       = Math.round(amt * 0.05);
+  const invNum    = generateInvoiceNumber(d.id);
+  const date      = d.confirmedAt?.toDate ? d.confirmedAt.toDate().toLocaleDateString('he-IL') : new Date().toLocaleDateString('he-IL');
+  const orderNum  = d.orderNumber || d.id?.slice(-6).toUpperCase() || '—';
+
+  const html = `
+    <div style="border:2px solid #1d4ed8;border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#1d4ed8;">TruckGo</div>
+          <div style="font-size:11px;color:#64748b;">פלטפורמת הובלות חכמה</div>
+          <div style="font-size:11px;color:#64748b;">truckgo.co.il</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-size:13px;font-weight:700;color:#334155;">${invNum}</div>
+          <div style="font-size:11px;color:#64748b;">תאריך: ${date}</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#e2e8f0;margin-bottom:12px;"></div>
+
+      <div style="font-size:12px;color:#64748b;margin-bottom:4px;">לכבוד:</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;">${d.brokerName || '—'}</div>
+
+      <div style="background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;">פרטי ההובלה</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#64748b;">מספר הזמנה</span><span style="font-weight:600;">${orderNum}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#64748b;">מוצא</span><span style="font-weight:600;">${d.from || '—'}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#64748b;">יעד</span><span style="font-weight:600;">${d.to || '—'}</span></div>
+        ${d.date ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#64748b;">תאריך הובלה</span><span style="font-weight:600;">${d.date}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:#64748b;">נהג</span><span style="font-weight:600;">${d.driverName || '—'}</span></div>
+      </div>
+
+      <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+        <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;">פירוט תשלום</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
+        <div style="height:1px;background:#e2e8f0;margin-bottom:8px;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;"><span>סה"כ לתשלום</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:4px;text-align:left;">כולל מע"מ</div>
+      </div>
+    </div>
+
+    <div style="font-size:10px;color:#94a3b8;text-align:center;">
+      TruckGo — פלטפורמת תיווך בלבד. אינה נושאת באחריות להובלה.
+    </div>
+  `;
+
+  document.getElementById('invoice-content').innerHTML = html;
+  window._currentInvoiceData = { html, invNum, brokerName: d.brokerName };
+  const modal = document.getElementById('invoice-modal');
+  modal.style.display = 'flex';
+};
+
+window.closeInvoiceModal = function() {
+  document.getElementById('invoice-modal').style.display = 'none';
+};
+
+window.printInvoice = function() {
+  const data = window._currentInvoiceData;
+  if (!data) return;
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <!DOCTYPE html>
+    <html dir="rtl" lang="he">
+    <head>
+      <meta charset="UTF-8">
+      <title>חשבונית ${data.invNum}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
+      <style>
+        body { font-family: Heebo, sans-serif; padding: 30px; max-width: 500px; margin: 0 auto; direction: rtl; }
+        @media print { body { padding: 10px; } }
+      </style>
+    </head>
+    <body>${data.html}</body>
+    </html>
+  `);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+};
+
 window.loadPaymentsScreen = async function() {
   if (!currentUser) return;
   // עדיפות: localStorage (נקבע ע"י adminGoBroker/adminGoDriver) > Firestore
@@ -4672,6 +4780,12 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
       </div>
       ${actions}
+      ${(role === 'brk' && isConfirmed && d.transferStatus === 'done') ? `
+      <div class="brow" style="margin-top:10px;">
+        <button class="btn" onclick="openInvoiceModal(${JSON.stringify({id:d.id,from:d.from,to:d.to,amount:d.amount,finalAmount:d.finalAmount,brokerName:d.brokerName,driverName:d.driverName,date:d.date,orderNumber:d.orderNumber,confirmedAt:d.confirmedAt?.seconds?{seconds:d.confirmedAt.seconds}:null}).replace(/"/g,'&quot;')})" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;">
+          צפה בחשבונית
+        </button>
+      </div>` : ''}
       ${buildTimeline(d)}
     </div>
   </div>`;
