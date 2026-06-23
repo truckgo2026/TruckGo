@@ -4187,7 +4187,7 @@ async function renderBrokerPayments() {
 }
 
 window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, amount) {
-  if (!confirm(\`לאשר קבלת ₪\${Number(amount).toLocaleString()} מ\${brokerName}?\nחשבונית תישלח אוטומטית לעמיל.\`)) return;
+  if (!confirm(`לאשר קבלת ₪${Number(amount).toLocaleString()} מ${brokerName}?\nחשבונית תישלח אוטומטית לעמיל.`)) return;
   try {
     await updateDoc(doc(db, 'shipments', shipId), {
       brokerPaymentConfirmed: true,
