@@ -376,7 +376,19 @@ textarea.fi{resize:vertical;}
     <!-- סיכום עליון -->
     <div id="admin-transfers-summary" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow);"></div>
     <!-- פילטר -->
+    <!-- טאבים ראשיים -->
     <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button id="atab-transfers" class="sch-stbtn on" onclick="adminTransferTab('transfers')" style="flex:1;">העברות לנהגים</button>
+      <button id="atab-broker" class="sch-stbtn" onclick="adminTransferTab('broker')" style="flex:1;">קבלה מעמילים</button>
+    </div>
+
+    <!-- מסך קבלה מעמילים -->
+    <div id="atf-broker-panel" style="display:none;">
+      <div id="admin-broker-list"><div style="text-align:center;color:var(--muted);padding:40px 0;">טוען...</div></div>
+    </div>
+
+    <!-- פילטר העברות לנהגים -->
+    <div id="atf-filters" style="display:flex;gap:8px;margin-bottom:16px;">
       <button id="atf-pending" class="sch-stbtn on" onclick="adminTransferFilter('pending')" style="flex:1;">ממתין להעברה</button>
       <button id="atf-done"    class="sch-stbtn"    onclick="adminTransferFilter('done')"    style="flex:1;">הועבר</button>
       <button id="atf-all"     class="sch-stbtn"    onclick="adminTransferFilter('all')"     style="flex:1;">הכל</button>
@@ -4110,6 +4122,93 @@ window.adminToggleBlock = async function(uid, isCurrentlyBlocked) {
 
 // ── אדמין: מרכז העברות כספים ──────────────────────────────────────
 window._adminTransferFilter = 'pending';
+
+window.adminTransferTab = function(tab) {
+  ['transfers','broker'].forEach(t => {
+    const btn = document.getElementById('atab-'+t);
+    if (btn) btn.classList.toggle('on', t === tab);
+  });
+  const brokerPanel = document.getElementById('atf-broker-panel');
+  const filters = document.getElementById('atf-filters');
+  const list = document.getElementById('admin-transfers-list');
+  if (tab === 'broker') {
+    if (brokerPanel) brokerPanel.style.display = 'block';
+    if (filters) filters.style.display = 'none';
+    if (list) list.style.display = 'none';
+    renderBrokerPayments();
+  } else {
+    if (brokerPanel) brokerPanel.style.display = 'none';
+    if (filters) filters.style.display = 'flex';
+    if (list) list.style.display = 'block';
+  }
+};
+
+async function renderBrokerPayments() {
+  const container = document.getElementById('admin-broker-list');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">טוען...</div>';
+
+  // שלוף הובלות שהסתיימו ועמיל אישר קבלה
+  const { collection, query, where, orderBy, getDocs, doc, updateDoc, serverTimestamp, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  const snap = await getDocs(query(collection(db, 'shipments'), where('status','==','completed')));
+  const ships = [];
+  snap.forEach(d => ships.push({id: d.id, ...d.data()}));
+
+  if (!ships.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">אין הובלות</div>';
+    return;
+  }
+
+  container.innerHTML = ships.map(d => {
+    const amt = d.finalAmount || d.amount || 0;
+    const brokerPays = Math.round(amt * 1.05);
+    const isPaid = d.brokerPaymentConfirmed === true;
+    const orderNum = d.orderNumber || d.id.slice(0,6).toUpperCase();
+    return `
+    <div style="background:var(--surface);border:1.5px solid ${isPaid ? 'var(--green)' : 'var(--amber)'};border-radius:16px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);">#${orderNum}</div>
+        <div class="badge ${isPaid ? 'bg' : 'bam'}" style="font-size:12px;">${isPaid ? '✓ התקבל תשלום' : 'ממתין לתשלום'}</div>
+      </div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:4px;">${d.from || '—'} ← ${d.to || '—'}</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">עמיל: ${d.brokerName || '—'}</div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span style="color:var(--muted);">לקבל מהעמיל</span><span style="font-weight:700;">₪${brokerPays.toLocaleString()}</span></div>
+        ${isPaid && d.brokerPaymentConfirmedAt ? `<div style="font-size:11px;color:var(--muted);">אושר: ${new Date(d.brokerPaymentConfirmedAt.seconds*1000).toLocaleDateString('he-IL')}</div>` : ''}
+      </div>
+      ${!isPaid ? `
+      <button onclick="confirmBrokerPayment('${d.id}','${d.brokerName||''}','${d.brokerEmail||''}',${brokerPays})" 
+        style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">
+        ✓ אישרתי קבלת ₪${brokerPays.toLocaleString()} מהעמיל
+      </button>` : `
+      <div style="text-align:center;font-size:13px;color:var(--green);font-weight:700;">✓ חשבונית נשלחה לעמיל</div>`}
+    </div>`;
+  }).join('');
+}
+
+window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, amount) {
+  if (!confirm(\`לאשר קבלת ₪\${Number(amount).toLocaleString()} מ\${brokerName}?\nחשבונית תישלח אוטומטית לעמיל.\`)) return;
+  try {
+    await updateDoc(doc(db, 'shipments', shipId), {
+      brokerPaymentConfirmed: true,
+      brokerPaymentConfirmedAt: serverTimestamp(),
+      invoiceSent: true
+    });
+
+    // שלוף פרטי הובלה מ-Firestore לחשבונית
+    const shipSnap = await getDoc(doc(db, 'shipments', shipId));
+    if (shipSnap.exists()) {
+      const ship = { id: shipId, ...shipSnap.data() };
+      try {
+        await sendInvoiceAuto(ship);
+        toast('✓ אושר! חשבונית נשלחה לעמיל המכס');
+      } catch(e) {
+        toast('אושר, אך שגיאה בשליחת מייל: ' + e.message);
+      }
+    }
+    renderBrokerPayments();
+  } catch(e) { toast('שגיאה: ' + e.message); }
+};
 
 window.adminTransferFilter = function(f) {
   window._adminTransferFilter = f;
