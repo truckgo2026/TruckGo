@@ -358,9 +358,10 @@ textarea.fi{resize:vertical;}
       <button onclick="closeInvoiceModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;">✕</button>
     </div>
     <div id="invoice-content"></div>
-    <div style="display:flex;gap:10px;margin-top:20px;">
-      <button onclick="printInvoice()" style="flex:1;padding:14px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">הדפס / שמור PDF</button>
-      <button onclick="closeInvoiceModal()" style="flex:1;padding:14px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">סגור</button>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button onclick="printInvoice()" style="flex:1;min-width:120px;padding:14px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">הדפס / שמור PDF</button>
+      <button onclick="sendInvoiceByEmail()" id="send-email-btn" style="flex:1;min-width:120px;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">שלח במייל ✉</button>
+      <button onclick="closeInvoiceModal()" style="flex:1;min-width:120px;padding:14px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">סגור</button>
     </div>
   </div>
 </div>
@@ -4358,21 +4359,139 @@ window.markTransferred = async function(shipId, recipientName, netAmount) {
   try {
     await updateDoc(doc(db, 'shipments', shipId), {
       transferStatus: 'done',
-      transferredAt: serverTimestamp()
+      transferredAt: serverTimestamp(),
+      invoiceSent: true
     });
     // עדכן ב-cache המקומי
     const idx = window._allTransferShipments.findIndex(d => d.id === shipId);
     if (idx !== -1) {
       window._allTransferShipments[idx].transferStatus = 'done';
       window._allTransferShipments[idx].transferredAt  = { toDate: () => new Date() };
+      window._allTransferShipments[idx].invoiceSent = true;
     }
-    toast('ההעברה סומנה בהצלחה!');
-    // פתח חשבונית אוטומטית
+    toast('ההעברה סומנה בהצלחה! שולח חשבונית לעמיל...');
+
+    // שלח חשבונית אוטומטית לעמיל המכס
     const ship = window._allTransferShipments.find(s => s.id === shipId);
-    if (ship) setTimeout(() => openInvoiceModal(ship), 500);
+    if (ship) {
+      try {
+        await sendInvoiceAuto(ship);
+        toast('החשבונית נשלחה בהצלחה לעמיל המכס!');
+      } catch(e) {
+        toast('ההעברה אושרה אך שגיאה בשליחת המייל: ' + e.message);
+      }
+    }
+
     window._renderAdminTransfers();
   } catch(e) { toast('שגיאה: ' + e.message); }
 };
+
+// שליחת חשבונית אוטומטית לעמיל המכס
+async function sendInvoiceAuto(d) {
+  // שלוף מייל ופרטי עמיל מ-Firestore
+  let brokerEmail = d.brokerEmail || '';
+  let brokerIdNumber = '';
+  let brokerCompany = '';
+  if (d.brokerUid) {
+    const uSnap = await getDoc(doc(db, 'users', d.brokerUid));
+    if (uSnap.exists()) {
+      const ud = uSnap.data();
+      brokerEmail = ud.email || brokerEmail;
+      brokerIdNumber = ud.idNumber || ud.hp || '';
+      brokerCompany = ud.companyName || '';
+    }
+  }
+  if (!brokerEmail) throw new Error('לא נמצא מייל לעמיל');
+
+  const amt = d.finalAmount || d.amount || 0;
+  const brokerPays = Math.round(amt * 1.05);
+  const fee = Math.round(amt * 0.05);
+  const orderNum = d.orderNumber || '—';
+  const invNum = 'INV-' + orderNum.replace(/[^A-Z0-9]/gi,'');
+  const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
+  const date = d.confirmedAt?.toDate
+    ? d.confirmedAt.toDate().toLocaleDateString('he-IL')
+    : (d.confirmedAt?.seconds ? new Date(d.confirmedAt.seconds*1000).toLocaleDateString('he-IL') : new Date().toLocaleDateString('he-IL'));
+
+  const invoiceHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#1e293b;background:#f1f5f9;padding:20px;}
+.page{width:100%;max-width:600px;background:#fff;margin:0 auto;padding:30px;border:2px solid #1d4ed8;border-radius:12px;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+.logo{font-size:26px;font-weight:900;color:#1d4ed8;}
+.divider{height:2px;background:#1d4ed8;margin:12px 0;border-radius:2px;}
+.section{background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:12px;}
+.section-title{font-size:12px;font-weight:800;color:#1d4ed8;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;}
+table{width:100%;border-collapse:collapse;}
+td{padding:3px 0;font-size:11px;vertical-align:top;}
+td:first-child{color:#64748b;width:45%;}
+td:last-child{font-weight:600;text-align:left;}
+.pay-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
+.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:900;margin-top:6px;padding-top:6px;border-top:1px solid #cbd5e1;}
+.footer{font-size:9px;color:#94a3b8;text-align:center;margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div style="font-size:13px;font-weight:700;">${invNum}</div>
+      <div style="font-size:11px;color:#64748b;">תאריך: ${date}</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="logo">TruckGo</div>
+      <div style="font-size:10px;color:#64748b;">פלטפורמת הובלות חכמה</div>
+      <div style="font-size:10px;color:#64748b;">truckgo.co.il</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div style="margin-bottom:14px;">
+    <div style="font-size:10px;color:#64748b;">לכבוד:</div>
+    <div style="font-size:15px;font-weight:800;">${d.brokerName || '—'}</div>
+    ${brokerCompany ? `<div style="font-size:11px;color:#475569;">${brokerCompany}</div>` : ''}
+    ${brokerIdNumber ? `<div style="font-size:11px;color:#475569;">${brokerCompany ? 'ח.פ' : 'ת"ז'}: ${brokerIdNumber}</div>` : ''}
+  </div>
+  <div class="section">
+    <div class="section-title">פרטי ההובלה</div>
+    <table>
+      <tr><td>מספר הזמנה</td><td>${orderNum}</td></tr>
+      <tr><td>מוצא</td><td>${d.from || '—'}</td></tr>
+      <tr><td>יעד</td><td>${d.to || '—'}</td></tr>
+      ${d.date ? `<tr><td>תאריך הובלה</td><td>${d.date}</td></tr>` : ''}
+      <tr><td>נהג / מוביל</td><td>${d.driverName || '—'}</td></tr>
+      <tr><td>סוג מטען</td><td>${cargoLabel}</td></tr>
+      ${d.weight ? `<tr><td>משקל</td><td>${Number(d.weight).toLocaleString()} ק"ג</td></tr>` : ''}
+      ${d.desc ? `<tr><td>תיאור טובין</td><td>${d.desc}</td></tr>` : ''}
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">פירוט תשלום</div>
+    <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
+    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
+    <div class="total-row"><span>סה"כ לתשלום</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:4px;">כולל מע"מ</div>
+  </div>
+  <div class="footer">TruckGo — פלטפורמת תיווך בלבד. אינה נושאת באחריות על ביצוע ההובלה.</div>
+</div>
+</body>
+</html>`;
+
+  const res = await fetch('https://send-invoice-763417873532.europe-west1.run.app', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to: brokerEmail,
+      subject: `חשבונית ${invNum} מ-TruckGo`,
+      invoiceHtml
+    })
+  });
+  if (!res.ok) throw new Error('שגיאה בשרת המייל');
+}
 
 function loadProfile(d, user) {
   // שמור תפקיד ו-uid לשימוש גלובלי
@@ -4642,6 +4761,120 @@ window.openInvoiceModal = async function(d) {
 
 window.closeInvoiceModal = function() {
   document.getElementById('invoice-modal').style.display = 'none';
+};
+
+window.sendInvoiceByEmail = async function() {
+  const data = window._currentInvoiceData;
+  if (!data) return;
+
+  const brokerEmail = data.shipment?.brokerEmail || '';
+  const email = prompt('כתובת מייל לשליחת החשבונית:', brokerEmail);
+  if (!email) return;
+
+  const btn = document.getElementById('send-email-btn');
+  btn.textContent = 'שולח...';
+  btn.disabled = true;
+
+  const d = data.shipment;
+  const amt = d.finalAmount || d.amount || 0;
+  const brokerPays = Math.round(amt * 1.05);
+  const fee = Math.round(amt * 0.05);
+  const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
+
+  const invoiceHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#1e293b;background:#f1f5f9;padding:20px;}
+.page{width:100%;max-width:600px;background:#fff;margin:0 auto;padding:30px;border:2px solid #1d4ed8;border-radius:12px;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+.logo{font-size:26px;font-weight:900;color:#1d4ed8;}
+.divider{height:2px;background:#1d4ed8;margin:12px 0;border-radius:2px;}
+.section{background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:12px;}
+.section-title{font-size:12px;font-weight:800;color:#1d4ed8;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;}
+table{width:100%;border-collapse:collapse;}
+td{padding:3px 0;font-size:11px;vertical-align:top;}
+td:first-child{color:#64748b;width:45%;}
+td:last-child{font-weight:600;text-align:left;}
+.pay-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
+.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:900;margin-top:6px;padding-top:6px;border-top:1px solid #cbd5e1;}
+.footer{font-size:9px;color:#94a3b8;text-align:center;margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div style="font-size:13px;font-weight:700;">${data.invNum}</div>
+      <div style="font-size:11px;color:#64748b;">תאריך: ${data.date}</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="logo">TruckGo</div>
+      <div style="font-size:10px;color:#64748b;">פלטפורמת הובלות חכמה</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div style="margin-bottom:14px;">
+    <div style="font-size:10px;color:#64748b;">לכבוד:</div>
+    <div style="font-size:15px;font-weight:800;">${d.brokerName || '—'}</div>
+    ${data.brokerCompany ? `<div style="font-size:11px;color:#475569;">${data.brokerCompany}</div>` : ''}
+    ${data.brokerIdNumber ? `<div style="font-size:11px;color:#475569;">${data.brokerCompany ? 'ח.פ' : 'ת"ז'}: ${data.brokerIdNumber}</div>` : ''}
+  </div>
+  <div class="section">
+    <div class="section-title">פרטי ההובלה</div>
+    <table>
+      <tr><td>מספר הזמנה</td><td>${d.orderNumber || '—'}</td></tr>
+      <tr><td>מוצא</td><td>${d.from || '—'}</td></tr>
+      <tr><td>יעד</td><td>${d.to || '—'}</td></tr>
+      ${d.date ? `<tr><td>תאריך הובלה</td><td>${d.date}</td></tr>` : ''}
+      <tr><td>נהג / מוביל</td><td>${d.driverName || '—'}</td></tr>
+      <tr><td>סוג מטען</td><td>${cargoLabel}</td></tr>
+      ${d.weight ? `<tr><td>משקל</td><td>${Number(d.weight).toLocaleString()} ק"ג</td></tr>` : ''}
+      ${d.desc ? `<tr><td>תיאור טובין</td><td>${d.desc}</td></tr>` : ''}
+    </table>
+  </div>
+  <div class="section">
+    <div class="section-title">פירוט תשלום</div>
+    <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
+    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
+    <div class="total-row"><span>סה"כ לתשלום</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:4px;">כולל מע"מ</div>
+  </div>
+  <div class="footer">TruckGo — פלטפורמת תיווך בלבד. אינה נושאת באחריות על ביצוע ההובלה.</div>
+</div>
+</body>
+</html>`;
+
+  try {
+    const res = await fetch('https://send-invoice-763417873532.europe-west1.run.app', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: email,
+        subject: `חשבונית ${data.invNum} מ-TruckGo`,
+        invoiceHtml
+      })
+    });
+
+    if (res.ok) {
+      btn.textContent = '✓ נשלח!';
+      btn.style.background = '#15803d';
+      setTimeout(() => {
+        btn.textContent = 'שלח במייל ✉';
+        btn.style.background = '#16a34a';
+        btn.disabled = false;
+      }, 3000);
+    } else {
+      throw new Error('שגיאה בשליחה');
+    }
+  } catch(e) {
+    alert('שגיאה בשליחת המייל. נסה שנית.');
+    btn.textContent = 'שלח במייל ✉';
+    btn.disabled = false;
+  }
 };
 
 window.printInvoice = function() {
@@ -4924,7 +5157,7 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
       </div>
       ${actions}
-      ${(role === 'brk' && isConfirmed) ? `
+      ${(role === 'brk' && d.invoiceSent) ? `
       <div class="brow" style="margin-top:10px;">
         <button class="btn" onclick="openInvoiceById('${d.id}')" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;">
           צפה בחשבונית
