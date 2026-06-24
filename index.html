@@ -360,7 +360,6 @@ textarea.fi{resize:vertical;}
     <div id="invoice-content"></div>
     <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
       <button onclick="printInvoice()" style="flex:1;min-width:120px;padding:14px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">הדפס / שמור PDF</button>
-      <button onclick="sendInvoiceByEmail()" id="send-email-btn" style="flex:1;min-width:120px;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">שלח במייל ✉</button>
       <button onclick="closeInvoiceModal()" style="flex:1;min-width:120px;padding:14px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">סגור</button>
     </div>
   </div>
@@ -4149,7 +4148,6 @@ async function renderBrokerPayments() {
   container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">טוען...</div>';
 
   // שלוף הובלות שהסתיימו ועמיל אישר קבלה
-  const { collection, query, where, orderBy, getDocs, doc, updateDoc, serverTimestamp, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
   const snap = await getDocs(query(collection(db, 'shipments'), where('status','==','confirmed')));
   const ships = [];
   snap.forEach(d => ships.push({id: d.id, ...d.data()}));
@@ -5039,12 +5037,19 @@ td:last-child{font-weight:600;text-align:left;}
 .footer{text-align:center;font-size:8pt;color:#94a3b8;margin-top:6mm;padding-top:3mm;border-top:1px solid #e2e8f0;}
 .btn{display:block;margin:6mm auto 0;padding:10px 36px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:12pt;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;}
 @media print{
-  html,body{background:#fff!important;padding:0!important;margin:0!important;}
-  .page{width:100%!important;min-height:100vh!important;padding:12mm 10mm!important;margin:0!important;border:none!important;border-radius:0!important;}
+  html,body{background:#fff!important;padding:0!important;margin:0!important;height:auto!important;}
+  .page{width:100%!important;height:auto!important;min-height:unset!important;padding:8mm 8mm!important;margin:0!important;border:none!important;border-radius:0!important;font-size:9pt!important;}
   .btn{display:none!important;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  .logo{font-size:20pt!important;}
+  .total-row{font-size:13pt!important;}
+  .section{padding:3mm 4mm!important;margin-bottom:3mm!important;}
+  .to-section{margin-bottom:4mm!important;}
+  .header{margin-bottom:4mm!important;}
+  .divider{margin:3mm 0!important;}
+  .footer{margin-top:3mm!important;}
 }
-@page{size:A4 portrait;margin:0;}
+@page{size:A4 portrait;margin:5mm;}
 </style>
 </head>
 <body>
