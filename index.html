@@ -4031,6 +4031,7 @@ window.loadAdminList = async function() {
 };
 
 window.adminApprove = async function(uid) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { toast('אין הרשאה'); return; }
   if (!confirm('לאשר משתמש זה?')) return;
   try {
     const userSnap = await getDoc(doc(db, 'users', uid));
@@ -4053,6 +4054,7 @@ window.adminApprove = async function(uid) {
 };
 
 window.adminReject = async function(uid) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { toast('אין הרשאה'); return; }
   if (!confirm('לדחות משתמש זה?')) return;
   try {
     await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
@@ -4110,6 +4112,7 @@ window.loadAdminUsers = async function() {
 
 // ── ניהול משתמשים: חסימה/שחרור ─────────────────
 window.adminToggleBlock = async function(uid, isCurrentlyBlocked) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { toast('אין הרשאה'); return; }
   const action = isCurrentlyBlocked ? 'לשחרר' : 'לחסום';
   if (!confirm(`${action} את המשתמש?`)) return;
   try {
@@ -4327,6 +4330,7 @@ window.setBrokerFilter = function(f) {
 };
 
 window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, amount) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { toast('אין הרשאה'); return; }
   // חלון אישור מובנה באפליקציה
   const confirmed = await new Promise(resolve => {
     const overlay = document.createElement('div');
@@ -4613,6 +4617,7 @@ window._renderAdminTransfers = function() {
 };
 
 window.markTransferred = async function(shipId, recipientName, netAmount) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { toast('אין הרשאה'); return; }
   if (!confirm(`לסמן שהעברת ₪${Number(netAmount).toLocaleString()} ל${recipientName}?`)) return;
   try {
     await updateDoc(doc(db, 'shipments', shipId), {
@@ -4741,7 +4746,7 @@ td:last-child{font-weight:600;text-align:left;}
 
   const res = await fetch('https://send-invoice-763417873532.europe-west1.run.app', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-api-secret': 'TruckGo2026!SecretKey#InvoiceAPI' },
     body: JSON.stringify({
       to: brokerEmail,
       subject: `חשבונית ${invNum} מ-TruckGo`,
@@ -5109,7 +5114,7 @@ td:last-child{font-weight:600;text-align:left;}
   try {
     const res = await fetch('https://send-invoice-763417873532.europe-west1.run.app', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-secret': 'TruckGo2026!SecretKey#InvoiceAPI' },
       body: JSON.stringify({
         to: email,
         subject: `חשבונית ${data.invNum} מ-TruckGo`,
