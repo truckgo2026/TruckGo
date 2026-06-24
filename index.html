@@ -4327,7 +4327,27 @@ window.setBrokerFilter = function(f) {
 };
 
 window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, amount) {
-  if (!confirm(`לאשר קבלת ₪${Number(amount).toLocaleString()} מ${brokerName}?\nחשבונית תישלח אוטומטית לעמיל.`)) return;
+  // חלון אישור מובנה באפליקציה
+  const confirmed = await new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="font-size:32px;margin-bottom:12px;">💰</div>
+        <div style="font-size:17px;font-weight:800;color:#1e293b;margin-bottom:8px;">אישור קבלת תשלום</div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:6px;">קיבלת ₪${Number(amount).toLocaleString()} מ${brokerName}?</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:20px;">חשבונית תישלח אוטומטית לעמיל</div>
+        <div style="display:flex;gap:10px;">
+          <button id="confirm-no" style="flex:1;padding:12px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">ביטול</button>
+          <button id="confirm-yes" style="flex:1;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">אישור ✓</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#confirm-yes').onclick = () => { document.body.removeChild(overlay); resolve(true); };
+    overlay.querySelector('#confirm-no').onclick = () => { document.body.removeChild(overlay); resolve(false); };
+  });
+  if (!confirmed) return;
+
   try {
     await updateDoc(doc(db, 'shipments', shipId), {
       brokerPaymentConfirmed: true,
@@ -4335,7 +4355,6 @@ window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, am
       invoiceSent: true
     });
 
-    // שלוף פרטי הובלה מ-Firestore לחשבונית
     const shipSnap = await getDoc(doc(db, 'shipments', shipId));
     if (shipSnap.exists()) {
       const ship = { id: shipId, ...shipSnap.data() };
