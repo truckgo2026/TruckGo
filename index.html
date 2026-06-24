@@ -4130,15 +4130,18 @@ window.adminTransferTab = function(tab) {
   const brokerPanel = document.getElementById('atf-broker-panel');
   const filters = document.getElementById('atf-filters');
   const list = document.getElementById('admin-transfers-list');
+  const summary = document.getElementById('admin-transfers-summary');
   if (tab === 'broker') {
     if (brokerPanel) brokerPanel.style.display = 'block';
     if (filters) filters.style.display = 'none';
     if (list) list.style.display = 'none';
+    if (summary) summary.style.display = 'none';
     renderBrokerPayments();
   } else {
     if (brokerPanel) brokerPanel.style.display = 'none';
     if (filters) filters.style.display = 'flex';
     if (list) list.style.display = 'block';
+    if (summary) summary.style.display = 'block';
   }
 };
 
