@@ -4184,6 +4184,12 @@ async function renderBrokerPayments() {
   // פילטר נוכחי
   const filter = window._brokerFilter || 'all';
 
+  // ריבועי מצב עמילים
+  const paidShips = ships.filter(d => d.brokerPaymentConfirmed);
+  const pendingShips = ships.filter(d => !d.brokerPaymentConfirmed);
+  const paidTotal = paidShips.reduce((s,d) => s + Math.round((d.finalAmount||d.amount||0)*1.05), 0);
+  const pendingTotal = pendingShips.reduce((s,d) => s + Math.round((d.finalAmount||d.amount||0)*1.05), 0);
+
   const summaryHtml = `
   <div style="background:#1d4ed8;border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;">
     <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:10px;text-align:center;">קבלות מעמילי מכס</div>
@@ -4203,8 +4209,24 @@ async function renderBrokerPayments() {
     </div>
     ${totalPending > 0 ? `<div style="background:rgba(251,191,36,.2);border-radius:10px;padding:8px;text-align:center;border:1px solid rgba(251,191,36,.5);">
       <div style="font-size:10px;color:rgba(255,255,255,.8);">ממתין לקבלה</div>
-      <div style="font-size:18px;font-weight:900;color:#fbbf24;">₪${totalPending.toLocaleString()}</div>
+      <div style="font-size:18px;font-weight:900;color:#fff;">₪${totalPending.toLocaleString()}</div>
     </div>` : ''}
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:14px;">
+    <div style="flex:1;background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:10px;font-weight:700;color:#d97706;margin-bottom:4px;">ממתין לתשלום</div>
+      <div style="font-size:22px;font-weight:900;color:#d97706;">${pendingShips.length}</div>
+      <div style="font-size:11px;color:#d97706;">הובלות</div>
+      <div style="font-size:13px;font-weight:900;color:#1e293b;margin-top:5px;">₪${pendingTotal.toLocaleString()}</div>
+      <div style="font-size:9px;color:#64748b;">לגבייה</div>
+    </div>
+    <div style="flex:1;background:#dcfce7;border:1px solid #16a34a;border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:10px;font-weight:700;color:#16a34a;margin-bottom:4px;">התקבל תשלום</div>
+      <div style="font-size:22px;font-weight:900;color:#16a34a;">${paidShips.length}</div>
+      <div style="font-size:11px;color:#16a34a;">הובלות</div>
+      <div style="font-size:13px;font-weight:900;color:#1e293b;margin-top:5px;">₪${paidTotal.toLocaleString()}</div>
+      <div style="font-size:9px;color:#64748b;">התקבל</div>
+    </div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:14px;">
     <button onclick="setBrokerFilter('all')" class="sch-stbtn ${filter==='all'?'on':''}" style="flex:1;">הכל</button>
