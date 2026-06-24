@@ -4182,24 +4182,24 @@ async function renderBrokerPayments() {
   const filter = window._brokerFilter || 'all';
 
   const summaryHtml = `
-  <div style="background:var(--primary);border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;">
-    <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:10px;text-align:center;">קבלות מעמילי מכס</div>
+  <div style="background:#1d4ed8;border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;">
+    <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:10px;text-align:center;">קבלות מעמילי מכס</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
       <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
-        <div style="font-size:10px;opacity:.8;">היום</div>
-        <div style="font-size:16px;font-weight:900;">₪${totalToday.toLocaleString()}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.8);">היום</div>
+        <div style="font-size:16px;font-weight:900;color:#fff;">₪${totalToday.toLocaleString()}</div>
       </div>
       <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
-        <div style="font-size:10px;opacity:.8;">החודש</div>
-        <div style="font-size:16px;font-weight:900;">₪${totalMonth.toLocaleString()}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.8);">החודש</div>
+        <div style="font-size:16px;font-weight:900;color:#fff;">₪${totalMonth.toLocaleString()}</div>
       </div>
       <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
-        <div style="font-size:10px;opacity:.8;">השנה</div>
-        <div style="font-size:16px;font-weight:900;">₪${totalYear.toLocaleString()}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.8);">השנה</div>
+        <div style="font-size:16px;font-weight:900;color:#fff;">₪${totalYear.toLocaleString()}</div>
       </div>
     </div>
-    ${totalPending > 0 ? `<div style="background:rgba(251,191,36,.2);border-radius:10px;padding:8px;text-align:center;border:1px solid rgba(251,191,36,.4);">
-      <div style="font-size:10px;opacity:.8;">ממתין לקבלה</div>
+    ${totalPending > 0 ? `<div style="background:rgba(251,191,36,.2);border-radius:10px;padding:8px;text-align:center;border:1px solid rgba(251,191,36,.5);">
+      <div style="font-size:10px;color:rgba(255,255,255,.8);">ממתין לקבלה</div>
       <div style="font-size:18px;font-weight:900;color:#fbbf24;">₪${totalPending.toLocaleString()}</div>
     </div>` : ''}
   </div>
@@ -4229,56 +4229,56 @@ async function renderBrokerPayments() {
     const fmtDate = dt => dt ? dt.toLocaleDateString('he-IL') + ' ' + dt.toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'}) : '—';
 
     const timelineEvents = [
-      createdAt ? {dot:'var(--primary)', label:'הזמנה נוצרה', time: fmtDate(createdAt)} : null,
-      brokerConfirmedAt ? {dot:'var(--primary)', label:'עמיל ונהג אישרו', time: fmtDate(brokerConfirmedAt)} : null,
-      driverDeliveredAt ? {dot:'var(--primary)', label:'נהג אישר מסירה', time: fmtDate(driverDeliveredAt)} : null,
-      isPaid && confirmedAt ? {dot:'var(--green)', label:'תשלום התקבל', time: fmtDate(confirmedAt)} : null,
-      isPaid ? {dot:'var(--green)', label:'חשבונית נשלחה לעמיל', time: ''} : null,
+      createdAt ? {dot:'#1d4ed8', label:'הזמנה נוצרה', time: fmtDate(createdAt)} : null,
+      brokerConfirmedAt ? {dot:'#1d4ed8', label:'עמיל ונהג אישרו', time: fmtDate(brokerConfirmedAt)} : null,
+      driverDeliveredAt ? {dot:'#1d4ed8', label:'נהג אישר מסירה', time: fmtDate(driverDeliveredAt)} : null,
+      isPaid && confirmedAt ? {dot:'#16a34a', label:'תשלום התקבל', time: fmtDate(confirmedAt)} : null,
+      isPaid ? {dot:'#16a34a', label:'חשבונית נשלחה לעמיל', time: ''} : null,
     ].filter(Boolean);
 
     return `
-    <div style="background:var(--surface);border:1.5px solid ${isPaid ? 'var(--green)' : 'var(--amber)'};border-radius:16px;padding:16px;margin-bottom:14px;">
+    <div style="background:#ffffff;border:1.5px solid ${isPaid ? '#16a34a' : '#f59e0b'};border-radius:16px;padding:16px;margin-bottom:14px;">
       <!-- כותרת -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:12px;font-weight:700;color:var(--muted);">#${orderNum}</div>
+        <div style="font-size:12px;font-weight:700;color:#64748b;">#${orderNum}</div>
         <div class="badge ${isPaid ? 'bg' : 'bam'}" style="font-size:12px;">${isPaid ? '✓ התקבל תשלום' : 'ממתין לתשלום'}</div>
       </div>
       <div style="font-size:15px;font-weight:800;margin-bottom:2px;">${d.from || '—'} ← ${d.to || '—'}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">עמיל: ${d.brokerName || '—'}</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">עמיל: ${d.brokerName || '—'}</div>
 
       <!-- פרטי הובלה -->
-      <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:8px;">פרטי ההובלה</div>
+      <div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">פרטי ההובלה</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-          <div style="font-size:11px;color:var(--muted);">נהג</div><div style="font-size:11px;font-weight:600;">${d.driverName||'—'}</div>
-          <div style="font-size:11px;color:var(--muted);">מטען</div><div style="font-size:11px;font-weight:600;">${cargoLabel}</div>
-          ${d.weight ? `<div style="font-size:11px;color:var(--muted);">משקל</div><div style="font-size:11px;font-weight:600;">${Number(d.weight).toLocaleString()} ק"ג</div>` : ''}
-          ${d.date ? `<div style="font-size:11px;color:var(--muted);">תאריך</div><div style="font-size:11px;font-weight:600;">${d.date}</div>` : ''}
+          <div style="font-size:11px;color:#64748b;">נהג</div><div style="font-size:11px;font-weight:600;">${d.driverName||'—'}</div>
+          <div style="font-size:11px;color:#64748b;">מטען</div><div style="font-size:11px;font-weight:600;">${cargoLabel}</div>
+          ${d.weight ? `<div style="font-size:11px;color:#64748b;">משקל</div><div style="font-size:11px;font-weight:600;">${Number(d.weight).toLocaleString()} ק"ג</div>` : ''}
+          ${d.date ? `<div style="font-size:11px;color:#64748b;">תאריך</div><div style="font-size:11px;font-weight:600;">${d.date}</div>` : ''}
         </div>
       </div>
 
       <!-- פירוט כספי -->
-      <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:8px;">פירוט כספי</div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--muted);">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:var(--muted);">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
-        <div style="height:1px;background:var(--border);margin-bottom:6px;"></div>
-        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;"><span>לקבל מהעמיל</span><span style="color:var(--primary);">₪${brokerPays.toLocaleString()}</span></div>
-        ${isPaid && confirmedAt ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;">התקבל: ${fmtDate(confirmedAt)}</div>` : ''}
+      <div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">פירוט כספי</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
+        <div style="height:1px;background:#e2e8f0;margin-bottom:6px;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;"><span>לקבל מהעמיל</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
+        ${isPaid && confirmedAt ? `<div style="font-size:10px;color:#64748b;margin-top:4px;">התקבל: ${fmtDate(confirmedAt)}</div>` : ''}
       </div>
 
       <!-- ציר זמן -->
-      <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px;">
-        <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:8px;">ציר זמן</div>
+      <div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">ציר זמן</div>
         ${timelineEvents.map((e,i) => `
         <div style="display:flex;align-items:flex-start;gap:8px;${i<timelineEvents.length-1?'margin-bottom:8px;':''}">
           <div style="display:flex;flex-direction:column;align-items:center;">
             <div style="width:8px;height:8px;border-radius:50%;background:${e.dot};flex-shrink:0;margin-top:2px;"></div>
-            ${i<timelineEvents.length-1?`<div style="width:1px;flex:1;background:var(--border);margin-top:2px;min-height:14px;"></div>`:''}
+            ${i<timelineEvents.length-1?`<div style="width:1px;flex:1;background:#e2e8f0;margin-top:2px;min-height:14px;"></div>`:''}
           </div>
           <div style="flex:1;">
             <div style="font-size:12px;font-weight:600;">${e.label}</div>
-            ${e.time ? `<div style="font-size:10px;color:var(--muted);">${e.time}</div>` : ''}
+            ${e.time ? `<div style="font-size:10px;color:#64748b;">${e.time}</div>` : ''}
           </div>
         </div>`).join('')}
       </div>
@@ -4286,10 +4286,10 @@ async function renderBrokerPayments() {
       <!-- כפתור -->
       ${!isPaid ? `
       <button onclick="confirmBrokerPayment('${d.id}','${(d.brokerName||'').replace(/'/g,"\'")}','${d.brokerEmail||''}',${brokerPays})"
-        style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">
+        style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">
         ✓ אישרתי קבלת ₪${brokerPays.toLocaleString()} מהעמיל
       </button>` : `
-      <div style="text-align:center;font-size:13px;color:var(--green);font-weight:700;padding:8px;">✓ חשבונית נשלחה לעמיל</div>`}
+      <div style="text-align:center;font-size:13px;color:#16a34a;font-weight:700;padding:8px;">✓ חשבונית נשלחה לעמיל</div>`}
     </div>`;
   }).join('');
 
@@ -5125,48 +5125,41 @@ window.printInvoice = function() {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html{background:#e5e7eb;}
-body{font-family:Heebo,sans-serif;direction:rtl;color:#1e293b;background:#e5e7eb;padding:20px;}
-.page{width:210mm;min-height:297mm;background:#fff;margin:0 auto;padding:16mm 14mm;border:2px solid #1d4ed8;border-radius:8px;}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;}
-.logo{font-size:28pt;font-weight:900;color:#1d4ed8;line-height:1;}
-.logo-sub{font-size:9pt;color:#64748b;margin-top:1mm;}
+body{font-family:Heebo,sans-serif;direction:rtl;color:#1e293b;background:#e5e7eb;padding:10px;}
+.page{width:100%;max-width:210mm;background:#fff;margin:0 auto;padding:8mm 8mm;border:2px solid #1d4ed8;border-radius:8px;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5mm;}
+.logo{font-size:20pt;font-weight:900;color:#1d4ed8;line-height:1;}
+.logo-sub{font-size:8pt;color:#64748b;margin-top:1mm;}
 .inv-right{text-align:left;}
-.inv-num{font-size:13pt;font-weight:800;}
-.inv-date{font-size:9pt;color:#64748b;margin-top:1mm;}
-.divider{height:2px;background:#1d4ed8;margin:5mm 0;border-radius:2px;}
-.to-label{font-size:9pt;color:#64748b;margin-bottom:1mm;}
-.to-name{font-size:15pt;font-weight:800;}
-.to-sub{font-size:10pt;color:#475569;margin-top:1mm;}
-.to-section{margin-bottom:7mm;}
-.section{background:#f8fafc;border-radius:6px;padding:5mm 6mm;margin-bottom:5mm;}
-.section-title{font-size:11pt;font-weight:800;color:#1d4ed8;padding-bottom:2mm;margin-bottom:4mm;border-bottom:1px solid #e2e8f0;}
+.inv-num{font-size:11pt;font-weight:800;}
+.inv-date{font-size:8pt;color:#64748b;margin-top:1mm;}
+.divider{height:2px;background:#1d4ed8;margin:3mm 0;border-radius:2px;}
+.to-label{font-size:8pt;color:#64748b;margin-bottom:1mm;}
+.to-name{font-size:13pt;font-weight:800;}
+.to-sub{font-size:9pt;color:#475569;margin-top:1mm;}
+.to-section{margin-bottom:4mm;}
+.section{background:#f8fafc;border-radius:6px;padding:3mm 4mm;margin-bottom:3mm;}
+.section-title{font-size:9pt;font-weight:800;color:#1d4ed8;padding-bottom:2mm;margin-bottom:3mm;border-bottom:1px solid #e2e8f0;}
 table{width:100%;border-collapse:collapse;}
-td{padding:2mm 0;font-size:10pt;vertical-align:top;}
+td{padding:1.5mm 0;font-size:9pt;vertical-align:top;}
 td:first-child{color:#64748b;width:45%;}
 td:last-child{font-weight:600;text-align:left;}
-.pay-row{display:flex;justify-content:space-between;font-size:10pt;padding:1.5mm 0;}
+.pay-row{display:flex;justify-content:space-between;font-size:9pt;padding:1mm 0;}
 .pay-label{color:#64748b;}
 .pay-val{font-weight:600;}
 .pay-divider{height:1px;background:#cbd5e1;margin:2mm 0;}
-.total-row{display:flex;justify-content:space-between;font-size:15pt;font-weight:900;padding-top:2mm;}
+.total-row{display:flex;justify-content:space-between;font-size:13pt;font-weight:900;padding-top:2mm;}
 .total-amt{color:#1d4ed8;}
-.vat{font-size:8pt;color:#94a3b8;margin-top:1mm;}
-.footer{text-align:center;font-size:8pt;color:#94a3b8;margin-top:6mm;padding-top:3mm;border-top:1px solid #e2e8f0;}
-.btn{display:block;margin:6mm auto 0;padding:10px 36px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:12pt;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;}
+.vat{font-size:7pt;color:#94a3b8;margin-top:1mm;}
+.footer{text-align:center;font-size:7pt;color:#94a3b8;margin-top:4mm;padding-top:2mm;border-top:1px solid #e2e8f0;}
+.btn{display:block;margin:4mm auto 0;padding:8px 30px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:11pt;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;}
 @media print{
-  html,body{background:#fff!important;padding:0!important;margin:0!important;height:auto!important;}
-  .page{width:100%!important;height:auto!important;min-height:unset!important;padding:8mm 8mm!important;margin:0!important;border:none!important;border-radius:0!important;font-size:9pt!important;}
+  html,body{background:#fff!important;padding:0!important;margin:0!important;}
+  .page{width:100%!important;max-width:none!important;padding:6mm 6mm!important;margin:0!important;border:none!important;border-radius:0!important;}
   .btn{display:none!important;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-  .logo{font-size:20pt!important;}
-  .total-row{font-size:13pt!important;}
-  .section{padding:3mm 4mm!important;margin-bottom:3mm!important;}
-  .to-section{margin-bottom:4mm!important;}
-  .header{margin-bottom:4mm!important;}
-  .divider{margin:3mm 0!important;}
-  .footer{margin-top:3mm!important;}
 }
-@page{size:A4 portrait;margin:5mm;}
+@page{size:A4 portrait;margin:4mm;}
 </style>
 </head>
 <body>
