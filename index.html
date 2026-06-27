@@ -4754,7 +4754,10 @@ td:last-child{font-weight:600;text-align:left;}
       invoiceHtml
     })
   });
-  if (!res.ok) throw new Error('שגיאה בשרת המייל');
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(`status ${res.status}: ${errData.error || 'שגיאה בשרת המייל'}`);
+  }
 }
 
 function loadProfile(d, user) {
