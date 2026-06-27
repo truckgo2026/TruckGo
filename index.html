@@ -4366,6 +4366,7 @@ window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, am
         await sendInvoiceAuto(ship);
         toast('✓ אושר! חשבונית נשלחה לעמיל המכס');
       } catch(e) {
+        alert('שגיאה בשליחת חשבונית: ' + e.message);
         toast('אושר, אך שגיאה בשליחת מייל: ' + e.message);
       }
     }
