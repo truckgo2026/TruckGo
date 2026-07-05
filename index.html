@@ -4684,41 +4684,54 @@ async function sendInvoiceAuto(d) {
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#1e293b;background:#f1f5f9;padding:20px;}
-.page{width:100%;max-width:600px;background:#fff;margin:0 auto;padding:30px;border:2px solid #1d4ed8;border-radius:12px;}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
-.logo{font-size:26px;font-weight:900;color:#1d4ed8;}
-.divider{height:2px;background:#1d4ed8;margin:12px 0;border-radius:2px;}
-.section{background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:12px;}
-.section-title{font-size:12px;font-weight:800;color:#1d4ed8;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;}
+html,body{background:#fff;}
+body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#1e293b;}
+@page{size:A4;margin:0;}
+.page{width:210mm;min-height:297mm;background:#fff;padding:16mm 14mm;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;}
+.logo{font-size:24pt;font-weight:900;color:#1d4ed8;line-height:1;}
+.logo-sub{font-size:9pt;color:#64748b;margin-top:1mm;}
+.inv-right{text-align:left;}
+.inv-num{font-size:12pt;font-weight:800;}
+.inv-date{font-size:9pt;color:#64748b;margin-top:1mm;}
+.divider{height:2px;background:#1d4ed8;margin:5mm 0;border-radius:2px;}
+.to-section{margin-bottom:7mm;}
+.to-label{font-size:9pt;color:#64748b;margin-bottom:1mm;}
+.to-name{font-size:14pt;font-weight:800;}
+.to-sub{font-size:10pt;color:#475569;margin-top:1mm;}
+.section{background:#f8fafc;border-radius:8px;padding:6mm 7mm;margin-bottom:6mm;}
+.section-title{font-size:10pt;font-weight:800;color:#1d4ed8;padding-bottom:3mm;margin-bottom:4mm;border-bottom:1px solid #e2e8f0;}
 table{width:100%;border-collapse:collapse;}
-td{padding:3px 0;font-size:11px;vertical-align:top;}
+td{padding:2mm 0;font-size:10pt;vertical-align:top;}
 td:first-child{color:#64748b;width:45%;}
 td:last-child{font-weight:600;text-align:left;}
-.pay-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
-.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:900;margin-top:6px;padding-top:6px;border-top:1px solid #cbd5e1;}
-.footer{font-size:9px;color:#94a3b8;text-align:center;margin-top:12px;}
+.pay-row{display:flex;justify-content:space-between;font-size:10pt;padding:1.5mm 0;}
+.pay-divider{height:1px;background:#cbd5e1;margin:3mm 0;}
+.total-row{display:flex;justify-content:space-between;font-size:15pt;font-weight:900;padding-top:3mm;}
+.total-amt{color:#1d4ed8;}
+.vat{font-size:8pt;color:#94a3b8;margin-top:2mm;}
+.footer{text-align:center;font-size:8pt;color:#94a3b8;margin-top:12mm;padding-top:4mm;border-top:1px solid #e2e8f0;}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="header">
     <div>
-      <div style="font-size:13px;font-weight:700;">${invNum}</div>
-      <div style="font-size:11px;color:#64748b;">תאריך: ${date}</div>
-    </div>
-    <div style="text-align:right;">
       <div class="logo">TruckGo</div>
-      <div style="font-size:10px;color:#64748b;">פלטפורמת הובלות חכמה</div>
-      <div style="font-size:10px;color:#64748b;">truckgo.co.il</div>
+      <div class="logo-sub">פלטפורמת הובלות חכמה</div>
+      <div class="logo-sub">truckgo.co.il</div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-num">${invNum}</div>
+      <div class="inv-date">תאריך הנפקה: ${date}</div>
     </div>
   </div>
   <div class="divider"></div>
-  <div style="margin-bottom:14px;">
-    <div style="font-size:10px;color:#64748b;">לכבוד:</div>
-    <div style="font-size:15px;font-weight:800;">${d.brokerName || '—'}</div>
-    ${brokerCompany ? `<div style="font-size:11px;color:#475569;">${brokerCompany}</div>` : ''}
-    ${brokerIdNumber ? `<div style="font-size:11px;color:#475569;">${brokerCompany ? 'ח.פ' : 'ת"ז'}: ${brokerIdNumber}</div>` : ''}
+  <div class="to-section">
+    <div class="to-label">לכבוד:</div>
+    <div class="to-name">${d.brokerName || '—'}</div>
+    ${brokerCompany ? `<div class="to-sub">${brokerCompany}</div>` : ''}
+    ${brokerIdNumber ? `<div class="to-sub">${brokerCompany ? 'ח.פ' : 'ת"ז'}: ${brokerIdNumber}</div>` : ''}
   </div>
   <div class="section">
     <div class="section-title">פרטי ההובלה</div>
@@ -4735,10 +4748,11 @@ td:last-child{font-weight:600;text-align:left;}
   </div>
   <div class="section">
     <div class="section-title">פירוט תשלום</div>
-    <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
-    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
-    <div class="total-row"><span>סה"כ לתשלום</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
-    <div style="font-size:9px;color:#94a3b8;margin-top:4px;">כולל מע"מ</div>
+    <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span style="font-weight:600;">₪${amt.toLocaleString()}</span></div>
+    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
+    <div class="pay-divider"></div>
+    <div class="total-row"><span>סה"כ לתשלום</span><span class="total-amt">₪${brokerPays.toLocaleString()}</span></div>
+    <div class="vat">כולל מע"מ</div>
   </div>
   <div class="footer">TruckGo — פלטפורמת תיווך בלבד. אינה נושאת באחריות על ביצוע ההובלה.</div>
 </div>
@@ -5055,40 +5069,54 @@ window.sendInvoiceByEmail = async function() {
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#1e293b;background:#f1f5f9;padding:20px;}
-.page{width:100%;max-width:600px;background:#fff;margin:0 auto;padding:30px;border:2px solid #1d4ed8;border-radius:12px;}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
-.logo{font-size:26px;font-weight:900;color:#1d4ed8;}
-.divider{height:2px;background:#1d4ed8;margin:12px 0;border-radius:2px;}
-.section{background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:12px;}
-.section-title{font-size:12px;font-weight:800;color:#1d4ed8;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;}
+html,body{background:#fff;}
+body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#1e293b;}
+@page{size:A4;margin:0;}
+.page{width:210mm;min-height:297mm;background:#fff;padding:16mm 14mm;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;}
+.logo{font-size:24pt;font-weight:900;color:#1d4ed8;line-height:1;}
+.logo-sub{font-size:9pt;color:#64748b;margin-top:1mm;}
+.inv-right{text-align:left;}
+.inv-num{font-size:12pt;font-weight:800;}
+.inv-date{font-size:9pt;color:#64748b;margin-top:1mm;}
+.divider{height:2px;background:#1d4ed8;margin:5mm 0;border-radius:2px;}
+.to-section{margin-bottom:7mm;}
+.to-label{font-size:9pt;color:#64748b;margin-bottom:1mm;}
+.to-name{font-size:14pt;font-weight:800;}
+.to-sub{font-size:10pt;color:#475569;margin-top:1mm;}
+.section{background:#f8fafc;border-radius:8px;padding:6mm 7mm;margin-bottom:6mm;}
+.section-title{font-size:10pt;font-weight:800;color:#1d4ed8;padding-bottom:3mm;margin-bottom:4mm;border-bottom:1px solid #e2e8f0;}
 table{width:100%;border-collapse:collapse;}
-td{padding:3px 0;font-size:11px;vertical-align:top;}
+td{padding:2mm 0;font-size:10pt;vertical-align:top;}
 td:first-child{color:#64748b;width:45%;}
 td:last-child{font-weight:600;text-align:left;}
-.pay-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;}
-.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:900;margin-top:6px;padding-top:6px;border-top:1px solid #cbd5e1;}
-.footer{font-size:9px;color:#94a3b8;text-align:center;margin-top:12px;}
+.pay-row{display:flex;justify-content:space-between;font-size:10pt;padding:1.5mm 0;}
+.pay-divider{height:1px;background:#cbd5e1;margin:3mm 0;}
+.total-row{display:flex;justify-content:space-between;font-size:15pt;font-weight:900;padding-top:3mm;}
+.total-amt{color:#1d4ed8;}
+.vat{font-size:8pt;color:#94a3b8;margin-top:2mm;}
+.footer{text-align:center;font-size:8pt;color:#94a3b8;margin-top:12mm;padding-top:4mm;border-top:1px solid #e2e8f0;}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="header">
     <div>
-      <div style="font-size:13px;font-weight:700;">${data.invNum}</div>
-      <div style="font-size:11px;color:#64748b;">תאריך: ${data.date}</div>
-    </div>
-    <div style="text-align:right;">
       <div class="logo">TruckGo</div>
-      <div style="font-size:10px;color:#64748b;">פלטפורמת הובלות חכמה</div>
+      <div class="logo-sub">פלטפורמת הובלות חכמה</div>
+      <div class="logo-sub">truckgo.co.il</div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-num">${data.invNum}</div>
+      <div class="inv-date">תאריך הנפקה: ${data.date}</div>
     </div>
   </div>
   <div class="divider"></div>
-  <div style="margin-bottom:14px;">
-    <div style="font-size:10px;color:#64748b;">לכבוד:</div>
-    <div style="font-size:15px;font-weight:800;">${d.brokerName || '—'}</div>
-    ${data.brokerCompany ? `<div style="font-size:11px;color:#475569;">${data.brokerCompany}</div>` : ''}
-    ${data.brokerIdNumber ? `<div style="font-size:11px;color:#475569;">${data.brokerCompany ? 'ח.פ' : 'ת"ז'}: ${data.brokerIdNumber}</div>` : ''}
+  <div class="to-section">
+    <div class="to-label">לכבוד:</div>
+    <div class="to-name">${d.brokerName || '—'}</div>
+    ${data.brokerCompany ? `<div class="to-sub">${data.brokerCompany}</div>` : ''}
+    ${data.brokerIdNumber ? `<div class="to-sub">${data.brokerCompany ? 'ח.פ' : 'ת"ז'}: ${data.brokerIdNumber}</div>` : ''}
   </div>
   <div class="section">
     <div class="section-title">פרטי ההובלה</div>
@@ -5105,10 +5133,11 @@ td:last-child{font-weight:600;text-align:left;}
   </div>
   <div class="section">
     <div class="section-title">פירוט תשלום</div>
-    <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
-    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
-    <div class="total-row"><span>סה"כ לתשלום</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
-    <div style="font-size:9px;color:#94a3b8;margin-top:4px;">כולל מע"מ</div>
+    <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span style="font-weight:600;">₪${amt.toLocaleString()}</span></div>
+    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
+    <div class="pay-divider"></div>
+    <div class="total-row"><span>סה"כ לתשלום</span><span class="total-amt">₪${brokerPays.toLocaleString()}</span></div>
+    <div class="vat">כולל מע"מ</div>
   </div>
   <div class="footer">TruckGo — פלטפורמת תיווך בלבד. אינה נושאת באחריות על ביצוע ההובלה.</div>
 </div>
