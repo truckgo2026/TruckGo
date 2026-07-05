@@ -75,14 +75,14 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .ob:focus{border-color:var(--accent);}
 
 /* HERO BANNER */
-.hb{background:linear-gradient(150deg,var(--accent),var(--accent-light));padding:20px 20px 18px;position:relative;overflow:hidden;flex-shrink:0;}
+.hb{background:linear-gradient(150deg,var(--accent),var(--accent-light));padding:14px 20px 12px;position:relative;overflow:hidden;flex-shrink:0;}
 .hb::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:radial-gradient(circle,rgba(255,255,255,0.1),transparent 70%);pointer-events:none;}
-.hb-hi{font-size:13px;color:rgba(255,255,255,0.75);margin-bottom:2px;}
-.hb-name{font-size:23px;font-weight:900;color:#fff;margin-bottom:14px;}
+.hb-hi{font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:1px;}
+.hb-name{font-size:19px;font-weight:900;color:#fff;margin-bottom:9px;}
 .stats{display:flex;background:rgba(255,255,255,0.15);border-radius:14px;border:1px solid rgba(255,255,255,0.2);overflow:hidden;}
-.si{flex:1;text-align:center;padding:10px 6px;border-left:1px solid rgba(255,255,255,0.15);}
+.si{flex:1;text-align:center;padding:7px 6px;border-left:1px solid rgba(255,255,255,0.15);}
 .si:last-child{border-left:none;}
-.si-v{font-size:18px;font-weight:900;color:#fff;}
+.si-v{font-size:15px;font-weight:900;color:#fff;}
 .si-l{font-size:10px;color:rgba(255,255,255,0.7);margin-top:1px;}
 
 /* SECTION */
@@ -237,7 +237,7 @@ textarea.fi{resize:vertical;}
 .ot.on .od{background:var(--green);}
 
 /* SHEETS */
-.so{position:absolute;inset:0;background:rgba(15,23,42,0.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.so{position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
 .so.on{opacity:1;pointer-events:all;}
 .sh{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;transform:translateY(40px);transition:transform .32s cubic-bezier(.22,1,.36,1);border-top:1px solid var(--border);box-shadow:0 -8px 40px rgba(29,78,216,0.12);max-height:85%;overflow-y:auto;}
 .so.on .sh{transform:translateY(0);}
@@ -349,6 +349,56 @@ textarea.fi{resize:vertical;}
     </button>
   </div>
 </div>
+
+
+<!-- מודלים גלובליים (הצעות נגדיות + דירוג) — עובדים מכל מסך -->
+  <!-- ═══ מודל הצעות נגדיות ═══ -->
+  <div class="so" id="counter-offers-modal" onclick="if(event.target===this)this.classList.remove('on')">
+    <div class="sh" style="max-height:82%;overflow-y:auto;">
+      <div class="shandle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="stitle" style="margin-bottom:0;">הצעות נגדיות</div>
+        <button onclick="document.getElementById('counter-offers-modal').classList.remove('on')"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">סגור ✕</button>
+      </div>
+      <div class="ssub">בחר נהג לאישור — המחיר יתעדכן אוטומטית</div>
+      <input type="hidden" id="com-shipment-id">
+      <div id="com-list"></div>
+    </div>
+  </div>
+  <!-- RATING MODAL -->
+  <div class="so" id="rating-modal" onclick="if(event.target===this&&!window._ratingRequired)this.classList.remove('on')">
+    <div class="sh" style="max-height:90%;overflow-y:auto;">
+      <div class="shandle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="stitle" style="margin-bottom:0;">דרג את ההובלה</div>
+        <button id="rating-skip-btn" onclick="if(!window._ratingRequired)document.getElementById('rating-modal').classList.remove('on')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">דלג ✕</button>
+      </div>
+      <div class="ssub" id="rating-subtitle">איך היה?</div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin:12px 0;display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;" id="rating-avatar">?</div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--text);" id="rating-target-name">—</div><div style="font-size:12px;color:var(--muted);" id="rating-target-role">—</div></div>
+      </div>
+      <div style="text-align:center;margin:16px 0 8px;">
+        <div style="display:flex;justify-content:center;gap:10px;" id="rating-stars">
+          <div onclick="selectStar(1)" id="rstar-1" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">☆</div>
+          <div onclick="selectStar(2)" id="rstar-2" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">☆</div>
+          <div onclick="selectStar(3)" id="rstar-3" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">☆</div>
+          <div onclick="selectStar(4)" id="rstar-4" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">☆</div>
+          <div onclick="selectStar(5)" id="rstar-5" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">☆</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px;" id="rating-label-text">בחר דירוג</div>
+      </div>
+      <div id="rating-reason-wrap" style="display:none;margin-top:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px;">⚠️ נדרשת סיבה לדירוג נמוך</div>
+        <textarea id="rating-reason" rows="3" placeholder="תאר מה הלך לא טוב..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:'Heebo',sans-serif;resize:none;outline:none;"></textarea>
+      </div>
+      <button id="rating-submit-btn" onclick="submitRating()" style="width:100%;margin-top:14px;padding:14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;opacity:.4;pointer-events:none;">שלח דירוג</button>
+      <input type="hidden" id="rating-shipment-id">
+      <input type="hidden" id="rating-target-uid">
+      <input type="hidden" id="rating-reviewer-role">
+    </div>
+  </div>
 
 <!-- מודל חשבונית -->
 <div class="modal-overlay" id="invoice-modal" onclick="if(event.target===this)closeInvoiceModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
@@ -991,54 +1041,6 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
-
-  <!-- ═══ מודל הצעות נגדיות ═══ -->
-  <div class="so" id="counter-offers-modal" onclick="if(event.target===this)this.classList.remove('on')">
-    <div class="sh" style="max-height:82%;overflow-y:auto;">
-      <div class="shandle"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div class="stitle" style="margin-bottom:0;">הצעות נגדיות</div>
-        <button onclick="document.getElementById('counter-offers-modal').classList.remove('on')"
-          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">סגור ✕</button>
-      </div>
-      <div class="ssub">בחר נהג לאישור — המחיר יתעדכן אוטומטית</div>
-      <input type="hidden" id="com-shipment-id">
-      <div id="com-list"></div>
-    </div>
-  </div>
-  <!-- RATING MODAL -->
-  <div class="so" id="rating-modal" onclick="if(event.target===this&&!window._ratingRequired)this.classList.remove('on')">
-    <div class="sh" style="max-height:90%;overflow-y:auto;">
-      <div class="shandle"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div class="stitle" style="margin-bottom:0;">דרג את ההובלה</div>
-        <button id="rating-skip-btn" onclick="if(!window._ratingRequired)document.getElementById('rating-modal').classList.remove('on')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">דלג 2715</button>
-      </div>
-      <div class="ssub" id="rating-subtitle">איך היה?</div>
-      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin:12px 0;display:flex;align-items:center;gap:10px;">
-        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;" id="rating-avatar">?</div>
-        <div><div style="font-size:14px;font-weight:700;color:var(--text);" id="rating-target-name">—</div><div style="font-size:12px;color:var(--muted);" id="rating-target-role">—</div></div>
-      </div>
-      <div style="text-align:center;margin:16px 0 8px;">
-        <div style="display:flex;justify-content:center;gap:10px;" id="rating-stars">
-          <div onclick="selectStar(1)" id="rstar-1" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
-          <div onclick="selectStar(2)" id="rstar-2" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
-          <div onclick="selectStar(3)" id="rstar-3" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
-          <div onclick="selectStar(4)" id="rstar-4" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
-          <div onclick="selectStar(5)" id="rstar-5" style="font-size:38px;cursor:pointer;transition:transform .15s;line-height:1;">2606</div>
-        </div>
-        <div style="font-size:13px;color:var(--muted);margin-top:8px;" id="rating-label-text">בחר דירוג</div>
-      </div>
-      <div id="rating-reason-wrap" style="display:none;margin-top:12px;">
-        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px;">26a0Fe0f נדרשת סיבה לדירוג נמוך</div>
-        <textarea id="rating-reason" rows="3" placeholder="תאר מה הלך לא טוב..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:'Heebo',sans-serif;resize:none;outline:none;"></textarea>
-      </div>
-      <button id="rating-submit-btn" onclick="submitRating()" style="width:100%;margin-top:14px;padding:14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;opacity:.4;pointer-events:none;">שלח דירוג</button>
-      <input type="hidden" id="rating-shipment-id">
-      <input type="hidden" id="rating-target-uid">
-      <input type="hidden" id="rating-reviewer-role">
-    </div>
-  </div>
 
   <!-- SUCCESS -->
   <div class="ov ov-success" id="brk-succ">
