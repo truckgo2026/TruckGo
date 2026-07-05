@@ -4157,6 +4157,10 @@ async function renderBrokerPayments() {
   const ships = [];
   snap.forEach(d => ships.push({id: d.id, ...d.data()}));
 
+  // שמירת ההובלות למפה גלובלית, כדי שנוכל לצפות בחשבונית שנשלחה בפועל
+  window._brokerShipmentsMap = {};
+  ships.forEach(d => { window._brokerShipmentsMap[d.id] = d; });
+
   if (!ships.length) {
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 0;">אין הובלות</div>';
     return;
@@ -4185,7 +4189,7 @@ async function renderBrokerPayments() {
   });
 
   // פילטר נוכחי
-  const filter = window._brokerFilter || 'all';
+  const filter = window._brokerFilter || 'pending';
 
   // ריבועי מצב עמילים
   const paidShips = ships.filter(d => d.brokerPaymentConfirmed);
@@ -4317,7 +4321,11 @@ async function renderBrokerPayments() {
         style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">
         ✓ אישרתי קבלת ₪${brokerPays.toLocaleString()} מהעמיל
       </button>` : `
-      <div style="text-align:center;font-size:13px;color:#16a34a;font-weight:700;padding:8px;">✓ חשבונית נשלחה לעמיל</div>`}
+      <div style="text-align:center;font-size:13px;color:#16a34a;font-weight:700;margin-bottom:8px;">✓ חשבונית נשלחה לעמיל</div>
+      <button onclick="viewSentInvoiceFromBroker('${d.id}')"
+        style="width:100%;padding:12px;background:#eff6ff;color:#1d4ed8;border:1.5px solid #1d4ed8;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">
+        📄 צפה בחשבונית שנשלחה
+      </button>`}
     </div>`;
   }).join('');
 
@@ -4327,6 +4335,13 @@ async function renderBrokerPayments() {
 window.setBrokerFilter = function(f) {
   window._brokerFilter = f;
   renderBrokerPayments();
+};
+
+// צפייה באדמין בחשבונית שנשלחה בפועל לעמיל (משתמש במודל החשבונית הקיים)
+window.viewSentInvoiceFromBroker = function(shipId) {
+  const d = window._brokerShipmentsMap && window._brokerShipmentsMap[shipId];
+  if (!d) { toast('לא נמצאו פרטי ההובלה'); return; }
+  openInvoiceModal(d);
 };
 
 window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, amount) {
