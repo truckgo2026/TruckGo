@@ -1950,6 +1950,7 @@ window.submitRating = async function() {
     document.getElementById('rating-modal').classList.remove('on');
     toast('הדירוג נשלח, תודה!');
   } catch(e) {
+    console.error('RATING ERROR:', e);
     toast('שגיאה, נסה שוב');
     btn.textContent = 'שלח דירוג'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
   }
