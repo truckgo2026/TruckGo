@@ -2549,6 +2549,17 @@ window._fbDoAccept = async function(slotStr) {
 
   try {
     const driverName = document.getElementById('p-name-v')?.textContent || '';
+
+    // דירוג עצמי — נהג מותר לו לקרוא את הפרופיל שלו
+    let driverRatingAvg = 0, driverRatingCount = 0;
+    try {
+      const selfSnap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (selfSnap.exists()) {
+        driverRatingAvg   = selfSnap.data().ratingAvg   || 0;
+        driverRatingCount = selfSnap.data().ratingCount || 0;
+      }
+    } catch(e) {}
+
     await updateDoc(doc(db, 'shipments', p.docId), {
       status:      'pending_approval',
       driverUid:   currentUser.uid,
@@ -2557,6 +2568,8 @@ window._fbDoAccept = async function(slotStr) {
       proposedAmount: p.amt,
       slot:        slotStr,
       requestedAt: serverTimestamp(),
+      driverRatingAvg,
+      driverRatingCount,
     });
     if(waitEl) waitEl.classList.remove('on');
     showOv('drv-succ', 'נשלח לעמיל!',
