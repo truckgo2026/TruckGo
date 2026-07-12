@@ -1145,7 +1145,7 @@ textarea.fi{resize:vertical;}
 
       <!-- חומר מסוכן -->
       <div class="fg" style="margin-bottom:0;">
-        <div class="fl">חומר מסוכן?</div>
+        <div class="fl" style="color:#dc2626;font-weight:700;">חומר מסוכן?</div>
         <div style="display:flex;gap:10px;">
           <div id="haz-no" onclick="selectHaz(false)" style="flex:1;padding:11px;background:var(--glow);border:2px solid var(--accent);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;"> לא</div>
           <div id="haz-yes" onclick="selectHaz(true)" style="flex:1;padding:11px;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;font-size:13px;font-weight:700;"> כן</div>
@@ -2847,7 +2847,7 @@ function startDriverRealtime(uid) {
               <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
               <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${desc}</div></div>
               ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
-              <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel}${hazCode ? ' — ' + hazCode : ''}</div></div>
+              <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${hazLabel}${hazCode ? ' — ' + hazCode : ''}</div></div>
               <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
               <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
               <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${brokerName}</div></div>
@@ -3028,7 +3028,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+esc(d.contSize):'')):'חלקי'}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
                 ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
-                <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
+                <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
                 <div class="dc"><div class="dcl">סכום ההובלה שלך</div><div class="dcv">₪${Math.round(finalAmt*0.95).toLocaleString()} <span style="font-size:10px;color:var(--muted);">לאחר עמלה</span></div></div>
@@ -3226,7 +3226,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
                 ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
-                <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${esc(hazLabel)}${hazCode ? ' — ' + esc(hazCode) : ''}</div></div>
+                <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${esc(hazLabel)}${hazCode ? ' — ' + esc(hazCode) : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
                 <div class="dc"><div class="dcl">מחיר שפורסם</div><div class="dcv">₪${Math.round((d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
@@ -3300,7 +3300,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel2}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
                 ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
-                <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${hazLabel2}${hazCode2 ? ' — ' + hazCode2 : ''}</div></div>
+                <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${hazLabel2}${hazCode2 ? ' — ' + hazCode2 : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel2}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel2}</div></div>
               </div>
@@ -5309,7 +5309,7 @@ td:last-child{font-weight:600;text-align:left;}
   </div>
   <div class="section">
     <div class="section-title">פרטי ההובלה</div>
-    <table>${rows.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
+    <table>${rows.map(([k,v]) => k === 'חומר מסוכן' ? `<tr><td style="color:#dc2626;">${k}</td><td style="color:#dc2626;font-weight:700;">${v}</td></tr>` : `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table>
   </div>
   <div class="section">
     <div class="section-title">פירוט תשלום</div>
@@ -5485,7 +5485,7 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+esc(d.contSize):'')):'חלקי'}</div></div>
         <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc||'—')}</div></div>
         ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes||'')}</div></div>` : ''}
-        <div class="dc"><div class="dcl">חומר מסוכן</div><div class="dcv">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
+        <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
         <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
         <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
         <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName||'—')}</div></div>
