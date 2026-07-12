@@ -2477,64 +2477,25 @@ window._fbSearchShipments = async function(uid, field) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
-// ── שמירת דירוג ─────────────────────────────────────────
+// ── שמירת דירוג — עובר תמיד דרך פונקציית שרת מאובטחת (לא כותב ל-Firestore ישירות) ──
 window._fbSubmitRating = async function({ shipId, targetUid, stars, reason, revRole }) {
   const reviewer = auth.currentUser;
   if (!reviewer) throw new Error('not logged in');
 
-  // בדוק שלא דירג כבר
-  const existing = await getDocs(query(
-    collection(db, 'reviews'),
-    where('shipmentId', '==', shipId),
-    where('reviewerUid', '==', reviewer.uid)
-  ));
-  if (!existing.empty) throw new Error('already_rated');
+  const idToken = await reviewer.getIdToken();
 
-  const reviewerSnap = await getDoc(doc(db, 'users', reviewer.uid));
-  const reviewerName = reviewerSnap.exists() ? (reviewerSnap.data().name || reviewerSnap.data().fullName || '—') : '—';
-
-  // שמור ב-reviews collection
-  await addDoc(collection(db, 'reviews'), {
-    shipmentId:   shipId,
-    targetUid,
-    reviewerUid:  reviewer.uid,
-    reviewerName,
-    reviewerRole: revRole,
-    stars,
-    reason:       reason || null,
-    createdAt:    serverTimestamp(),
+  const res = await fetch('https://submit-rating-763417873532.europe-west1.run.app', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + idToken
+    },
+    body: JSON.stringify({ shipId, targetUid, stars, reason, revRole })
   });
 
-  // עדכן ממוצע דירוג ב-users
-  const userSnap = await getDoc(doc(db, 'users', targetUid));
-  if (userSnap.exists()) {
-    const data = userSnap.data();
-    const oldAvg   = data.ratingAvg   || 0;
-    const oldCount = data.ratingCount || 0;
-    const newCount = oldCount + 1;
-    const newAvg   = Math.round(((oldAvg * oldCount) + stars) / newCount * 10) / 10;
-    await updateDoc(doc(db, 'users', targetUid), {
-      ratingAvg:   newAvg,
-      ratingCount: newCount,
-    });
-  }
-
-  // אם דירוג נמוך — שלח התראה לאדמין + לנהג/עמיל
-  if (stars <= 3) {
-    const targetSnap = await getDoc(doc(db, 'users', targetUid));
-    const targetName = targetSnap.exists() ? (targetSnap.data().name || targetSnap.data().fullName || '—') : '—';
-    // שמור התראה לאדמין
-    await addDoc(collection(db, 'adminAlerts'), {
-      type: 'low_rating',
-      stars,
-      reason,
-      reviewerUid: reviewer.uid,
-      reviewerName,
-      targetUid,
-      targetName,
-      shipmentId: shipId,
-      createdAt: serverTimestamp(),
-    });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || 'שגיאה בשליחת הדירוג');
   }
 };
 
