@@ -4766,10 +4766,12 @@ td:last-child{font-weight:600;text-align:left;}
 </body>
 </html>`;
 
+  const idToken = await auth.currentUser.getIdToken();
   const res = await fetch('https://send-invoice-763417873532.europe-west1.run.app', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-secret': 'TruckGo2026!SecretKey#InvoiceAPI' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
     body: JSON.stringify({
+      shipId: d.id,
       to: brokerEmail,
       subject: `חשבונית ${invNum} מ-TruckGo`,
       invoiceHtml
@@ -5188,10 +5190,12 @@ td:last-child{font-weight:600;text-align:left;}
 </html>`;
 
   try {
+    const idToken = await auth.currentUser.getIdToken();
     const res = await fetch('https://send-invoice-763417873532.europe-west1.run.app', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-secret': 'TruckGo2026!SecretKey#InvoiceAPI' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
       body: JSON.stringify({
+        shipId: data.shipment?.id,
         to: email,
         subject: `חשבונית ${data.invNum} מ-TruckGo`,
         invoiceHtml
