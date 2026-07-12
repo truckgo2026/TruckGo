@@ -400,6 +400,18 @@ textarea.fi{resize:vertical;}
     </div>
   </div>
 
+  <!-- DRIVER REVIEWS MODAL -->
+  <div class="so" id="driver-reviews-modal" onclick="if(event.target===this)this.classList.remove('on')">
+    <div class="sh" style="max-height:80%;overflow-y:auto;">
+      <div class="shandle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="stitle" style="margin-bottom:0;" id="driver-reviews-title">ביקורות</div>
+        <button onclick="document.getElementById('driver-reviews-modal').classList.remove('on')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'Heebo',sans-serif;">סגור ✕</button>
+      </div>
+      <div id="driver-reviews-list" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
 <!-- מודל חשבונית -->
 <div class="modal-overlay" id="invoice-modal" onclick="if(event.target===this)closeInvoiceModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:20px;padding:24px;width:92%;max-width:480px;max-height:90vh;overflow-y:auto;direction:rtl;">
@@ -3170,7 +3182,10 @@ function startBrokerRealtime(uid) {
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
               <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${Math.round((d.proposedAmount||d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:#92400e;">כולל עמלה</span></div>
               ${d.driverRatingAvg && d.driverRatingCount >= 3
-                ? `<div style="margin-top:6px;font-size:12px;color:#92400e;">★ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></div>`
+                ? `<div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                     <span style="font-size:12px;color:#92400e;">★ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></span>
+                     <button onclick="viewDriverReviews('${d.driverUid}','${esc(d.driverName)}')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;font-family:'Heebo',sans-serif;">צפה בכל הביקורות</button>
+                   </div>`
                 : `<div style="margin-top:6px;font-size:12px;color:var(--muted);">נהג חדש — אין ביקורות עדיין</div>`}
             </div>` : '';
           const offerBox = hasOffer ? `
@@ -4891,6 +4906,42 @@ async function loadProfileReviews(uid, count) {
     el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">שגיאה בטעינת ביקורות</div>';
   }
 }
+
+window.viewDriverReviews = async function(uid, name) {
+  const modal = document.getElementById('driver-reviews-modal');
+  const titleEl = document.getElementById('driver-reviews-title');
+  const listEl = document.getElementById('driver-reviews-list');
+  if (!modal || !listEl) return;
+  titleEl.textContent = 'ביקורות על ' + (name || '—');
+  listEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">טוען...</div>';
+  modal.classList.add('on');
+  if (!window._fbLoadReviews) { listEl.innerHTML = ''; return; }
+  try {
+    const reviews = await window._fbLoadReviews(uid);
+    if (reviews.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;background:var(--surface2);border-radius:12px;">אין ביקורות עדיין</div>';
+      return;
+    }
+    const stars = n => '★'.repeat(n) + '☆'.repeat(5-n);
+    const starColors = ['','#ef4444','#f97316','#eab308','#22c55e','#10b981'];
+    listEl.innerHTML = reviews.map(r => {
+      const t = r.createdAt ? fmtTS(r.createdAt) : '';
+      return `
+        <div style="background:var(--surface2);border-radius:12px;padding:13px 14px;margin-bottom:8px;border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="color:${starColors[r.stars]};font-size:15px;letter-spacing:1px;">${stars(r.stars)}</span>
+              <span style="font-size:13px;font-weight:700;color:var(--text);">${esc(r.reviewerName)}</span>
+            </div>
+            <span style="font-size:11px;color:var(--muted);">${t}</span>
+          </div>
+          ${r.reason ? `<div style="font-size:13px;color:var(--muted);line-height:1.5;">"${esc(r.reason)}"</div>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">שגיאה בטעינת ביקורות</div>';
+  }
+};
 
 function setEl(id, val) {
   const el = document.getElementById(id);
