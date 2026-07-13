@@ -458,6 +458,62 @@ textarea.fi{resize:vertical;}
   </div>
 </div>
 
+<!-- מודל תנאי שימוש ומדיניות פרטיות -->
+<div class="modal-overlay" id="terms-modal" onclick="if(event.target===this)closeTermsModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:0;width:92%;max-width:560px;max-height:88vh;overflow:hidden;direction:rtl;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 22px;border-bottom:1px solid #e5e7eb;">
+      <div style="font-size:17px;font-weight:900;color:#1d4ed8;">תנאי שימוש ומדיניות פרטיות — TruckGo</div>
+      <button onclick="closeTermsModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;">✕</button>
+    </div>
+    <div style="overflow-y:auto;padding:20px 22px;font-size:13.5px;line-height:1.9;color:#1f2937;text-align:right;">
+      <p style="color:#6b7280;font-size:12px;margin-bottom:14px;">בתוקף החל מיום 13.07.2026</p>
+      <p>מסמך זה מהווה הסכם מחייב בין המשתמש ("המשתמש" או "אתה") לבין מפעילת האתר והאפליקציה TruckGo ("החברה", "אנחנו" או "הפלטפורמה"). הרשמה לשירות ו/או שימוש בו מהווים הסכמה מלאה, בלתי מסויגת ומדעת לכל האמור במסמך זה. משתמש שאינו מסכים לתנאי כלשהו מתבקש להימנע מהרשמה ומשימוש בשירות.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">1. הגדרות</h4>
+      <p>"הפלטפורמה" — אתר האינטרנט והאפליקציה TruckGo, המחברים בין עמילי מכס לבין נהגים ותאגידי הובלה, לצורך תיאום והתקשרות ישירה ביניהם בעניין הובלת מטענים. "עמיל מכס" — משתמש המפרסם דרישה להובלת מטען. "נהג" — משתמש (יחיד או תאגיד הובלות) המציע ומבצע שירותי הובלה.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">2. אופי השירות — פלטפורמת תיווך טכנולוגית בלבד</h4>
+      <p>TruckGo הינה פלטפורמה טכנולוגית המספקת תשתית מקוונת ליצירת קשר, תיאום ותקשורת בין עמילי מכס לבין נהגים ותאגידי הובלה. הפלטפורמה משמשת אך ורק כזירת מפגש טכנולוגית, ואינה צד להתקשרות, להסכם ההובלה, או לכל עסקה אחרת המתגבשת בין המשתמשים באמצעותה. החברה אינה מפעילה כלי רכב, אינה מספקת שירותי הובלה, ואינה צד להסכם הנכרת בין עמיל המכס לבין הנהג. כל הסכם, הבנה או התחייבות בין המשתמשים — לרבות תנאי ההובלה, התמורה, מועדי הביצוע ואחריות לנזק למטען — הינם עניינם הבלעדי של הצדדים המתקשרים, ואינם באחריות החברה. כל משתמש אחראי באופן בלעדי לבחון את זהותו, אמינותו וכשירותו החוקית של הצד שכנגד.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">3. הרשמה וניהול חשבון</h4>
+      <p>השימוש בפלטפורמה מותנה בהרשמה הכוללת מסירת פרטים נכונים, מדויקים ומעודכנים. המשתמש אחראי באופן בלעדי לשמירה על סודיות פרטי ההתחברות ולכל פעולה המתבצעת בחשבונו.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">4. מדיניות פרטיות ואיסוף מידע</h4>
+      <p><strong>מידע הנאסף:</strong> פרטים מזהים (שם, ת"ז/ח.פ, טלפון, אימייל, כתובת); פרטי עסק (חשבון בנק, רישוי, ביטוח, רישיון נהיגה); מידע תפעולי (משלוחים, הצעות מחיר, תכתובות, דירוגים); ומידע טכני (IP, מכשיר, נתוני שימוש).</p>
+      <p><strong>מטרות השימוש:</strong> תפעול השירות, אימות זהות, טיפול בתשלומים וחשבוניות, תמיכה, הודעות תפעוליות, עמידה בדין, ואבטחת הפלטפורמה.</p>
+      <p><strong>שיתוף עם צדדים שלישיים:</strong> החברה אינה מוכרת מידע אישי למטרות שיווקיות. לצורך תפעול השירות נעשה שימוש בספקי תשתית טכנולוגיים (אחסון נתונים, דיוור, עיבוד תשלומים וחשבוניות), הכפופים להתחייבויות סודיות מקובלות. מידע עשוי להיחשף על פי דרישת רשות מוסמכת או צו שיפוטי.</p>
+      <p><strong>אבטחת מידע:</strong> ננקטים אמצעי אבטחה סבירים ומקובלים, אך לא ניתן להבטיח הגנה מוחלטת מפני חדירה או שיבוש בלתי מורשים.</p>
+      <p><strong>זכויות המשתמש:</strong> ניתן לפנות בכל עת בבקשה לעיין, לתקן או למחוק מידע אישי, בכפוף לדין ולצרכים תפעוליים לגיטימיים של החברה.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">5. תשלומים, עמלות וחשבוניות</h4>
+      <p>הפלטפורמה מתפעלת מנגנון תיאום תשלומים בכפוף למודל עמלה כפי שמוצג למשתמש בממשק. החברה אינה צד להעברה הכספית בין עמיל המכס לנהג, אלא אם נכתב אחרת ובמפורש. המשתמש מתחייב לשלם לחברה כל עמלה המגיעה לה.</p>
+
+      <h4 style="color:#dc2626;margin:18px 0 8px;">6. הגבלת אחריות והסרת אחריות</h4>
+      <p>במידה המרבית המותרת על פי דין, החברה, בעלי מניותיה, מנהליה ועובדיה לא יישאו באחריות לכל אחד מאלה: נזק, אובדן, עיכוב או קלקול במטען המובל, מכל סיבה שהיא; אי-עמידת נהג או עמיל מכס בתנאי ההתקשרות ביניהם, לרבות אי-תשלום או איחור; מעשה או מחדל של משתמש כלשהו, לרבות מסירת מידע כוזב; נזק עקיף, תוצאתי או מקרי מכל סוג; ותקלה, הפסקת שירות, שיבוש או אובדן נתונים. השירות ניתן כפי שהוא ("AS IS") וכפי שזמין, ללא כל התחייבות או מצג. ככל שתוטל על החברה אחריות כלשהי על פי דין חרף האמור, זו תוגבל לגובה העמלה ששולמה בפועל בגין העסקה הרלוונטית בלבד.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">7. שיפוי</h4>
+      <p>המשתמש מתחייב לשפות את החברה בגין כל נזק, הפסד או תביעת צד שלישי שייגרמו לה כתוצאה מהפרת מסמך זה, משימוש בלתי מורשה בשירות, או מהתקשרות שגיבש המשתמש עם משתמש אחר באמצעות הפלטפורמה.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">8. קניין רוחני</h4>
+      <p>כל זכויות הקניין הרוחני בפלטפורמה — עיצובה, קוד המקור, סימני המסחר והלוגו — הינם בבעלות החברה הבלעדית, ואין לעשות בהם שימוש ללא הסכמתה מראש ובכתב.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">9. הפסקת שירות ושינויים</h4>
+      <p>החברה רשאית לשנות, להשעות או להפסיק את השירות בכל עת וללא הודעה מוקדמת. תנאים אלה עשויים להתעדכן מעת לעת; המשך השימוש בשירות לאחר עדכון מהווה הסכמה לתנאים המעודכנים.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">10. דין חל וסמכות שיפוט</h4>
+      <p>על מסמך זה יחולו דיני מדינת ישראל בלבד. סמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים במחוז תל אביב-יפו.</p>
+
+      <h4 style="color:#1d4ed8;margin:18px 0 8px;">11. יצירת קשר</h4>
+      <p>בכל שאלה או בקשה בעניין מסמך זה, לרבות בעניין פרטיות המידע, ניתן ליצור קשר עם החברה באמצעות פרטי הקשר המופיעים בעמוד "צור קשר" באפליקציה.</p>
+
+      <p style="font-weight:700;margin-top:18px;">בסימון תיבת ההסכמה בעת ההרשמה, המשתמש מאשר כי קרא את המסמך במלואו, הבין את תוכנו על כל סעיפיו — לרבות סעיף הגבלת האחריות — ומסכים להיות כפוף להם ללא סייג.</p>
+    </div>
+    <div style="padding:16px 22px;border-top:1px solid #e5e7eb;">
+      <button onclick="closeTermsModal()" style="width:100%;padding:13px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">סגור</button>
+    </div>
+  </div>
+</div>
+
 <!--  S-ADMIN-TRANSFERS: מרכז העברות כספים  -->
 <div class="scr" id="s-admin-transfers">
   <div class="tb">
@@ -808,6 +864,14 @@ textarea.fi{resize:vertical;}
         <input class="fi" id="reg-password" type="password" placeholder="לפחות 6 תווים" autocomplete="new-password">
         <div class="fl">אימות סיסמה</div>
         <input class="fi" id="reg-password2" type="password" placeholder="הכנס סיסמה שוב" autocomplete="new-password">
+
+        <div style="display:flex;align-items:flex-start;gap:8px;margin:16px 0 6px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;">
+          <input type="checkbox" id="reg-terms-check" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;cursor:pointer;">
+          <label for="reg-terms-check" style="font-size:13px;color:var(--text);line-height:1.7;cursor:pointer;">
+            קראתי ואני מסכים/ה ל<a onclick="event.preventDefault();showTermsModal()" style="color:var(--accent);font-weight:700;text-decoration:underline;">תנאי השימוש ומדיניות הפרטיות</a> של TruckGo
+          </label>
+        </div>
+
         <button class="ab" id="reg-btn" onclick="fbRegister()">צור חשבון ושלח לאישור →</button>
       </div>
     </div>
@@ -1801,6 +1865,14 @@ function showOv(id,t,s){
   document.getElementById(id).classList.add('on');
 }
 function closeOv(id){document.getElementById(id).classList.remove('on');}
+
+//  TERMS & PRIVACY MODAL 
+window.showTermsModal = function(){
+  document.getElementById('terms-modal').style.display = 'flex';
+};
+window.closeTermsModal = function(){
+  document.getElementById('terms-modal').style.display = 'none';
+};
 
 //  DRIVER ONLINE 
 let drvOn=true;
@@ -3519,9 +3591,10 @@ window.fbRegister = async function() {
   if (!email) { toast('הכנס אימייל'); return; }
   if (password.length < 6) { toast('סיסמה חייבת להיות לפחות 6 תווים'); return; }
   if (password !== password2) { toast(' הסיסמאות אינן תואמות'); return; }
+  if (!document.getElementById('reg-terms-check').checked) { toast('יש לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך'); return; }
 
   // איסוף נתונים לפי סוג
-  let profileData = { role, email, status: 'pending' };
+  let profileData = { role, email, status: 'pending', termsAcceptedAt: new Date().toISOString() };
 
   if (role === 'drv') {
     const fname = document.getElementById('drv-fname').value.trim();
