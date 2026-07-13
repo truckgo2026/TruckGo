@@ -1,6 +1,26 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
+<script>
+  window.sentryOnLoad = function () {
+    Sentry.init({
+      sendDefaultPii: false,
+      beforeSend: function (event) {
+        // הסרת מידע אישי (אימייל/שם משתמש) אם נקלט בטעות בתוך פרטי השגיאה
+        if (event.user) {
+          delete event.user.email;
+          delete event.user.username;
+          delete event.user.ip_address;
+        }
+        return event;
+      }
+    });
+  };
+</script>
+<script
+  src="https://js-de.sentry-cdn.com/87eca875fad3e1e80bd9415f583edfc7.min.js"
+  crossorigin="anonymous"
+></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>TruckGo</title>
