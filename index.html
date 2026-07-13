@@ -2,6 +2,14 @@
 <html lang="he" dir="rtl">
 <head>
 <script>
+  window.syncSentryUser = function (user) {
+    window._pendingSentryUser = user; // תמיד שומר את המצב העדכני
+    try {
+      if (window.Sentry && typeof Sentry.setUser === 'function') {
+        Sentry.setUser(user && user.uid ? { id: user.uid } : null);
+      }
+    } catch (e) {}
+  };
   window.sentryOnLoad = function () {
     Sentry.init({
       sendDefaultPii: false,
@@ -15,6 +23,8 @@
         return event;
       }
     });
+    // אם ההתחברות זוהתה לפני ש-Sentry סיים להיטען, נסנכרן עכשיו
+    window.syncSentryUser(window._pendingSentryUser);
   };
 </script>
 <script
@@ -3629,7 +3639,7 @@ window.fbLogout = async function(silent = false) {
   stopAllListeners();
   clearNotifBadge();
   await signOut(auth);
-  try { if (window.Sentry) Sentry.setUser(null); } catch(e) {}
+  window.syncSentryUser(null);
   currentUser = null;
   window.selectedRole = null;
   localStorage.removeItem('truckgo_role');
@@ -3813,7 +3823,7 @@ auth.onAuthStateChanged(async (user) => {
   if (user) {
     currentUser = user;
     try { await user.reload(); currentUser = auth.currentUser; } catch(e) {}
-    try { if (window.Sentry) Sentry.setUser({ id: currentUser.uid }); } catch(e) {}
+    window.syncSentryUser(currentUser);
     if (!currentUser.emailVerified) {
       document.getElementById('verify-email').textContent = currentUser.email || '';
       go('s-verify');
