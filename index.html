@@ -3629,6 +3629,7 @@ window.fbLogout = async function(silent = false) {
   stopAllListeners();
   clearNotifBadge();
   await signOut(auth);
+  try { if (window.Sentry) Sentry.setUser(null); } catch(e) {}
   currentUser = null;
   window.selectedRole = null;
   localStorage.removeItem('truckgo_role');
@@ -3812,6 +3813,7 @@ auth.onAuthStateChanged(async (user) => {
   if (user) {
     currentUser = user;
     try { await user.reload(); currentUser = auth.currentUser; } catch(e) {}
+    try { if (window.Sentry) Sentry.setUser({ id: currentUser.uid }); } catch(e) {}
     if (!currentUser.emailVerified) {
       document.getElementById('verify-email').textContent = currentUser.email || '';
       go('s-verify');
