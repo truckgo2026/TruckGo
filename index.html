@@ -5941,7 +5941,7 @@ window.brokerRejectOffer = async function(shipId, offerId) {
 };
 
 // ── רענון נתונים ────────────────────────────────────
-function refreshCurrentScreen() {
+window.refreshCurrentScreen = function() {
   const uid = auth?.currentUser?.uid;
   if (!uid) return;
   const role = window.selectedRole;
