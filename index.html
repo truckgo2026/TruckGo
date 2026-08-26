@@ -135,7 +135,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .ci.g{background:var(--green-bg);border-color:#bbf7d0;}
 .ci.am{background:var(--amber-bg);border-color:#fde68a;}
 .ci.r{background:var(--red-bg);border-color:#fecaca;}
-.ci.pend{overflow:hidden;position:relative;animation:ciHalo 3.2s infinite;}
+.ci.pend{overflow:hidden;position:relative;border-radius:50%;animation:ciHalo 3.2s infinite;}
 .ci.pend svg{animation:ciTruckDrive 3.2s infinite;}
 @keyframes ciHalo{0%,55%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}10%{box-shadow:0 0 0 8px rgba(29,78,216,0);}65%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}100%{box-shadow:0 0 0 8px rgba(29,78,216,0);}}
 @keyframes ciTruckDrive{0%{transform:scaleX(-1) translateX(-14px);opacity:0;}10%{transform:scaleX(-1) translateX(-14px);opacity:1;}45%{transform:scaleX(-1) translateX(0);opacity:1;}55%{transform:scaleX(-1) translateX(0);opacity:1;}90%{transform:scaleX(-1) translateX(14px);opacity:0;}100%{transform:scaleX(-1) translateX(14px);opacity:0;}}
