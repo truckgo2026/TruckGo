@@ -1348,11 +1348,11 @@ textarea.fi{resize:vertical;}
   <!-- עמלת פלטפורמה -->
   <div style="margin:0 16px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">עמלת פלטפורמה (5%)</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);">עמלת פלטפורמה (1%)</div>
     </div>
     <div style="display:flex;justify-content:space-between;">
       <div style="font-size:12px;color:var(--muted);">סה״כ עמלות ששולמו</div>
-      <div id="pay-total-fee" style="font-size:13px;font-weight:700;color:var(--red);">₪0</div>
+      <div id="pay-total-fee" style="font-size:13px;font-weight:700;color:var(--accent);">₪0</div>
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:4px;">
       <div style="font-size:12px;color:var(--muted);">סה״כ נטו</div>
@@ -1904,10 +1904,10 @@ function ck(k){
 }
 function updCnt(){
   const base = parseInt(cntVal) || 0;
-  const net  = base ? Math.round(base * 0.95) : 0;
+  const net  = base ? Math.round(base * 0.99) : 0;
   document.getElementById('cnt-disp').textContent = base ? '₪'+base.toLocaleString() : '₪0';
   const netEl = document.getElementById('cnt-net-display');
-  if(netEl) netEl.textContent = net ? 'תקבל: ₪'+net.toLocaleString()+' (לאחר עמלה 5%)' : '';
+  if(netEl) netEl.textContent = net ? 'תקבל: ₪'+net.toLocaleString()+' (לאחר עמלה 1%)' : '';
 }
 function sendCnt(){
   if(!cntVal||parseInt(cntVal)<=0){toast('הכנס סכום תקין');return;}
@@ -2207,7 +2207,7 @@ window.runSearch = async function() {
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
             <div class="cr">
-              <div class="cp" style="color:${d.status==='confirmed'?'var(--green)':d.status==='cancelled'?'var(--red)':'var(--amber)'}">₪${role==='brk'?Math.round(amt*1.05).toLocaleString():Math.round(amt*0.95).toLocaleString()}</div>
+              <div class="cp" style="color:${d.status==='confirmed'?'var(--green)':d.status==='cancelled'?'var(--red)':'var(--amber)'}">₪${role==='brk'?Math.round(amt*1.01).toLocaleString():Math.round(amt*0.99).toLocaleString()}</div>
               <div class="badge ${stC}">${stTxt}</div>
               <div class="chev">▼</div>
             </div>
@@ -2222,7 +2222,7 @@ window.runSearch = async function() {
               <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':'—'}</div></div>
               ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
               ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
-              <div class="dc"><div class="dcl">מחיר</div><div class="dcv">₪${role==='brk'?Math.round(amt*1.05).toLocaleString():Math.round(amt*0.95).toLocaleString()}</div></div>
+              <div class="dc"><div class="dcl">מחיר</div><div class="dcv">₪${role==='brk'?Math.round(amt*1.01).toLocaleString():Math.round(amt*0.99).toLocaleString()}</div></div>
               <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${stTxt}</div></div>
               <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+d.contSize:'')):'חלקי'}</div></div>
               ${d.desc ? `<div class="dc"><div class="dcl">תיאור</div><div class="dcv">${esc(d.desc)}</div></div>` : ''}
@@ -2944,7 +2944,7 @@ function startDriverRealtime(uid) {
               <div class="cm2">${summary} • ${cargoLabel}</div>
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
-            <div class="cr"><div><div class="cp">₪${Math.round(amt*0.95).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">לאחר עמלה</div></div><div class="chev">▼</div></div>
+            <div class="cr"><div><div class="cp">₪${Math.round(amt*0.99).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">לאחר עמלה</div></div><div class="chev">▼</div></div>
           </div>
           <div class="cd">
             <div class="dg">
@@ -3089,7 +3089,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">${esc(d.orderNumber||'')} • ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:var(--amber)">₪${Math.round((d.lastCounterAmount||d.amount||0)*0.95).toLocaleString()}</div>
+                <div class="cp" style="color:var(--amber)">₪${Math.round((d.lastCounterAmount||d.amount||0)*0.99).toLocaleString()}</div>
                 <div class="badge bam">ממתין</div>
               </div>
             </div>
@@ -3121,7 +3121,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">${isDelivered?'נמסר — ממתין לאישור קבלה':'הובלה פעילה'} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${Math.round(finalAmt*0.95).toLocaleString()}<div style="font-size:10px;color:var(--muted);">סכום ההובלה שלך</div></div>
+                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${Math.round(finalAmt*0.99).toLocaleString()}<div style="font-size:10px;color:var(--muted);">סכום ההובלה שלך</div></div>
                 <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
                 <div class="chev">▼</div>
               </div>
@@ -3142,7 +3142,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
-                <div class="dc"><div class="dcl">סכום ההובלה שלך</div><div class="dcv">₪${Math.round(finalAmt*0.95).toLocaleString()} <span style="font-size:10px;color:var(--muted);">לאחר עמלה</span></div></div>
+                <div class="dc"><div class="dcl">סכום ההובלה שלך</div><div class="dcv">₪${Math.round(finalAmt*0.99).toLocaleString()} <span style="font-size:10px;color:var(--muted);">לאחר עמלה</span></div></div>
                 <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName)}</div></div>
               </div>
               ${buildTimeline(d)}
@@ -3171,7 +3171,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="cm2">${esc(d.orderNumber||'')} • ${esc(d.date)} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*0.95).toLocaleString()}</div>
+                <div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*0.99).toLocaleString()}</div>
                 <div class="badge bg">הושלם</div>
                 <div class="chev">▼</div>
               </div>
@@ -3291,7 +3291,7 @@ function startBrokerRealtime(uid) {
               <div style="font-size:15px;font-weight:800;color:var(--accent);">${esc(d.driverName)}</div>
               ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(d.driverPhone)}</div>` : ''}
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
-              <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${Math.round((d.proposedAmount||d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:#92400e;">כולל עמלה</span></div>
+              <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${Math.round((d.proposedAmount||d.amount||0)*1.01).toLocaleString()} <span style="font-size:10px;color:#92400e;">כולל עמלה</span></div>
               ${d.driverRatingAvg && d.driverRatingCount >= 3
                 ? `<div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
                      <span style="font-size:12px;color:#92400e;">★ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></span>
@@ -3302,7 +3302,7 @@ function startBrokerRealtime(uid) {
           const offerBox = hasOffer ? `
             <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
               <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;">הצעה אחרונה</div>
-              <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${Math.round((d.lastCounterAmount||0)*1.05).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
+              <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${Math.round((d.lastCounterAmount||0)*1.01).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
               <div style="font-size:12px;color:var(--muted);">מ: ${esc(d.lastCounterDriverName)}</div>
             </div>` : '';
           const cargoLabel = d.cargoType === 'cont'
@@ -3323,7 +3323,7 @@ function startBrokerRealtime(uid) {
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
                 ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
               </div>
-              <div class="cr"><div><div class="cp">₪${Math.round((hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0))*1.05).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div>${badge}<div class="chev">▼</div></div>
+              <div class="cr"><div><div class="cp">₪${Math.round((hasOffer ? (d.lastCounterAmount||d.amount||0) : (d.amount||0))*1.01).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div>${badge}<div class="chev">▼</div></div>
             </div>
             <div class="cd">
               <div class="dg">
@@ -3340,7 +3340,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${esc(hazLabel)}${hazCode ? ' — ' + esc(hazCode) : ''}</div></div>
                 <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${portersLabel}</div></div>
                 <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${rampLabel}</div></div>
-                <div class="dc"><div class="dcl">מחיר שפורסם</div><div class="dcv">₪${Math.round((d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
+                <div class="dc"><div class="dcl">מחיר שפורסם</div><div class="dcv">₪${Math.round((d.amount||0)*1.01).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
               </div>
               ${approvalBox}
               ${offerBox}
@@ -3390,7 +3390,7 @@ function startBrokerRealtime(uid) {
                 <div class="cm2">${isDelivered?'ממתין לאישורך':'בדרך'} • ${esc(d.driverName)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${Math.round(finalAmt*1.05).toLocaleString()}<div style="font-size:10px;color:var(--muted);">סכום לתשלום שלך</div></div>
+                <div class="cp" style="color:${isDelivered?'var(--amber)':'var(--green)'}">₪${Math.round(finalAmt*1.01).toLocaleString()}<div style="font-size:10px;color:var(--muted);">סכום לתשלום שלך</div></div>
                 <div class="badge ${isDelivered?'bam':'bg'}">${isDelivered?'נמסר':'פעיל'}</div>
                 <div class="chev">▼</div>
               </div>
@@ -3401,7 +3401,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
                 <div class="dc"><div class="dcl">טלפון נהג</div><div class="dcv">${esc(d.driverPhone)}</div></div>
                 <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot)}</div></div>
-                <div class="dc"><div class="dcl">סכום לתשלום</div><div class="dcv">₪${Math.round(finalAmt*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
+                <div class="dc"><div class="dcl">סכום לתשלום</div><div class="dcv">₪${Math.round(finalAmt*1.01).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
@@ -3445,7 +3445,7 @@ function startBrokerRealtime(uid) {
             <div class="cm" onclick="toggleCard('bdone-${d.id}')">
               <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div class="cinfo"><div class="ct">${esc(d.from)} → ${esc(d.to)}</div><div class="cm2">${esc(d.date)} • ${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''}</div></div>
-              <div class="cr"><div><div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*1.05).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div><div class="badge bg">הושלם</div><div class="chev">▼</div></div>
+              <div class="cr"><div><div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*1.01).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div><div class="badge bg">הושלם</div><div class="chev">▼</div></div>
             </div>
             <div class="cd">
               <div class="dg">
@@ -3453,7 +3453,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName)}</div></div>
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
-                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${Math.round((d.finalAmount||d.amount||0)*1.05).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
+                <div class="dc"><div class="dcl">מחיר סופי</div><div class="dcv">₪${Math.round((d.finalAmount||d.amount||0)*1.01).toLocaleString()} <span style="font-size:10px;color:var(--muted);">כולל עמלה</span></div></div>
               </div>
               ${buildTimeline(d)}
             </div>
@@ -4287,7 +4287,7 @@ async function renderBrokerPayments() {
 
   let totalToday = 0, totalMonth = 0, totalYear = 0, totalPending = 0;
   ships.forEach(d => {
-    const amt = Math.round((d.finalAmount || d.amount || 0) * 1.05);
+    const amt = Math.round((d.finalAmount || d.amount || 0) * 1.01);
     if (d.brokerPaymentConfirmed) {
       const ts = d.brokerPaymentConfirmedAt;
       const date = ts ? new Date(ts.seconds * 1000) : null;
@@ -4307,8 +4307,8 @@ async function renderBrokerPayments() {
   // ריבועי מצב עמילים
   const paidShips = ships.filter(d => d.brokerPaymentConfirmed);
   const pendingShips = ships.filter(d => !d.brokerPaymentConfirmed);
-  const paidTotal = paidShips.reduce((s,d) => s + Math.round((d.finalAmount||d.amount||0)*1.05), 0);
-  const pendingTotal = pendingShips.reduce((s,d) => s + Math.round((d.finalAmount||d.amount||0)*1.05), 0);
+  const paidTotal = paidShips.reduce((s,d) => s + Math.round((d.finalAmount||d.amount||0)*1.01), 0);
+  const pendingTotal = pendingShips.reduce((s,d) => s + Math.round((d.finalAmount||d.amount||0)*1.01), 0);
 
   const summaryHtml = `
   <div style="background:#1d4ed8;border-radius:16px;padding:16px;margin-bottom:16px;color:#fff;">
@@ -4362,8 +4362,8 @@ async function renderBrokerPayments() {
 
   const cardsHtml = filteredShips.map(d => {
     const amt = d.finalAmount || d.amount || 0;
-    const brokerPays = Math.round(amt * 1.05);
-    const fee = Math.round(amt * 0.05);
+    const brokerPays = Math.round(amt * 1.01);
+    const fee = Math.round(amt * 0.01);
     const isPaid = d.brokerPaymentConfirmed === true;
     const orderNum = d.orderNumber || d.id.slice(0,6).toUpperCase();
     const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
@@ -4406,7 +4406,7 @@ async function renderBrokerPayments() {
       <div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:10px;">
         <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">פירוט כספי</div>
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#64748b;">שירות הובלה</span><span>₪${amt.toLocaleString()}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span>₪${fee.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span style="color:#64748b;">עמלת פלטפורמה (1%)</span><span>₪${fee.toLocaleString()}</span></div>
         <div style="height:1px;background:#e2e8f0;margin-bottom:6px;"></div>
         <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;"><span>לקבל מהעמיל</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
         ${isPaid && confirmedAt ? `<div style="font-size:10px;color:#64748b;margin-top:4px;">התקבל: ${fmtDate(confirmedAt)}</div>` : ''}
@@ -4560,7 +4560,7 @@ window._renderAdminTransfers = function() {
     if (d.confirmedAt?.seconds) return new Date(d.confirmedAt.seconds * 1000);
     return null;
   }
-  function commission(d) { return Math.round((d.finalAmount || d.amount || 0) * 0.10); } // 5% מעמיל + 5% מנהג
+  function commission(d) { return Math.round((d.finalAmount || d.amount || 0) * 0.02); } // 1% מעמיל + 1% מנהג
 
   const profitDay   = all.filter(d => { const dt = getConfirmedDate(d); return dt && dt.toISOString().slice(0,10) === todayStr; }).reduce((s,d) => s+commission(d), 0);
   const profitMonth = all.filter(d => { const dt = getConfirmedDate(d); return dt && (dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')) === thisMonth; }).reduce((s,d) => s+commission(d), 0);
@@ -4569,13 +4569,13 @@ window._renderAdminTransfers = function() {
 
   // ── סיכום/כרטיסי מצב ──
   const pendingItems = all.filter(d => !d.transferStatus || d.transferStatus === 'pending');
-  const pendingNet   = pendingItems.reduce((s,d) => { const g = d.finalAmount||d.amount||0; return s+Math.round(g*0.95); }, 0);
+  const pendingNet   = pendingItems.reduce((s,d) => { const g = d.finalAmount||d.amount||0; return s+Math.round(g*0.99); }, 0);
   const doneItems    = all.filter(d => d.transferStatus === 'done');
 
   if (summary) summary.innerHTML = `
     <!-- כרטיס רווח TruckGo -->
     <div style="background:linear-gradient(135deg,#1d4ed8 0%,#3b82f6 100%);border-radius:16px;padding:18px;margin-bottom:12px;color:#fff;">
-      <div style="font-size:12px;font-weight:700;opacity:0.8;margin-bottom:10px;letter-spacing:0.5px;">הרווח שלי — 5% מעמיל + 5% מנהג</div>
+      <div style="font-size:12px;font-weight:700;opacity:0.8;margin-bottom:10px;letter-spacing:0.5px;">הרווח שלי — 1% מעמיל + 1% מנהג</div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;text-align:center;">
           <div style="font-size:10px;opacity:0.8;margin-bottom:4px;">היום</div>
@@ -4631,8 +4631,8 @@ window._renderAdminTransfers = function() {
 
   list.innerHTML = filtered.map(d => {
     const gross        = d.finalAmount || d.amount || 0;
-    const brokerPays   = Math.round(gross * 1.05);   // מה שילם העמיל
-    const driverGets   = Math.round(gross * 0.95);   // מה מקבל הנהג
+    const brokerPays   = Math.round(gross * 1.01);   // מה שילם העמיל
+    const driverGets   = Math.round(gross * 0.99);   // מה מקבל הנהג
     const myProfit     = brokerPays - driverGets;    // הרווח שלי = 10% מהבסיס
     const net          = driverGets;
     const isDone     = d.transferStatus === 'done';
@@ -4706,8 +4706,8 @@ window._renderAdminTransfers = function() {
           <div style="font-size:11px;color:var(--muted);">₪${gross.toLocaleString()}</div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-size:11px;color:var(--muted);">עמלה על עמיל (5%)</div>
-          <div style="font-size:11px;color:var(--muted);">+ ₪${Math.round(gross*0.05).toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--muted);">עמלה על עמיל (1%)</div>
+          <div style="font-size:11px;color:var(--muted);">+ ₪${Math.round(gross*0.01).toLocaleString()}</div>
         </div>
         <div style="height:1px;background:var(--border);margin:8px 0;"></div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
@@ -4715,14 +4715,14 @@ window._renderAdminTransfers = function() {
           <div style="font-size:13px;font-weight:700;color:var(--red);">- ₪${driverGets.toLocaleString()}</div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-size:11px;color:var(--muted);">עמלה על נהג (5%)</div>
-          <div style="font-size:11px;color:var(--muted);">- ₪${Math.round(gross*0.05).toLocaleString()}</div>
+          <div style="font-size:11px;color:var(--muted);">עמלה על נהג (1%)</div>
+          <div style="font-size:11px;color:var(--muted);">- ₪${Math.round(gross*0.01).toLocaleString()}</div>
         </div>
         <div style="height:1px;background:var(--border);margin:8px 0;"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-size:13px;font-weight:800;color:var(--accent);">הרווח שלי (10%)</div>
-            <div style="font-size:10px;color:var(--muted);">5% מעמיל + 5% מנהג</div>
+            <div style="font-size:13px;font-weight:800;color:var(--accent);">הרווח שלי (2%)</div>
+            <div style="font-size:10px;color:var(--muted);">1% מעמיל + 1% מנהג</div>
           </div>
           <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${myProfit.toLocaleString()}</div>
         </div>
@@ -4796,8 +4796,8 @@ async function sendInvoiceAuto(d) {
   if (!brokerEmail) throw new Error('לא נמצא מייל לעמיל');
 
   const amt = d.finalAmount || d.amount || 0;
-  const brokerPays = Math.round(amt * 1.05);
-  const fee = Math.round(amt * 0.05);
+  const brokerPays = Math.round(amt * 1.01);
+  const fee = Math.round(amt * 0.01);
   const orderNum = d.orderNumber || '—';
   const invNum = 'INV-' + orderNum.replace(/[^A-Z0-9]/gi,'');
   const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
@@ -4877,7 +4877,7 @@ td:last-child{font-weight:600;text-align:left;}
   <div class="section">
     <div class="section-title">פירוט תשלום</div>
     <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span style="font-weight:600;">₪${amt.toLocaleString()}</span></div>
-    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
+    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (1%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
     <div class="pay-divider"></div>
     <div class="total-row"><span>סה"כ לתשלום</span><span class="total-amt">₪${brokerPays.toLocaleString()}</span></div>
     <div class="vat">כולל מע"מ</div>
@@ -5127,8 +5127,8 @@ window.openInvoiceModal = async function(d) {
   } catch(e) {}
 
   const amt        = d.finalAmount || d.amount || 0;
-  const brokerPays = Math.round(amt * 1.05);
-  const fee        = Math.round(amt * 0.05);
+  const brokerPays = Math.round(amt * 1.01);
+  const fee        = Math.round(amt * 0.01);
   const orderNum   = d.orderNumber || '—';
   const invNum     = 'INV-' + orderNum.replace(/[^A-Z0-9]/gi,'');
   const date       = d.confirmedAt?.toDate
@@ -5190,7 +5190,7 @@ window.openInvoiceModal = async function(d) {
       <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:12px;">
         <div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;">פירוט תשלום</div>
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span style="color:#64748b;">שירות הובלה</span><span style="font-weight:600;">₪${amt.toLocaleString()}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span style="color:#64748b;">עמלת פלטפורמה (1%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
         <div style="height:1px;background:#cbd5e1;margin-bottom:8px;"></div>
         <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;"><span>סה"כ לתשלום</span><span style="color:#1d4ed8;">₪${brokerPays.toLocaleString()}</span></div>
         <div style="font-size:10px;color:#94a3b8;margin-top:4px;">כולל מע"מ</div>
@@ -5224,8 +5224,8 @@ window.sendInvoiceByEmail = async function() {
 
   const d = data.shipment;
   const amt = d.finalAmount || d.amount || 0;
-  const brokerPays = Math.round(amt * 1.05);
-  const fee = Math.round(amt * 0.05);
+  const brokerPays = Math.round(amt * 1.01);
+  const fee = Math.round(amt * 0.01);
   const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
 
   const invoiceHtml = `<!DOCTYPE html>
@@ -5300,7 +5300,7 @@ td:last-child{font-weight:600;text-align:left;}
   <div class="section">
     <div class="section-title">פירוט תשלום</div>
     <div class="pay-row"><span style="color:#64748b;">שירות הובלה</span><span style="font-weight:600;">₪${amt.toLocaleString()}</span></div>
-    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (5%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
+    <div class="pay-row"><span style="color:#64748b;">עמלת פלטפורמה (1%)</span><span style="font-weight:600;">₪${fee.toLocaleString()}</span></div>
     <div class="pay-divider"></div>
     <div class="total-row"><span>סה"כ לתשלום</span><span class="total-amt">₪${brokerPays.toLocaleString()}</span></div>
     <div class="vat">כולל מע"מ</div>
@@ -5347,8 +5347,8 @@ window.printInvoice = function() {
   const d = data.shipment;
   const w = window.open('', '_blank');
   const amt = d.finalAmount || d.amount || 0;
-  const brokerPays = Math.round(amt * 1.05);
-  const fee = Math.round(amt * 0.05);
+  const brokerPays = Math.round(amt * 1.01);
+  const fee = Math.round(amt * 0.01);
   const cargoLabel = d.cargoType === 'cont' ? ('מכולה' + (d.contSize ? ' ' + d.contSize : '')) : 'חלקי';
   const rows = [
     ['מספר הזמנה', d.orderNumber || '—'],
@@ -5439,7 +5439,7 @@ td:last-child{font-weight:600;text-align:left;}
   <div class="section">
     <div class="section-title">פירוט תשלום</div>
     <div class="pay-row"><span class="pay-label">שירות הובלה</span><span class="pay-val">₪${amt.toLocaleString()}</span></div>
-    <div class="pay-row"><span class="pay-label">עמלת פלטפורמה (5%)</span><span class="pay-val">₪${fee.toLocaleString()}</span></div>
+    <div class="pay-row"><span class="pay-label">עמלת פלטפורמה (1%)</span><span class="pay-val">₪${fee.toLocaleString()}</span></div>
     <div class="pay-divider"></div>
     <div class="total-row"><span>סה"כ לתשלום</span><span class="total-amt">₪${brokerPays.toLocaleString()}</span></div>
     <div class="vat">כולל מע"מ</div>
@@ -5514,7 +5514,7 @@ window.loadPaymentsScreen = async function() {
     docs.forEach(d => {
       if (d.status !== 'confirmed') return;
       const amt = d.finalAmount || d.amount || 0;
-      const fee = Math.round(amt * 0.05);
+      const fee = Math.round(amt * 0.01);
       const net = amt - fee;
       totalFee += fee;
       totalNet += net;
@@ -5564,7 +5564,7 @@ function renderPaymentCard(d, role) {
   const st = ESCROW_LABEL[d.status] || ESCROW_LABEL.pending;
   const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
   const amt = d.finalAmount || d.amount || 0;
-  const fee = Math.round(amt * 0.05);
+  const fee = Math.round(amt * 0.01);
   const net = amt - fee;
   const isDelivered = d.status === 'delivered';
   const isConfirmed = d.status === 'confirmed';
@@ -5591,7 +5591,7 @@ function renderPaymentCard(d, role) {
         <div class="cm2">${date} • ${role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג')}</div>
       </div>
       <div class="cr">
-        <div class="cp" style="color:${isConfirmed ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${role==='drv'?Math.round(amt*0.95).toLocaleString():Math.round(amt*1.05).toLocaleString()}</div>
+        <div class="cp" style="color:${isConfirmed ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${role==='drv'?Math.round(amt*0.99).toLocaleString():Math.round(amt*1.01).toLocaleString()}</div>
         <div class="badge ${st.cls}">${st.txt}</div>
         <div class="chev">▼</div>
       </div>
@@ -5616,7 +5616,7 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName||'—')}</div></div>
         <div class="dc"><div class="dcl">נהג</div><div class="dcv">${esc(d.driverName||'—')}</div></div>
         <div class="dc"><div class="dcl">ברוטו</div><div class="dcv">₪${amt.toLocaleString()}</div></div>
-        <div class="dc"><div class="dcl">עמלה (5%)</div><div class="dcv" style="color:var(--red)">-₪${fee.toLocaleString()}</div></div>
+        <div class="dc"><div class="dcl">עמלה (1%)</div><div class="dcv" style="color:var(--accent)">-₪${fee.toLocaleString()}</div></div>
         <div class="dc"><div class="dcl">נטו לנהג</div><div class="dcv" style="color:var(--green)">₪${net.toLocaleString()}</div></div>
         <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
       </div>
@@ -5664,14 +5664,14 @@ window.exportPaymentsPDF = function() {
     if (d.status === 'confirmed') {
       const amt = d.finalAmount || d.amount || 0;
       totalGross += amt;
-      totalFee += Math.round(amt * 0.05);
-      totalNet += amt - Math.round(amt * 0.05);
+      totalFee += Math.round(amt * 0.01);
+      totalNet += amt - Math.round(amt * 0.01);
     }
   });
 
   const rows = docs.map((d, i) => {
     const amt = d.finalAmount || d.amount || 0;
-    const fee = Math.round(amt * 0.05);
+    const fee = Math.round(amt * 0.01);
     const net = amt - fee;
     const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
     const other = role === 'drv' ? (d.brokerName||'—') : (d.driverName||'—');
@@ -5716,7 +5716,7 @@ window.exportPaymentsPDF = function() {
 </div>
 <div class="summary">
   <div class="scard"><div class="val">₪${totalGross.toLocaleString()}</div><div class="lbl">סה"כ ברוטו</div></div>
-  <div class="scard"><div class="val" style="color:#dc2626">-₪${totalFee.toLocaleString()}</div><div class="lbl">עמלות פלטפורמה 5%</div></div>
+  <div class="scard"><div class="val" style="color:#1d4ed8">-₪${totalFee.toLocaleString()}</div><div class="lbl">עמלות פלטפורמה 1%</div></div>
   <div class="scard"><div class="val" style="color:#16a34a">₪${totalNet.toLocaleString()}</div><div class="lbl">סה"כ נטו</div></div>
 </div>
 <table>
@@ -5805,8 +5805,8 @@ window.openCounterOffers = async function(shipmentId) {
     const uniqueOffers = Array.from(seenDrivers.values());
     document.getElementById('com-list').innerHTML = uniqueOffers.map((d,idx) => {
       const o = d.data();
-      const brokerProposed = Math.round((o.proposedAmount||0)*1.05);
-      const brokerOrig = Math.round(origAmt*1.05);
+      const brokerProposed = Math.round((o.proposedAmount||0)*1.01);
+      const brokerOrig = Math.round(origAmt*1.01);
       const diff = brokerProposed - brokerOrig;
       const diffClr = diff <= 0 ? 'var(--green)' : 'var(--amber)';
       const diffTxt = diff===0?'':(diff<0?'▼ זול ב-':'▲ יקר ב-')+'₪'+Math.abs(diff).toLocaleString();
@@ -5829,7 +5829,7 @@ window.openCounterOffers = async function(shipmentId) {
             ${o.slot?`<div style="font-size:12px;color:var(--muted);">טווח: ${esc(o.slot)}</div>`:''}
           </div>
           <div style="text-align:left;">
-            <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${Math.round((o.proposedAmount||0)*1.05).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${Math.round((o.proposedAmount||0)*1.01).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
             ${diffTxt?`<div style="font-size:11px;font-weight:700;color:${diffClr};">${diffTxt}</div>`:''}
           </div>
         </div>
