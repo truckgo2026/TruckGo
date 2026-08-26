@@ -2202,7 +2202,7 @@ window.runSearch = async function() {
           <div class="cm" onclick="toggleCard('${cardId}')">
             <div class="ci ${d.status==='confirmed'?'g':d.status==='cancelled'?'':d.status==='delivered'?'am':''}"></div>
             <div class="cinfo">
-              <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+              <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
               <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} ${d.qty?'• '+d.qty+' יח\'':''}</div>
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
@@ -2940,7 +2940,7 @@ function startDriverRealtime(uid) {
           <div class="cm" onclick="toggleCard('dof-${id}')">
             <div class="ci"></div>
             <div class="cinfo">
-              <div class="ct">${from} → ${to}</div>
+              <div class="ct">${from} ← ${to}</div>
               <div class="cm2">${summary} • ${cargoLabel}</div>
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
@@ -2979,7 +2979,7 @@ function startDriverRealtime(uid) {
         const from = d.from || '—';
         const to   = d.to   || '—';
         const amt  = d.amount || 0;
-        showPushNotification('🚛 הזמנה חדשה!', `${from} → ${to}  •  ₪${amt.toLocaleString()}`, 'new-order-' + change.doc.id);
+        showPushNotification('🚛 הזמנה חדשה!', `${from} ← ${to}  •  ₪${amt.toLocaleString()}`, 'new-order-' + change.doc.id);
         addNotifBadge(1);
       }
     });
@@ -3085,7 +3085,7 @@ function startMyOrdersRealtime(uid) {
             <div class="cm">
               <div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
               <div class="cinfo">
-                <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+                <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${esc(d.orderNumber||'')} • ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
               </div>
               <div class="cr">
@@ -3117,7 +3117,7 @@ function startMyOrdersRealtime(uid) {
             <div class="cm" onclick="toggleCard('dact-${d.id}')">
               <div class="ci ${isDelivered?'am':'g'}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
               <div class="cinfo">
-                <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+                <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${isDelivered?'נמסר — ממתין לאישור קבלה':'הובלה פעילה'} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
@@ -3167,7 +3167,7 @@ function startMyOrdersRealtime(uid) {
             <div class="cm" onclick="toggleCard('ddone-${d.id}')">
               <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div class="cinfo">
-                <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+                <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${esc(d.orderNumber||'')} • ${esc(d.date)} • ${esc(d.slot)}</div>
               </div>
               <div class="cr">
@@ -3202,7 +3202,7 @@ function startMyOrdersRealtime(uid) {
         const d = change.doc.data();
         const shipId = change.doc.id;
         if (d.status === 'accepted') {
-          showPushNotification('✅ אושרת!', `${esc(d.from)} → ${esc(d.to)} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + shipId);
+          showPushNotification('✅ אושרת!', `${esc(d.from)} ← ${esc(d.to)} • ₪${(d.finalAmount||0).toLocaleString()}`, 'mine-accepted-' + shipId);
           addNotifBadge(1);
           toast('ההובלה אושרה! ₪' + (d.finalAmount||0).toLocaleString());
           drvTab('mine');
@@ -3319,7 +3319,7 @@ function startBrokerRealtime(uid) {
             <div class="cm" onclick="toggleCard('bord-${d.id}')">
               <div class="ci ${hasOffer?'am':''}"></div>
               <div class="cinfo">
-                <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+                <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
                 ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
               </div>
@@ -3386,7 +3386,7 @@ function startBrokerRealtime(uid) {
             <div class="cm" onclick="toggleCard('bact-${d.id}')">
               <div class="ci ${isDelivered?'am':'g'}"></div>
               <div class="cinfo">
-                <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+                <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${isDelivered?'ממתין לאישורך':'בדרך'} • ${esc(d.driverName)}</div>
               </div>
               <div class="cr">
@@ -3444,7 +3444,7 @@ function startBrokerRealtime(uid) {
           <div class="card" id="bdone-${d.id}">
             <div class="cm" onclick="toggleCard('bdone-${d.id}')">
               <div class="ci g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-              <div class="cinfo"><div class="ct">${esc(d.from)} → ${esc(d.to)}</div><div class="cm2">${esc(d.date)} • ${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''}</div></div>
+              <div class="cinfo"><div class="ct">${esc(d.from)} ← ${esc(d.to)}</div><div class="cm2">${esc(d.date)} • ${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''}</div></div>
               <div class="cr"><div><div class="cp" style="color:var(--green)">₪${Math.round((d.finalAmount||d.amount||0)*1.01).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">כולל עמלה</div></div><div class="badge bg">הושלם</div><div class="chev">▼</div></div>
             </div>
             <div class="cd">
@@ -3468,22 +3468,22 @@ function startBrokerRealtime(uid) {
       const from = d.from || '—';
       const to   = d.to   || '—';
       if (d.status === 'pending_approval') {
-        showPushNotification('🚛 נהג ביקש לבצע הובלה!', `${from} → ${to}  •  ${esc(d.driverName)} • ₪${(d.proposedAmount||d.amount||0).toLocaleString()}`, 'approval-' + change.doc.id);
+        showPushNotification('🚛 נהג ביקש לבצע הובלה!', `${from} ← ${to}  •  ${esc(d.driverName)} • ₪${(d.proposedAmount||d.amount||0).toLocaleString()}`, 'approval-' + change.doc.id);
         addNotifBadge(1);
         toast((d.driverName||'נהג') + ' ביקש לבצע הובלה — דרוש אישורך!');
       }
       if (d.status === 'accepted') {
-        showPushNotification('✅ נהג קיבל הזמנה!', `${from} → ${to}  •  ${esc(d.driverName)} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
+        showPushNotification('✅ נהג קיבל הזמנה!', `${from} ← ${to}  •  ${esc(d.driverName)} • ₪${(d.finalAmount||d.amount||0).toLocaleString()}`, 'accept-' + change.doc.id);
         addNotifBadge(1);
         toast((d.driverName||'נהג') + ' קיבל את ההזמנה!');
       }
       if (d.status === 'offer_sent') {
-        showPushNotification('💬 הצעה נגדית!', `${from} → ${to}  •  ${esc(d.lastCounterDriverName)} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-' + change.doc.id);
+        showPushNotification('💬 הצעה נגדית!', `${from} ← ${to}  •  ${esc(d.lastCounterDriverName)} מציע ₪${(d.lastCounterAmount||0).toLocaleString()}`, 'offer-' + change.doc.id);
         addNotifBadge(1);
         toast('הצעה נגדית: ₪'+(d.lastCounterAmount||0).toLocaleString()+' מ-'+(d.lastCounterDriverName||'נהג'));
       }
       if (d.status === 'delivered') {
-        showPushNotification('📦 נהג אישר מסירה!', `${from} → ${to}  — אשר קבלה לשחרור תשלום`, 'delivered-' + change.doc.id);
+        showPushNotification('📦 נהג אישר מסירה!', `${from} ← ${to}  — אשר קבלה לשחרור תשלום`, 'delivered-' + change.doc.id);
         addNotifBadge(1);
         toast((d.driverName||'נהג') + ' אישר מסירה — לחץ לאשר קבלה!');
       }
@@ -5587,7 +5587,7 @@ function renderPaymentCard(d, role) {
     <div class="cm" onclick="toggleCard('pay-${d.id}')">
       <div class="ci ${isConfirmed ? 'g' : 'am'}">${st.icon}</div>
       <div class="cinfo">
-        <div class="ct">${esc(d.from)} → ${esc(d.to)}</div>
+        <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
         <div class="cm2">${date} • ${role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג')}</div>
       </div>
       <div class="cr">
@@ -5678,7 +5678,7 @@ window.exportPaymentsPDF = function() {
     const st = statusMap[d.status] || d.status;
     const stColor = d.status==='confirmed' ? '#16a34a' : d.status==='cancelled' ? '#dc2626' : '#d97706';
     return `<tr style="background:${i%2===0?'#f9fafb':'#fff'}">
-      <td>${date}</td><td>${d.from||'—'} → ${d.to||'—'}</td><td>${other}</td>
+      <td>${date}</td><td>${d.from||'—'} ← ${d.to||'—'}</td><td>${other}</td>
       <td style="text-align:left">₪${amt.toLocaleString()}</td>
       <td style="text-align:left;color:#dc2626">-₪${fee.toLocaleString()}</td>
       <td style="text-align:left;color:#16a34a;font-weight:700">₪${net.toLocaleString()}</td>
