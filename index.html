@@ -1999,15 +1999,18 @@ function selSlot(i){
   const btn=document.getElementById('ts-btn');
   btn.style.opacity='1'; btn.style.pointerEvents='all';
 }
+let _tsConfirming = false;
 function confirmTS(){
-  if(selSlotIdx<0)return;
+  if(selSlotIdx<0 || _tsConfirming)return;
+  _tsConfirming = true;
   closeSheet('ts-sh');
   const s=SLOTS[selSlotIdx];
   const slotStr = s.n + ' (' + s.h + ')';
+  const done = () => { _tsConfirming = false; };
   if(tsIsCnt) {
-    _doCounterOfferFirebase(slotStr);
+    _doCounterOfferFirebase(slotStr).then(done, done);
   } else {
-    _doAcceptFirebase(slotStr);
+    _doAcceptFirebase(slotStr).then(done, done);
   }
 }
 
@@ -2713,7 +2716,7 @@ window._fbAddDoc = async function(data) {
 // קבלת הובלה רגילה + slot
 window._fbDoAccept = async function(slotStr) {
   const p = window._pendingAccept;
-  if(!p) { toast('שגיאה פנימית — נסה שוב'); return; }
+  if(!p) { if(window.Sentry) Sentry.captureMessage('confirmTS: _pendingAccept missing'); toast('לא הצלחנו לשלוח, נסה שוב'); return; }
   window._pendingAccept = null;
 
   const waitEl = document.getElementById('drv-wait');
@@ -2757,7 +2760,7 @@ window._fbDoAccept = async function(slotStr) {
 // הצעה נגדית + slot
 window._fbDoCounter = async function(slotStr) {
   const p = window._pendingCounter;
-  if(!p) { toast('שגיאה פנימית — נסה שוב'); return; }
+  if(!p) { if(window.Sentry) Sentry.captureMessage('confirmTS: _pendingCounter missing'); toast('לא הצלחנו לשלוח, נסה שוב'); return; }
   if(!p.docId) { toast('שגיאה: לא נמצא מזהה הובלה'); return; }
   window._pendingCounter = null;
 
