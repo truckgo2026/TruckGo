@@ -6016,7 +6016,7 @@ window.repairStuckCounterOffers = async function() {
   alert(`תוקנו ${fixed} הצעות תקועות. עכשיו הן יופיעו אצל העמילים המתאימים.`);
 };
 
-
+window.brokerAcceptOfferByKey = function(key) {
   const o = _offerCache[key];
   if (!o) { toast('שגיאה: נסה לסגור ולפתוח שוב'); return; }
   brokerAcceptOffer(o.shipmentId, o.offerId, o.driverUid, o.driverName, o.driverPhone, o.proposedAmount, o.slot);
