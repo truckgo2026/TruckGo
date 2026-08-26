@@ -2621,7 +2621,7 @@ if ("serviceWorker" in navigator) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, collectionGroup, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
 // אין צורך להסתיר - האבטחה מתבצעת דרך Firebase Rules + הגבלת דומיין
@@ -2783,27 +2783,31 @@ window._fbDoCounter = async function(slotStr) {
       return;
     }
 
-    // 1. שמור הצעה ב-sub-collection
-    await addDoc(collection(db, 'shipments', p.docId, 'counterOffers'), {
-      authorUid:      currentUser.uid,
-      driverUid:      currentUser.uid,
-      driverName,
-      driverPhone:    window._currentPhone || '',
-      proposedAmount: p.proposedAmt,
-      slot:           slotStr,
-      status:         'pending',
-      createdAt:      serverTimestamp(),
-    });
-
-    // 2. עדכן shipment ראשי (ללא driverUid — הנהג עדיין לא אושר)
-    await updateDoc(doc(db, 'shipments', p.docId), {
-      status:                'offer_sent',
-      hasCounterOffers:      true,
-      counterOffersCount:    increment(1),
-      lastCounterAmount:     p.proposedAmt,
-      lastCounterDriverUid:  currentUser.uid,
-      lastCounterDriverName: driverName,
-      lastCounterAt:         serverTimestamp(),
+    // 1+2. שמור הצעה ב-sub-collection + עדכן shipment ראשי — יחד בטרנזקציה אחת
+    //     כדי שאם שלב אחד נכשל, השני לא יישאר "תקוע" (הצעה שקיימת אצל הנהג
+    //     אבל לא נראית אצל העמיל)
+    const shipRef = doc(db, 'shipments', p.docId);
+    const newOfferRef = doc(collection(db, 'shipments', p.docId, 'counterOffers'));
+    await runTransaction(db, async (tx) => {
+      tx.set(newOfferRef, {
+        authorUid:      currentUser.uid,
+        driverUid:      currentUser.uid,
+        driverName,
+        driverPhone:    window._currentPhone || '',
+        proposedAmount: p.proposedAmt,
+        slot:           slotStr,
+        status:         'pending',
+        createdAt:      serverTimestamp(),
+      });
+      tx.update(shipRef, {
+        status:                'offer_sent',
+        hasCounterOffers:      true,
+        counterOffersCount:    increment(1),
+        lastCounterAmount:     p.proposedAmt,
+        lastCounterDriverUid:  currentUser.uid,
+        lastCounterDriverName: driverName,
+        lastCounterAt:         serverTimestamp(),
+      });
     });
 
     if(waitEl) waitEl.classList.remove('on');
@@ -5969,7 +5973,50 @@ window.brokerRejectDriver = async function(shipId) {
   } catch(e) { toast('שגיאה: '+e.message); }
 };
 
-window.brokerAcceptOfferByKey = function(key) {
+// ── תיקון חד-פעמי: הצעות נגדיות "תקועות" מהבאג הישן ──
+// (הצעה שנשמרה אצל הנהג אבל ההובלה הראשית מעולם לא עודכנה,
+//  ולכן העמיל אף פעם לא ראה אותה). מריצים פעם אחת מהקונסול,
+//  מחוברים כאדמין: repairStuckCounterOffers()
+window.repairStuckCounterOffers = async function() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) {
+    console.warn('יש להריץ את זה מחובר כאדמין בלבד');
+    return;
+  }
+  console.log('סורק הצעות נגדיות תקועות...');
+  const allOffers = await getDocs(
+    query(collectionGroup(db, 'counterOffers'), where('status', '==', 'pending'))
+  );
+  let fixed = 0, checked = 0, skipped = 0;
+  for (const offerDoc of allOffers.docs) {
+    checked++;
+    const shipRef = offerDoc.ref.parent.parent; // /shipments/{id}
+    if (!shipRef) continue;
+    const shipSnap = await getDoc(shipRef);
+    if (!shipSnap.exists()) { skipped++; continue; }
+    const ship = shipSnap.data();
+    if (ship.status === 'offer_sent' || ship.status === 'accepted' ||
+        ship.status === 'pending_approval' || ship.status === 'confirmed' ||
+        ship.status === 'delivered' || ship.status === 'cancelled') {
+      continue; // כבר תקין / כבר התקדם הלאה — לא נוגעים
+    }
+    const o = offerDoc.data();
+    await updateDoc(shipRef, {
+      status:                'offer_sent',
+      hasCounterOffers:      true,
+      counterOffersCount:    increment(1),
+      lastCounterAmount:     o.proposedAmount || 0,
+      lastCounterDriverUid:  o.driverUid || '',
+      lastCounterDriverName: o.driverName || '',
+      lastCounterAt:         o.createdAt || serverTimestamp(),
+    });
+    fixed++;
+    console.log('תוקן:', shipRef.path, '— נהג:', o.driverName, '— ₪' + (o.proposedAmount||0));
+  }
+  console.log(`סיום: נבדקו ${checked}, תוקנו ${fixed}, דולגו ${skipped}.`);
+  alert(`תוקנו ${fixed} הצעות תקועות. עכשיו הן יופיעו אצל העמילים המתאימים.`);
+};
+
+
   const o = _offerCache[key];
   if (!o) { toast('שגיאה: נסה לסגור ולפתוח שוב'); return; }
   brokerAcceptOffer(o.shipmentId, o.offerId, o.driverUid, o.driverName, o.driverPhone, o.proposedAmount, o.slot);
@@ -5979,19 +6026,23 @@ window.brokerAcceptOfferByKey = function(key) {
 window.brokerAcceptOffer = async function(shipId, offerId, driverUid, driverName, driverPhone, proposedAmt, slot) {
   if(!confirm('לאשר את '+driverName+' על ₪'+Number(proposedAmt).toLocaleString()+'?')) return;
   try {
-    await updateDoc(doc(db,'shipments',shipId), {
-      status: 'accepted',
-      driverUid, driverName,
-      driverPhone: driverPhone||'',
-      finalAmount: Number(proposedAmt),
-      slot: slot||'',
-      acceptedAt: serverTimestamp(),
+    const shipRef  = doc(db,'shipments',shipId);
+    const offerRef = doc(db,'shipments',shipId,'counterOffers',offerId);
+    await runTransaction(db, async (tx) => {
+      tx.update(shipRef, {
+        status: 'accepted',
+        driverUid, driverName,
+        driverPhone: driverPhone||'',
+        finalAmount: Number(proposedAmt),
+        slot: slot||'',
+        acceptedAt: serverTimestamp(),
+      });
+      tx.update(offerRef, { status:'accepted' });
     });
-    await updateDoc(doc(db,'shipments',shipId,'counterOffers',offerId), { status:'accepted' });
     document.getElementById('counter-offers-modal').classList.remove('on');
     document.getElementById('brk-succ-s').textContent = driverName+' יבצע את ההובלה!\n₪'+Number(proposedAmt).toLocaleString();
     fireOvCheck('brk-succ');document.getElementById('brk-succ').classList.add('on');
-  } catch(e) { console.error(e); toast('שגיאה: '+e.message); }
+  } catch(e) { console.error(e); toast('שגיאה: '+e.message); if(window.Sentry) Sentry.captureException(e); }
 };
 
 // ── עמיל: דחה הצעה נגדית ─────────────────────────────
