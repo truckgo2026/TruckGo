@@ -1944,7 +1944,7 @@ function toggleDrvOnline(){
 let cntCard='',cntVal='';
 function openCounter(card,price){
   cntCard=card; cntVal='';
-  document.getElementById('cnt-sub').textContent='המחיר שהעמיל מציע: ₪'+price.toLocaleString()+' — הזן את הצעתך (סכום בסיס)';
+  document.getElementById('cnt-sub').textContent='המחיר שהעמיל מציע: ₪'+price.toLocaleString()+' — הזן את הסכום שתרצה לקבל';
   updCnt();
   openSheet('cnt-sh');
 }
@@ -1955,21 +1955,22 @@ function ck(k){
   updCnt();
 }
 function updCnt(){
-  const base = parseInt(cntVal) || 0;
-  const net  = base ? Math.round(base * 0.99) : 0;
-  document.getElementById('cnt-disp').textContent = base ? '₪'+base.toLocaleString() : '₪0';
+  const netWant = parseInt(cntVal) || 0;
+  document.getElementById('cnt-disp').textContent = netWant ? '₪'+netWant.toLocaleString() : '₪0';
   const netEl = document.getElementById('cnt-net-display');
-  if(netEl) netEl.textContent = net ? 'תקבל: ₪'+net.toLocaleString()+' (לאחר עמלה 1%)' : '';
+  if(netEl) netEl.textContent = '';
 }
 function sendCnt(){
-  if(!cntVal||parseInt(cntVal)<=0){toast('הכנס סכום תקין');return;}
+  const netWant = parseInt(cntVal);
+  if(!cntVal||netWant<=0){toast('הכנס סכום תקין');return;}
+  const base = Math.round(netWant / 0.99);
   const sendBtn = document.querySelector('.sbt[onclick="sendCnt()"]');
   if(sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.5'; }
   closeSheet('cnt-sh');
   // שמור פרטי הצעה נגדית - docId מתוך cardId "dof-DOCID"
   const docId = cntCard.startsWith('dof-') ? cntCard.slice(4) : '';
-  window._pendingCounter = { cardId: cntCard, docId, proposedAmt: parseInt(cntVal) };
-  openTS(cntCard, parseInt(cntVal), true);
+  window._pendingCounter = { cardId: cntCard, docId, proposedAmt: base, netWant };
+  openTS(cntCard, netWant, true);
 }
 
 //  TIMESLOTS 
@@ -2762,7 +2763,7 @@ window._fbDoCounter = async function(slotStr) {
 
   const waitEl = document.getElementById('drv-wait');
   const waitS  = document.getElementById('drv-wait-s');
-  if(waitEl){ waitS.textContent = 'שולח הצעה ₪' + p.proposedAmt.toLocaleString() + '...'; waitEl.classList.add('on'); }
+  if(waitEl){ waitS.textContent = 'שולח הצעה ₪' + p.netWant.toLocaleString() + '...'; waitEl.classList.add('on'); }
 
   try {
     const rawName = document.getElementById('p-name-v')?.textContent || '';
@@ -2804,7 +2805,7 @@ window._fbDoCounter = async function(slotStr) {
 
     if(waitEl) waitEl.classList.remove('on');
     showOv('drv-succ', 'הצעה נשלחה!',
-      'הצעת ₪' + p.proposedAmt.toLocaleString() +
+      'הצעת ₪' + p.netWant.toLocaleString() +
       '\nטווח: ' + slotStr +
       '\nעמיל המכס יקבל התראה');
   } catch(e) {
