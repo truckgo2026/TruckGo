@@ -135,6 +135,10 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .ci.g{background:var(--green-bg);border-color:#bbf7d0;}
 .ci.am{background:var(--amber-bg);border-color:#fde68a;}
 .ci.r{background:var(--red-bg);border-color:#fecaca;}
+.ci.pend{overflow:hidden;position:relative;animation:ciHalo 3.2s infinite;}
+.ci.pend svg{animation:ciTruckDrive 3.2s infinite;}
+@keyframes ciHalo{0%,55%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}10%{box-shadow:0 0 0 8px rgba(29,78,216,0);}65%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}100%{box-shadow:0 0 0 8px rgba(29,78,216,0);}}
+@keyframes ciTruckDrive{0%{transform:scaleX(-1) translateX(-14px);opacity:0;}10%{transform:scaleX(-1) translateX(-14px);opacity:1;}45%{transform:scaleX(-1) translateX(0);opacity:1;}55%{transform:scaleX(-1) translateX(0);opacity:1;}90%{transform:scaleX(-1) translateX(14px);opacity:0;}100%{transform:scaleX(-1) translateX(14px);opacity:0;}}
 .cinfo{flex:1;min-width:0;}
 .ct{font-size:15px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cm2{font-size:13px;color:var(--muted);}
@@ -1642,6 +1646,9 @@ textarea.fi{resize:vertical;}
   // ─────────────────────────────────────────────────────────
 
   // ── אבטחה: Sanitize כל ערך שמגיע מ-Firestore לפני הכנסה ל-HTML ──
+function ciTruck() {
+  return '<div class="ci pend"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>';
+}
 function esc(str) {
   if (str == null) return '—';
   return String(str)
@@ -2938,7 +2945,7 @@ function startDriverRealtime(uid) {
       return `
         <div class="card" id="dof-${id}">
           <div class="cm" onclick="toggleCard('dof-${id}')">
-            <div class="ci"></div>
+            ${ciTruck()}
             <div class="cinfo">
               <div class="ct">${from} ← ${to}</div>
               <div class="cm2">${summary} • ${cargoLabel}</div>
@@ -3317,7 +3324,7 @@ function startBrokerRealtime(uid) {
           return `
           <div class="card" id="bord-${d.id}">
             <div class="cm" onclick="toggleCard('bord-${d.id}')">
-              <div class="ci ${hasOffer?'am':''}"></div>
+              ${hasOffer ? '<div class="ci am"></div>' : ciTruck()}
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
