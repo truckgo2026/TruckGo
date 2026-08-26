@@ -137,8 +137,15 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .ci.r{background:var(--red-bg);border-color:#fecaca;}
 .ci.pend{overflow:hidden;position:relative;border-radius:50%;animation:ciHalo 3.2s infinite;}
 .ci.pend svg{animation:ciTruckDrive 3.2s infinite;}
+.cm.hot{position:relative;border-radius:16px;animation:cmFlash 8s ease-in-out infinite;}
 @keyframes ciHalo{0%,55%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}10%{box-shadow:0 0 0 8px rgba(29,78,216,0);}65%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}100%{box-shadow:0 0 0 8px rgba(29,78,216,0);}}
 @keyframes ciTruckDrive{0%{transform:scaleX(-1) translateX(-14px);opacity:0;}10%{transform:scaleX(-1) translateX(-14px);opacity:1;}45%{transform:scaleX(-1) translateX(0);opacity:1;}55%{transform:scaleX(-1) translateX(0);opacity:1;}90%{transform:scaleX(-1) translateX(14px);opacity:0;}100%{transform:scaleX(-1) translateX(14px);opacity:0;}}
+@keyframes cmFlash{0%,100%{background:var(--surface);}50%{background:var(--surface2);}}
+@keyframes cmChase{0%{stroke-dashoffset:0;}100%{stroke-dashoffset:-860;}}
+@keyframes cmChaseSpark{0%{stroke-dashoffset:-60;}100%{stroke-dashoffset:-920;}}
+@keyframes cmSparkPulse{0%,100%{opacity:.55;}50%{opacity:1;}}
+.cm-chase{animation:cmChase 5s linear infinite;}
+.cm-spark{animation:cmChaseSpark 5s linear infinite,cmSparkPulse .7s ease-in-out infinite;}
 .cinfo{flex:1;min-width:0;}
 .ct{font-size:15px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cm2{font-size:13px;color:var(--muted);}
@@ -1649,6 +1656,9 @@ textarea.fi{resize:vertical;}
 function ciTruck() {
   return '<div class="ci pend"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>';
 }
+function cardChase() {
+  return '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 350 84" preserveAspectRatio="none"><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#378ADD" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="60 800" class="cm-chase"/><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#E6F1FB" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="5 855" class="cm-spark"/></svg>';
+}
 function esc(str) {
   if (str == null) return '—';
   return String(str)
@@ -2944,7 +2954,8 @@ function startDriverRealtime(uid) {
       const summary = [weight, volume, qty].filter(Boolean).join(' • ');
       return `
         <div class="card" id="dof-${id}">
-          <div class="cm" onclick="toggleCard('dof-${id}')">
+          <div class="cm hot" onclick="toggleCard('dof-${id}')">
+            ${cardChase()}
             ${ciTruck()}
             <div class="cinfo">
               <div class="ct">${from} ← ${to}</div>
@@ -3323,7 +3334,8 @@ function startBrokerRealtime(uid) {
           const qtyLabel     = d.qty    ? d.qty + " יח'" : null;
           return `
           <div class="card" id="bord-${d.id}">
-            <div class="cm" onclick="toggleCard('bord-${d.id}')">
+            <div class="cm ${hasOffer?'':'hot'}" onclick="toggleCard('bord-${d.id}')">
+              ${hasOffer ? '' : cardChase()}
               ${hasOffer ? '<div class="ci am"></div>' : ciTruck()}
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
