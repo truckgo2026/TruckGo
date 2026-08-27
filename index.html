@@ -2804,6 +2804,18 @@ window._fbDoCounter = async function(slotStr) {
           lastCounterAt:         od.createdAt || serverTimestamp(),
         });
         if(waitEl) waitEl.classList.remove('on');
+        // שמור ב-localStorage ו-myOrdersMap כדי שיופיע ב"הזמנות שלי"
+        try {
+          const key = 'tg_counter_' + currentUser.uid;
+          const ids = JSON.parse(localStorage.getItem(key) || '[]');
+          if (!ids.includes(p.docId)) { ids.push(p.docId); localStorage.setItem(key, JSON.stringify(ids)); }
+          window._myOrdersMap = window._myOrdersMap || {};
+          const freshSnap = await getDoc(doc(db, 'shipments', p.docId));
+          if (freshSnap.exists()) {
+            window._myOrdersMap[p.docId] = { id: p.docId, ...freshSnap.data(), _fromCounter: true };
+          }
+          if (typeof renderMyOrders === 'function') renderMyOrders();
+        } catch(e4) {}
         toast('ההצעה שלך כבר נשלחה — תוקן ונשלח לעמיל.');
         return;
       } catch(repairErr) {
@@ -3159,7 +3171,7 @@ function startMyOrdersRealtime(uid) {
         return tb - ta;
       });
 
-    const pending = all.filter(d => d.status === 'offer_sent' || d.status === 'pending_approval');
+    const pending = all.filter(d => d.status === 'offer_sent' || d.status === 'pending_approval' || d._fromCounter);
     const active  = all.filter(d => ['accepted','delivered'].includes(d.status));
     const done    = all.filter(d => d.status === 'confirmed');
 
