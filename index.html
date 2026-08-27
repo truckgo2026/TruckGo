@@ -2814,7 +2814,7 @@ window._fbDoCounter = async function(slotStr) {
           if (freshSnap.exists()) {
             window._myOrdersMap[p.docId] = { id: p.docId, ...freshSnap.data(), _fromCounter: true };
           }
-          if (typeof renderMyOrders === 'function') renderMyOrders();
+          if (typeof window.renderMyOrders === 'function') window.renderMyOrders();
         } catch(e4) {}
         toast('ההצעה שלך כבר נשלחה — תוקן ונשלח לעמיל.');
         return;
@@ -2873,7 +2873,7 @@ window._fbDoCounter = async function(slotStr) {
           window._myOrdersMap[p.docId] = { id: p.docId, ...shipSnap.data(), _fromCounter: true };
         }
       } catch(e3) {}
-      if (typeof renderMyOrders === 'function') renderMyOrders();
+      if (typeof window.renderMyOrders === 'function') window.renderMyOrders();
     } catch(e2) { /* non-critical */ }
 
     showOv('drv-succ', 'הצעה נשלחה!',
@@ -3163,7 +3163,6 @@ function startMyOrdersRealtime(uid) {
   window._myOrdersMap = window._myOrdersMap || {};
 
   function renderMyOrders() {
-    window.renderMyOrders = renderMyOrders; // נגישות גלובלית
     const map = window._myOrdersMap || {};
     const all = Object.values(map)
       .sort((a, b) => {
@@ -3310,6 +3309,9 @@ function startMyOrdersRealtime(uid) {
       }
     }
   }
+
+  // הפוך את renderMyOrders לנגיש גלובלית כדי שגם _fbDoCounter יוכל לקרוא לה
+  window.renderMyOrders = renderMyOrders;
 
   // Listener 1: driverUid (הובלות שאושרו / פעילות)
   const q1 = query(collection(db, 'shipments'), where('driverUid', '==', uid));
