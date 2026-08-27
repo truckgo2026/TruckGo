@@ -3288,16 +3288,33 @@ function startMyOrdersRealtime(uid) {
     });
   }, err => console.error('MyOrders listener error', err));
 
-  // Listener 2: lastCounterDriverUid (הצעות נגדיות שהנהג שלח)
-  const q2 = query(collection(db, 'shipments'), where('lastCounterDriverUid', '==', uid));
-  window._unsubMyOrdersCounter = onSnapshot(q2, { includeMetadataChanges: false }, (snapshot) => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === 'removed') {
-        delete window._myOrdersMap[change.doc.id];
-      } else {
-        window._myOrdersMap[change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+  // Listener 2: הצעות נגדיות שהנהג שלח (דרך counterOffers subcollection)
+  const q2 = query(collectionGroup(db, 'counterOffers'), where('driverUid', '==', uid), where('status', '==', 'pending'));
+  window._unsubMyOrdersCounter = onSnapshot(q2, { includeMetadataChanges: false }, async (snapshot) => {
+    // אסוף shipment IDs מתוך ה-counterOffers שנמצאו
+    const shipIds = new Set();
+    snapshot.docs.forEach(d => {
+      // path: shipments/{shipId}/counterOffers/{offerId}
+      const parts = d.ref.path.split('/');
+      if (parts.length >= 2) shipIds.add(parts[1]);
+    });
+    // הסר הובלות שכבר לא רלוונטיות (ההצעה נדחתה/הוסרה)
+    Object.keys(window._myOrdersMap).forEach(id => {
+      const existing = window._myOrdersMap[id];
+      if (existing && existing._fromCounter && !shipIds.has(id)) {
+        delete window._myOrdersMap[id];
       }
     });
+    // שלוף כל הובלה שיש לנהג הצעה פעילה עליה
+    for (const shipId of shipIds) {
+      if (window._myOrdersMap[shipId]) continue; // כבר קיים מ-Listener 1
+      try {
+        const shipSnap = await getDoc(doc(db, 'shipments', shipId));
+        if (shipSnap.exists()) {
+          window._myOrdersMap[shipId] = { id: shipId, ...shipSnap.data(), _fromCounter: true };
+        }
+      } catch(e) { /* shipment might not be readable */ }
+    }
     renderMyOrders();
   }, err => console.error('MyOrdersCounter listener error', err));
 }
