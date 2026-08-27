@@ -2815,6 +2815,21 @@ window._fbDoCounter = async function(slotStr) {
     });
 
     if(waitEl) waitEl.classList.remove('on');
+
+    // שמור ID של ההובלה ב-localStorage כדי לעקוב אחריה ב"הזמנות שלי"
+    try {
+      const key = 'tg_counter_' + currentUser.uid;
+      const ids = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!ids.includes(p.docId)) { ids.push(p.docId); localStorage.setItem(key, JSON.stringify(ids)); }
+      // הוסף ישירות ל-myOrdersMap כדי שיופיע מיד
+      const shipSnap = await getDoc(doc(db, 'shipments', p.docId));
+      if (shipSnap.exists()) {
+        window._myOrdersMap = window._myOrdersMap || {};
+        window._myOrdersMap[p.docId] = { id: p.docId, ...shipSnap.data(), _fromCounter: true };
+        if (typeof renderMyOrders === 'function') renderMyOrders();
+      }
+    } catch(e2) { /* non-critical */ }
+
     showOv('drv-succ', 'הצעה נשלחה!',
       'הצעת ₪' + p.netWant.toLocaleString() +
       '\nטווח: ' + slotStr +
@@ -3288,35 +3303,31 @@ function startMyOrdersRealtime(uid) {
     });
   }, err => console.error('MyOrders listener error', err));
 
-  // Listener 2: הצעות נגדיות שהנהג שלח (דרך counterOffers subcollection)
-  const q2 = query(collectionGroup(db, 'counterOffers'), where('driverUid', '==', uid), where('status', '==', 'pending'));
-  window._unsubMyOrdersCounter = onSnapshot(q2, { includeMetadataChanges: false }, async (snapshot) => {
-    // אסוף shipment IDs מתוך ה-counterOffers שנמצאו
-    const shipIds = new Set();
-    snapshot.docs.forEach(d => {
-      // path: shipments/{shipId}/counterOffers/{offerId}
-      const parts = d.ref.path.split('/');
-      if (parts.length >= 2) shipIds.add(parts[1]);
-    });
-    // הסר הובלות שכבר לא רלוונטיות (ההצעה נדחתה/הוסרה)
-    Object.keys(window._myOrdersMap).forEach(id => {
-      const existing = window._myOrdersMap[id];
-      if (existing && existing._fromCounter && !shipIds.has(id)) {
-        delete window._myOrdersMap[id];
-      }
-    });
-    // שלוף כל הובלה שיש לנהג הצעה פעילה עליה
-    for (const shipId of shipIds) {
+  // Listener 2: הצעות נגדיות — שולף הובלות לפי IDs ששמרנו ב-localStorage
+  async function loadCounterOfferShipments() {
+    const stored = JSON.parse(localStorage.getItem('tg_counter_' + uid) || '[]');
+    if (!stored.length) return;
+    const stillPending = [];
+    for (const shipId of stored) {
       if (window._myOrdersMap[shipId]) continue; // כבר קיים מ-Listener 1
       try {
         const shipSnap = await getDoc(doc(db, 'shipments', shipId));
         if (shipSnap.exists()) {
-          window._myOrdersMap[shipId] = { id: shipId, ...shipSnap.data(), _fromCounter: true };
-        }
-      } catch(e) { /* shipment might not be readable */ }
+          const d = shipSnap.data();
+          // הובלה עדיין רלוונטית? (ממתינה או שיש הצעה)
+          if (d.status === 'pending' || d.status === 'offer_sent') {
+            window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
+            stillPending.push(shipId);
+          }
+          // אם אושרה — Listener 1 יטפל, אם בוטלה — נוריד
+        } 
+      } catch(e) { /* shipment not readable — skip */ }
     }
+    // נקה IDs שכבר לא רלוונטיים
+    localStorage.setItem('tg_counter_' + uid, JSON.stringify(stillPending));
     renderMyOrders();
-  }, err => console.error('MyOrdersCounter listener error', err));
+  }
+  loadCounterOfferShipments();
 }
 
 function startBrokerRealtime(uid) {
