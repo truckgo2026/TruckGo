@@ -2787,23 +2787,23 @@ window._fbDoCounter = async function(slotStr) {
       return;
     }
 
-    // 1+2. שמור הצעה ב-sub-collection + עדכן shipment ראשי — יחד בטרנזקציה אחת
-    //     כדי שאם שלב אחד נכשל, השני לא יישאר "תקוע" (הצעה שקיימת אצל הנהג
-    //     אבל לא נראית אצל העמיל)
-    const shipRef = doc(db, 'shipments', p.docId);
+    // שלב 1: שמור הצעה ב-sub-collection (לנהג יש הרשאה)
     const newOfferRef = doc(collection(db, 'shipments', p.docId, 'counterOffers'));
-    await runTransaction(db, async (tx) => {
-      tx.set(newOfferRef, {
-        authorUid:      currentUser.uid,
-        driverUid:      currentUser.uid,
-        driverName,
-        driverPhone:    window._currentPhone || '',
-        proposedAmount: p.proposedAmt,
-        slot:           slotStr,
-        status:         'pending',
-        createdAt:      serverTimestamp(),
-      });
-      tx.update(shipRef, {
+    await setDoc(newOfferRef, {
+      authorUid:      currentUser.uid,
+      driverUid:      currentUser.uid,
+      driverName,
+      driverPhone:    window._currentPhone || '',
+      proposedAmount: p.proposedAmt,
+      slot:           slotStr,
+      status:         'pending',
+      createdAt:      serverTimestamp(),
+    });
+
+    // שלב 2: נסה לעדכן shipment ראשי (ייכשל אם אין הרשאה — לא קריטי)
+    const shipRef = doc(db, 'shipments', p.docId);
+    try {
+      await updateDoc(shipRef, {
         status:                'offer_sent',
         hasCounterOffers:      true,
         counterOffersCount:    increment(1),
@@ -2812,7 +2812,9 @@ window._fbDoCounter = async function(slotStr) {
         lastCounterDriverName: driverName,
         lastCounterAt:         serverTimestamp(),
       });
-    });
+    } catch(permErr) {
+      console.warn('Could not update parent shipment (permissions) — broker will poll counterOffers', permErr);
+    }
 
     if(waitEl) waitEl.classList.remove('on');
 
@@ -2821,13 +2823,15 @@ window._fbDoCounter = async function(slotStr) {
       const key = 'tg_counter_' + currentUser.uid;
       const ids = JSON.parse(localStorage.getItem(key) || '[]');
       if (!ids.includes(p.docId)) { ids.push(p.docId); localStorage.setItem(key, JSON.stringify(ids)); }
-      // הוסף ישירות ל-myOrdersMap כדי שיופיע מיד
-      const shipSnap = await getDoc(doc(db, 'shipments', p.docId));
-      if (shipSnap.exists()) {
-        window._myOrdersMap = window._myOrdersMap || {};
-        window._myOrdersMap[p.docId] = { id: p.docId, ...shipSnap.data(), _fromCounter: true };
-        if (typeof renderMyOrders === 'function') renderMyOrders();
-      }
+      window._myOrdersMap = window._myOrdersMap || {};
+      window._myOrdersMap[p.docId] = window._myOrdersMap[p.docId] || { id: p.docId, from: '', to: '', _fromCounter: true };
+      try {
+        const shipSnap = await getDoc(shipRef);
+        if (shipSnap.exists()) {
+          window._myOrdersMap[p.docId] = { id: p.docId, ...shipSnap.data(), _fromCounter: true };
+        }
+      } catch(e3) {}
+      if (typeof renderMyOrders === 'function') renderMyOrders();
     } catch(e2) { /* non-critical */ }
 
     showOv('drv-succ', 'הצעה נשלחה!',
@@ -3336,7 +3340,7 @@ function startBrokerRealtime(uid) {
   // ללא orderBy - מיון בצד הלקוח
   const q = query(collection(db, 'shipments'), where('brokerUid', '==', uid));
 
-  _unsubBrokerOrders = onSnapshot(q, { includeMetadataChanges: false }, (snapshot) => {
+  _unsubBrokerOrders = onSnapshot(q, { includeMetadataChanges: false }, async (snapshot) => {
     const all = snapshot.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => {
@@ -3344,6 +3348,30 @@ function startBrokerRealtime(uid) {
         const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
         return tb - ta;
       });
+
+    // בדוק counterOffers subcollection בהובלות "pending" — למקרה שהנהג לא הצליח לעדכן את הסטטוס
+    for (const d of all) {
+      if (d.status === 'pending' && !d.hasCounterOffers) {
+        try {
+          const offersSnap = await getDocs(collection(db, 'shipments', d.id, 'counterOffers'));
+          const pendingOffers = offersSnap.docs.filter(o => o.data().status === 'pending');
+          if (pendingOffers.length > 0) {
+            const lastOffer = pendingOffers[0].data();
+            // עדכן את ההובלה עם פרטי ההצעות
+            await updateDoc(doc(db, 'shipments', d.id), {
+              status:                'offer_sent',
+              hasCounterOffers:      true,
+              counterOffersCount:    pendingOffers.length,
+              lastCounterAmount:     lastOffer.proposedAmount || 0,
+              lastCounterDriverUid:  lastOffer.driverUid || '',
+              lastCounterDriverName: lastOffer.driverName || '',
+              lastCounterAt:         lastOffer.createdAt || serverTimestamp(),
+            });
+            // ה-listener יקבל עדכון אוטומטי ויצייר מחדש
+          }
+        } catch(e) { /* non-critical */ }
+      }
+    }
 
     const pending   = all.filter(d => d.status === 'pending' || d.status === 'offer_sent' || d.status === 'pending_approval');
     const active    = all.filter(d => d.status === 'accepted' || d.status === 'in_transit' || d.status === 'delivered');
