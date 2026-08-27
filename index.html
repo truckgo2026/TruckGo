@@ -3163,6 +3163,7 @@ function startMyOrdersRealtime(uid) {
   window._myOrdersMap = window._myOrdersMap || {};
 
   function renderMyOrders() {
+    window.renderMyOrders = renderMyOrders; // נגישות גלובלית
     const map = window._myOrdersMap || {};
     const all = Object.values(map)
       .sort((a, b) => {
