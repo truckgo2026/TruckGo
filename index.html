@@ -2777,14 +2777,44 @@ window._fbDoCounter = async function(slotStr) {
       query(collection(db, 'shipments', p.docId, 'counterOffers'),
             where('driverUid', '==', currentUser.uid))
     );
-    const hasPendingOffer = existingOffers.docs.some(d => {
+    const pendingOffer = existingOffers.docs.find(d => {
       const st = d.data().status;
       return st !== 'rejected';
     });
-    if (hasPendingOffer) {
-      if(waitEl) waitEl.classList.remove('on');
-      toast('כבר שלחת הצעה להובלה זו. ממתין לתשובת העמיל.');
-      return;
+    if (pendingOffer) {
+      // בדוק: האם ההובלה הראשית באמת יודעת על ההצעה?
+      const shipCheck = await getDoc(doc(db, 'shipments', p.docId));
+      const shipData = shipCheck.exists() ? shipCheck.data() : {};
+      if (shipData.status === 'offer_sent' || shipData.hasCounterOffers) {
+        // ההצעה קיימת ונראית — חסום כמצופה
+        if(waitEl) waitEl.classList.remove('on');
+        toast('כבר שלחת הצעה להובלה זו. ממתין לתשובת העמיל.');
+        return;
+      }
+      // ההצעה תקועה — ההובלה לא יודעת עליה. נסה לתקן:
+      try {
+        const od = pendingOffer.data();
+        await updateDoc(doc(db, 'shipments', p.docId), {
+          status:                'offer_sent',
+          hasCounterOffers:      true,
+          counterOffersCount:    1,
+          lastCounterAmount:     od.proposedAmount || p.proposedAmt,
+          lastCounterDriverUid:  currentUser.uid,
+          lastCounterDriverName: od.driverName || driverName,
+          lastCounterAt:         od.createdAt || serverTimestamp(),
+        });
+        if(waitEl) waitEl.classList.remove('on');
+        toast('ההצעה שלך כבר נשלחה — תוקן ונשלח לעמיל.');
+        return;
+      } catch(repairErr) {
+        // אין הרשאה לתקן — מחק את ההצעה התקועה כדי לאפשר שליחה מחדש
+        try {
+          await updateDoc(pendingOffer.ref, { status: 'rejected' });
+        } catch(delErr) {
+          // גם מחיקה נכשלה — מוחק מקומית ומאפשר ניסיון חדש
+          console.warn('Cannot fix stuck offer, proceeding with new one');
+        }
+      }
     }
 
     // שלב 1: שמור הצעה ב-sub-collection (לנהג יש הרשאה)
