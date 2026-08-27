@@ -2772,12 +2772,16 @@ window._fbDoCounter = async function(slotStr) {
     const rawName = document.getElementById('p-name-v')?.textContent || '';
     const driverName = (rawName === '—' || rawName === '') ? (currentUser?.displayName || currentUser?.email || '') : rawName;
 
-    // בדיקה: כבר שלח הצעה לאותה הובלה?
+    // בדיקה: כבר שלח הצעה לאותה הובלה? (מתעלם מהצעות שנדחו)
     const existingOffers = await getDocs(
       query(collection(db, 'shipments', p.docId, 'counterOffers'),
             where('driverUid', '==', currentUser.uid))
     );
-    if (!existingOffers.empty) {
+    const hasPendingOffer = existingOffers.docs.some(d => {
+      const st = d.data().status;
+      return st !== 'rejected';
+    });
+    if (hasPendingOffer) {
       if(waitEl) waitEl.classList.remove('on');
       toast('כבר שלחת הצעה להובלה זו. ממתין לתשובת העמיל.');
       return;
@@ -6050,6 +6054,17 @@ window.brokerRejectOffer = async function(shipId, offerId) {
   try {
     await updateDoc(doc(db,'shipments',shipId,'counterOffers',offerId), { status:'rejected' });
     toast('הצעה נדחתה');
+
+    // בדיקה: אם כל ההצעות נדחו — החזר הובלה למצב "ממתין" כדי שנהגים יוכלו להציע שוב
+    const allOffers = await getDocs(collection(db,'shipments',shipId,'counterOffers'));
+    const anyPending = allOffers.docs.some(d => d.data().status === 'pending');
+    if (!anyPending) {
+      await updateDoc(doc(db,'shipments',shipId), {
+        status: 'pending',
+        hasCounterOffers: false
+      });
+    }
+
     window.openCounterOffers(shipId);
   } catch(e) { toast('שגיאה: '+e.message); }
 };
