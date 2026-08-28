@@ -3391,41 +3391,37 @@ function startMyOrdersRealtime(uid) {
     });
   }, err => console.error('MyOrders listener error', err));
 
-  // Listener 2: הצעות נגדיות — מאזין בזמן-אמת (לא שליפה חד-פעמית!) לכל הובלה
-  // ששלחנו אליה הצעה, גם אם אין driverUid על ה-shipment. כך אם עמיל המכס
-  // (או תיקון אוטומטי בצד שלו) יעדכן את סכום ההצעה, זה מתעדכן כאן מיד — בלי צורך ברענון הדף.
+  // Listener 2: הצעות נגדיות — מבוסס ישירות על בסיס הנתונים (שאילתה בזמן-אמת על כל
+  // מסמכי counterOffers ששלח הנהג הזה), ולא על localStorage. כך גם אם ה-localStorage
+  // מתנקה, נמחק בטעות, או שהנהג מתחבר ממכשיר/דפדפן אחר — ההצעות שלו תמיד יופיעו נכון.
   window._myOrdersCounterUnsubs = window._myOrdersCounterUnsubs || [];
-  function removeStoredCounterId(shipId) {
-    const key = 'tg_counter_' + uid;
-    const ids = JSON.parse(localStorage.getItem(key) || '[]').filter(x => x !== shipId);
-    localStorage.setItem(key, JSON.stringify(ids));
-  }
-  function loadCounterOfferShipments() {
-    const stored = JSON.parse(localStorage.getItem('tg_counter_' + uid) || '[]');
-    stored.forEach(shipId => {
-      if (window._myOrdersMap[shipId]) return; // כבר מכוסה ע"י Listener 1
-      const unsub = onSnapshot(doc(db, 'shipments', shipId), (snap) => {
+  window._myOrdersShipUnsubs = window._myOrdersShipUnsubs || {};
+  const myOffersQ = query(collectionGroup(db, 'counterOffers'), where('driverUid', '==', uid));
+  const unsubMyOffers = onSnapshot(myOffersQ, (offersSnap) => {
+    offersSnap.docs.forEach(offerDoc => {
+      if (offerDoc.data().status === 'rejected') return; // הצעה שנדחתה — לא רלוונטית יותר
+      const shipRef = offerDoc.ref.parent.parent; // shipments/{id}
+      if (!shipRef || window._myOrdersShipUnsubs[shipRef.id]) return; // כבר יש מאזין להובלה הזו
+      window._myOrdersShipUnsubs[shipRef.id] = onSnapshot(shipRef, (snap) => {
         if (!snap.exists()) {
-          delete window._myOrdersMap[shipId];
-          removeStoredCounterId(shipId);
+          delete window._myOrdersMap[shipRef.id];
           renderMyOrders();
           return;
         }
         const d = snap.data();
-        // הובלה עדיין רלוונטית? (ממתינה, יש הצעה, או שהנהג הזה אושר עליה)
-        if (d.status === 'pending' || d.status === 'offer_sent' || d.driverUid === uid) {
-          window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
-        } else {
-          // ההצעה כבר לא רלוונטית (בוטלה / ניתנה לנהג אחר)
-          delete window._myOrdersMap[shipId];
-          removeStoredCounterId(shipId);
+        // ההובלה כבר סופית ושייכת לנהג אחר (לא אנחנו) — אין טעם להציג אותה יותר
+        if (d.driverUid && d.driverUid !== uid && ['accepted','delivered','confirmed'].includes(d.status)) {
+          delete window._myOrdersMap[shipRef.id];
+          renderMyOrders();
+          return;
         }
+        window._myOrdersMap[shipRef.id] = { id: shipRef.id, ...d, _fromCounter: true };
         renderMyOrders();
-      }, err => console.error('Counter offer listener error', err));
-      window._myOrdersCounterUnsubs.push(unsub);
+      }, err => console.error('Counter shipment listener error', err));
+      window._myOrdersCounterUnsubs.push(() => { if (window._myOrdersShipUnsubs[shipRef.id]) { window._myOrdersShipUnsubs[shipRef.id](); delete window._myOrdersShipUnsubs[shipRef.id]; } });
     });
-  }
-  loadCounterOfferShipments();
+  }, err => console.error('My counter offers listener error', err));
+  window._myOrdersCounterUnsubs.push(unsubMyOffers);
 }
 
 function startBrokerRealtime(uid) {
