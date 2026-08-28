@@ -2621,7 +2621,7 @@ if ("serviceWorker" in navigator) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, confirmPasswordReset, applyActionCode, verifyPasswordResetCode } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, collectionGroup, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, deleteDoc, serverTimestamp, collection, collectionGroup, addDoc, getDocs, updateDoc, query, where, orderBy, onSnapshot, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ✅ Firebase config - מפתח זה מוגבל לדומיין truckgo.co.il בלבד ב-Google Cloud Console
 // אין צורך להסתיר - האבטחה מתבצעת דרך Firebase Rules + הגבלת דומיין
@@ -2804,6 +2804,12 @@ window._fbDoCounter = async function(slotStr) {
           lastCounterAt:         od.createdAt || serverTimestamp(),
         });
         if(waitEl) waitEl.classList.remove('on');
+        // רשום מצביע בתיקייה הפרטית שלנו כדי שיופיע ב"ממתינות לאישור" (ראה startMyOrdersRealtime)
+        try {
+          await setDoc(doc(db, 'driverPendingOffers', currentUser.uid, 'items', p.docId), {
+            shipmentId: p.docId, createdAt: serverTimestamp()
+          });
+        } catch(ePtr) {}
         // שמור ב-localStorage ו-myOrdersMap כדי שיופיע ב"הזמנות שלי"
         try {
           const key = 'tg_counter_' + currentUser.uid;
@@ -2855,6 +2861,13 @@ window._fbDoCounter = async function(slotStr) {
       status:         'pending',
       createdAt:      serverTimestamp(),
     });
+
+    // רשום מצביע בתיקייה הפרטית שלנו כדי שההצעה תופיע ב"ממתינות לאישור" (ראה startMyOrdersRealtime)
+    try {
+      await setDoc(doc(db, 'driverPendingOffers', currentUser.uid, 'items', p.docId), {
+        shipmentId: p.docId, createdAt: serverTimestamp()
+      });
+    } catch(ePtr) {}
 
     // שלב 2: נסה לעדכן shipment ראשי (ייכשל אם אין הרשאה — לא קריטי)
     const shipRef = doc(db, 'shipments', p.docId);
@@ -3401,34 +3414,40 @@ function startMyOrdersRealtime(uid) {
     });
   }, err => console.error('MyOrders listener error', err));
 
-  // Listener 2: הצעות נגדיות — מבוסס ישירות על בסיס הנתונים (שאילתה בזמן-אמת על כל
-  // מסמכי counterOffers ששלח הנהג הזה), ולא על localStorage. כך גם אם ה-localStorage
-  // מתנקה, נמחק בטעות, או שהנהג מתחבר ממכשיר/דפדפן אחר — ההצעות שלו תמיד יופיעו נכון.
+  // Listener 2: הצעות נגדיות — לא משתמשים בשאילתת collectionGroup (Firestore חוסם
+  // אותה במקרה הזה — מגבלה ידועה: לא ניתן "להוכיח" בטיחות שאילתת collectionGroup
+  // כשהחוק תלוי בשדה שהשאילתה עצמה לא מסננת לפיו, גם אם הבדיקה הגיונית ותקינה).
+  // במקום זאת, כל הצעה שהנהג שולח נרשמת גם בתיקייה פרטית שלו:
+  // driverPendingOffers/{uid}/items/{shipmentId}. הנתיב עצמו (לא שדה בתוך מסמך)
+  // הוא מה ש-Firestore יודע להוכיח כבטוח תמיד, ולכן זה עובד באופן אמין.
   window._myOrdersCounterUnsubs = window._myOrdersCounterUnsubs || [];
   window._myOrdersShipUnsubs = window._myOrdersShipUnsubs || {};
-  const myOffersQ = query(collectionGroup(db, 'counterOffers'), where('driverUid', '==', uid));
-  const unsubMyOffers = onSnapshot(myOffersQ, (offersSnap) => {
-    offersSnap.docs.forEach(offerDoc => {
-      if (offerDoc.data().status === 'rejected') return; // הצעה שנדחתה — לא רלוונטית יותר
-      const shipRef = offerDoc.ref.parent.parent; // shipments/{id}
-      if (!shipRef || window._myOrdersShipUnsubs[shipRef.id]) return; // כבר יש מאזין להובלה הזו
-      window._myOrdersShipUnsubs[shipRef.id] = onSnapshot(shipRef, (snap) => {
+  const myPendingRef = collection(db, 'driverPendingOffers', uid, 'items');
+  const unsubMyOffers = onSnapshot(myPendingRef, (itemsSnap) => {
+    itemsSnap.docs.forEach(itemDoc => {
+      const shipId = itemDoc.id;
+      if (window._myOrdersShipUnsubs[shipId]) return; // כבר יש מאזין להובלה הזו
+      window._myOrdersShipUnsubs[shipId] = onSnapshot(doc(db, 'shipments', shipId), (snap) => {
+        const cleanupPointer = () => deleteDoc(doc(db, 'driverPendingOffers', uid, 'items', shipId)).catch(()=>{});
         if (!snap.exists()) {
-          delete window._myOrdersMap[shipRef.id];
+          delete window._myOrdersMap[shipId];
+          cleanupPointer();
           renderMyOrders();
           return;
         }
         const d = snap.data();
-        // ההובלה כבר סופית ושייכת לנהג אחר (לא אנחנו) — אין טעם להציג אותה יותר
+        // ההובלה כבר סופית ושייכת לנהג אחר (לא אנחנו) — אין טעם להמשיך לעקוב,
+        // ומנקים גם את מצביע ה"תיקייה הפרטית" שלנו
         if (d.driverUid && d.driverUid !== uid && ['accepted','delivered','confirmed'].includes(d.status)) {
-          delete window._myOrdersMap[shipRef.id];
+          delete window._myOrdersMap[shipId];
+          cleanupPointer();
           renderMyOrders();
           return;
         }
-        window._myOrdersMap[shipRef.id] = { id: shipRef.id, ...d, _fromCounter: true };
+        window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
         renderMyOrders();
       }, err => console.error('Counter shipment listener error', err));
-      window._myOrdersCounterUnsubs.push(() => { if (window._myOrdersShipUnsubs[shipRef.id]) { window._myOrdersShipUnsubs[shipRef.id](); delete window._myOrdersShipUnsubs[shipRef.id]; } });
+      window._myOrdersCounterUnsubs.push(() => { if (window._myOrdersShipUnsubs[shipId]) { window._myOrdersShipUnsubs[shipId](); delete window._myOrdersShipUnsubs[shipId]; } });
     });
   }, err => console.error('My counter offers listener error', err));
   window._myOrdersCounterUnsubs.push(unsubMyOffers);
