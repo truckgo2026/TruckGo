@@ -2814,6 +2814,10 @@ window._fbDoCounter = async function(slotStr) {
           if (freshSnap.exists()) {
             window._myOrdersMap[p.docId] = { id: p.docId, ...freshSnap.data(), _fromCounter: true };
           }
+          // ודא שהמחיר המוצג הוא תמיד הצעת הנהג, גם אם עדכון ה-shipment הראשי נכשל בגלל הרשאות
+          window._myOrdersMap[p.docId].lastCounterAmount     = od.proposedAmount || p.proposedAmt;
+          window._myOrdersMap[p.docId].lastCounterDriverName = od.driverName || driverName;
+          window._myOrdersMap[p.docId].status                = 'offer_sent';
           if (typeof window.renderMyOrders === 'function') window.renderMyOrders();
         } catch(e4) {}
         toast('ההצעה שלך כבר נשלחה — תוקן ונשלח לעמיל.');
@@ -2873,6 +2877,10 @@ window._fbDoCounter = async function(slotStr) {
           window._myOrdersMap[p.docId] = { id: p.docId, ...shipSnap.data(), _fromCounter: true };
         }
       } catch(e3) {}
+      // ודא שהמחיר המוצג הוא תמיד הצעת הנהג, גם אם עדכון ה-shipment הראשי נכשל בגלל הרשאות
+      window._myOrdersMap[p.docId].lastCounterAmount     = p.proposedAmt;
+      window._myOrdersMap[p.docId].lastCounterDriverName = driverName;
+      window._myOrdersMap[p.docId].status                = 'offer_sent';
       if (typeof window.renderMyOrders === 'function') window.renderMyOrders();
     } catch(e2) { /* non-critical */ }
 
@@ -3157,7 +3165,7 @@ window.drvTab = function(tab) {
 // ── ההובלות שלי (real-time) ──────────────────────────
 function startMyOrdersRealtime(uid) {
   if (_unsubMyOrders) { _unsubMyOrders(); _unsubMyOrders = null; }
-  if (window._unsubMyOrdersCounter) { window._unsubMyOrdersCounter(); window._unsubMyOrdersCounter = null; }
+  if (window._myOrdersCounterUnsubs) { window._myOrdersCounterUnsubs.forEach(fn => fn()); window._myOrdersCounterUnsubs = []; }
 
   // מפת כל ה-docs שנראתה — משני ה-listeners
   window._myOrdersMap = window._myOrdersMap || {};
@@ -3206,20 +3214,51 @@ function startMyOrdersRealtime(uid) {
           <div style="font-size:13px;color:var(--muted);">הובלות שתאשר יופיעו כאן</div>
         </div>`;
       } else {
-        pendingEl.innerHTML = pending.map(d => `
-          <div class="card">
-            <div class="cm">
+        pendingEl.innerHTML = pending.map(d => {
+          const isCounter = d.status === 'offer_sent' && !!d.lastCounterAmount;
+          const myGrossAmt = d.lastCounterAmount || d.proposedAmount || d.amount || 0;
+          const myNetAmt = Math.round(myGrossAmt * 0.99);
+          return `
+          <div class="card" id="dpend-${d.id}">
+            <div class="cm" onclick="toggleCard('dpend-${d.id}')">
               <div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
-                <div class="cm2">${esc(d.orderNumber||'')} • ממתינה לאישור עמיל • ${esc(d.brokerName)}</div>
+                <div class="cm2">${esc(d.orderNumber||'')} • ${isCounter ? 'הצעת מחיר ממתינה' : 'ממתינה לאישור עמיל'} • ${esc(d.brokerName)}</div>
               </div>
               <div class="cr">
-                <div class="cp" style="color:var(--amber)">₪${Math.round((d.lastCounterAmount||d.amount||0)*0.99).toLocaleString()}</div>
+                <div class="cp" style="color:var(--amber)">₪${myNetAmt.toLocaleString()}</div>
                 <div class="badge bam">ממתין</div>
+                <div class="chev">▼</div>
               </div>
             </div>
-          </div>`).join('');
+            <div class="cd">
+              ${isCounter ? `
+              <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:2px;">ההצעה שלי</div>
+                <div style="font-size:20px;font-weight:900;color:var(--accent);">₪${myNetAmt.toLocaleString()}</div>
+                <div style="font-size:11px;color:var(--muted);">לאחר עמלה • ממתין לאישור ${esc(d.brokerName)}</div>
+              </div>` : ''}
+              <div class="dg">
+                <div class="dc"><div class="dcl">מזהה הובלה</div><div class="dcv">${esc(d.orderNumber||'—')}</div></div>
+                <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
+                <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
+                <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
+                <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot)}</div></div>
+                <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight ? Number(d.weight).toLocaleString()+' ק"ג' : '—'}</div></div>
+                ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${esc(d.volume)} מ"ק</div></div>` : ''}
+                ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${esc(d.qty)} יח'</div></div>` : ''}
+                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+esc(d.contSize):'')):'חלקי'}</div></div>
+                <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
+                ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
+                <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${d.isHazardous?('כן'+(d.hazCode?' — '+esc(d.hazCode):'')):'לא'}</div></div>
+                <div class="dc"><div class="dcl">נדרש סבלים</div><div class="dcv">${d.needPorters?'כן':'לא'}</div></div>
+                <div class="dc"><div class="dcl">נדרש רמפית</div><div class="dcv">${d.needRamp?'כן':'לא'}</div></div>
+                <div class="dc"><div class="dcl">עמיל מכס</div><div class="dcv">${esc(d.brokerName)}</div></div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
       }
     }
 
@@ -3352,29 +3391,39 @@ function startMyOrdersRealtime(uid) {
     });
   }, err => console.error('MyOrders listener error', err));
 
-  // Listener 2: הצעות נגדיות — שולף הובלות לפי IDs ששמרנו ב-localStorage
-  async function loadCounterOfferShipments() {
+  // Listener 2: הצעות נגדיות — מאזין בזמן-אמת (לא שליפה חד-פעמית!) לכל הובלה
+  // ששלחנו אליה הצעה, גם אם אין driverUid על ה-shipment. כך אם עמיל המכס
+  // (או תיקון אוטומטי בצד שלו) יעדכן את סכום ההצעה, זה מתעדכן כאן מיד — בלי צורך ברענון הדף.
+  window._myOrdersCounterUnsubs = window._myOrdersCounterUnsubs || [];
+  function removeStoredCounterId(shipId) {
+    const key = 'tg_counter_' + uid;
+    const ids = JSON.parse(localStorage.getItem(key) || '[]').filter(x => x !== shipId);
+    localStorage.setItem(key, JSON.stringify(ids));
+  }
+  function loadCounterOfferShipments() {
     const stored = JSON.parse(localStorage.getItem('tg_counter_' + uid) || '[]');
-    if (!stored.length) return;
-    const stillPending = [];
-    for (const shipId of stored) {
-      if (window._myOrdersMap[shipId]) continue; // כבר קיים מ-Listener 1
-      try {
-        const shipSnap = await getDoc(doc(db, 'shipments', shipId));
-        if (shipSnap.exists()) {
-          const d = shipSnap.data();
-          // הובלה עדיין רלוונטית? (ממתינה או שיש הצעה)
-          if (d.status === 'pending' || d.status === 'offer_sent') {
-            window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
-            stillPending.push(shipId);
-          }
-          // אם אושרה — Listener 1 יטפל, אם בוטלה — נוריד
-        } 
-      } catch(e) { /* shipment not readable — skip */ }
-    }
-    // נקה IDs שכבר לא רלוונטיים
-    localStorage.setItem('tg_counter_' + uid, JSON.stringify(stillPending));
-    renderMyOrders();
+    stored.forEach(shipId => {
+      if (window._myOrdersMap[shipId]) return; // כבר מכוסה ע"י Listener 1
+      const unsub = onSnapshot(doc(db, 'shipments', shipId), (snap) => {
+        if (!snap.exists()) {
+          delete window._myOrdersMap[shipId];
+          removeStoredCounterId(shipId);
+          renderMyOrders();
+          return;
+        }
+        const d = snap.data();
+        // הובלה עדיין רלוונטית? (ממתינה, יש הצעה, או שהנהג הזה אושר עליה)
+        if (d.status === 'pending' || d.status === 'offer_sent' || d.driverUid === uid) {
+          window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
+        } else {
+          // ההצעה כבר לא רלוונטית (בוטלה / ניתנה לנהג אחר)
+          delete window._myOrdersMap[shipId];
+          removeStoredCounterId(shipId);
+        }
+        renderMyOrders();
+      }, err => console.error('Counter offer listener error', err));
+      window._myOrdersCounterUnsubs.push(unsub);
+    });
   }
   loadCounterOfferShipments();
 }
@@ -3700,7 +3749,7 @@ function stopAllListeners() {
   if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
   if (_unsubBrokerOrders) { _unsubBrokerOrders(); _unsubBrokerOrders = null; }
   if (_unsubMyOrders) { _unsubMyOrders(); _unsubMyOrders = null; }
-  if (window._unsubMyOrdersCounter) { window._unsubMyOrdersCounter(); window._unsubMyOrdersCounter = null; }
+  if (window._myOrdersCounterUnsubs) { window._myOrdersCounterUnsubs.forEach(fn => fn()); window._myOrdersCounterUnsubs = []; }
   window._myOrdersMap = {};
   if (_unsubPayments) { _unsubPayments(); _unsubPayments = null; }
 }
