@@ -2834,10 +2834,20 @@ window._fbDoCounter = async function(slotStr) {
     }
 
     // שלב 1: שמור הצעה ב-sub-collection (לנהג יש הרשאה)
+    // שולפים גם את brokerUid של ההובלה ושומרים אותו על מסמך ההצעה עצמו —
+    // כך שלעמיל יש הרשאת קריאה בלי להזדקק ל-get() בחוקי ה-Firestore
+    // (ש-get() בחוק שמשמש שאילתת collectionGroup גורם ל"Missing permissions" גורף)
+    let shipBrokerUid = '';
+    try {
+      const shipForBroker = await getDoc(doc(db, 'shipments', p.docId));
+      if (shipForBroker.exists()) shipBrokerUid = shipForBroker.data().brokerUid || '';
+    } catch(eBrk) {}
+
     const newOfferRef = doc(collection(db, 'shipments', p.docId, 'counterOffers'));
     await setDoc(newOfferRef, {
       authorUid:      currentUser.uid,
       driverUid:      currentUser.uid,
+      brokerUid:      shipBrokerUid,
       driverName,
       driverPhone:    window._currentPhone || '',
       proposedAmount: p.proposedAmt,
