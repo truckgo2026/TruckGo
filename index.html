@@ -2871,7 +2871,7 @@ window._fbDoCounter = async function(slotStr) {
       await setDoc(doc(db, 'driverPendingOffers', currentUser.uid, 'items', p.docId), {
         shipmentId: p.docId, createdAt: serverTimestamp()
       });
-    } catch(ePtr) {}
+    } catch(ePtr) { console.error('driverPendingOffers pointer write FAILED:', ePtr); }
 
     // שלב 2: נסה לעדכן shipment ראשי (ייכשל אם אין הרשאה — לא קריטי)
     const shipRef = doc(db, 'shipments', p.docId);
@@ -3431,39 +3431,66 @@ function startMyOrdersRealtime(uid) {
   // הוא מה ש-Firestore יודע להוכיח כבטוח תמיד, ולכן זה עובד באופן אמין.
   window._myOrdersCounterUnsubs = window._myOrdersCounterUnsubs || [];
   window._myOrdersShipUnsubs = window._myOrdersShipUnsubs || {};
+
+  // פונקציה משותפת: יוצר listener על הובלה ספציפית (משמש גם את driverPendingOffers וגם את ה-fallback)
+  function attachShipListener(shipId) {
+    if (window._myOrdersShipUnsubs[shipId]) return; // כבר יש מאזין להובלה הזו
+    window._myOrdersShipUnsubs[shipId] = onSnapshot(doc(db, 'shipments', shipId), (snap) => {
+      const cleanupPointer = () => deleteDoc(doc(db, 'driverPendingOffers', uid, 'items', shipId)).catch(()=>{});
+      if (!snap.exists()) {
+        delete window._myOrdersMap[shipId];
+        cleanupPointer();
+        renderMyOrders();
+        return;
+      }
+      const d = snap.data();
+      // ההובלה כבר סופית ושייכת לנהג אחר (לא אנחנו) — אין טעם להמשיך לעקוב,
+      // ומנקים גם את מצביע ה"תיקייה הפרטית" שלנו
+      if (d.driverUid && d.driverUid !== uid && ['accepted','delivered','confirmed'].includes(d.status)) {
+        delete window._myOrdersMap[shipId];
+        cleanupPointer();
+        // ניקוי גם מ-localStorage
+        try {
+          const key = 'tg_counter_' + uid;
+          const ids = JSON.parse(localStorage.getItem(key) || '[]');
+          const filtered = ids.filter(id => id !== shipId);
+          localStorage.setItem(key, JSON.stringify(filtered));
+        } catch(e) {}
+        renderMyOrders();
+        return;
+      }
+      window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
+      renderMyOrders();
+    }, err => {
+      console.error('Counter shipment listener error', err);
+      // ניקוי — מאפשר retry בפעם הבאה שה-listener יורה
+      delete window._myOrdersShipUnsubs[shipId];
+    });
+    window._myOrdersCounterUnsubs.push(() => { if (window._myOrdersShipUnsubs[shipId]) { window._myOrdersShipUnsubs[shipId](); delete window._myOrdersShipUnsubs[shipId]; } });
+  }
+
   const myPendingRef = collection(db, 'driverPendingOffers', uid, 'items');
   const unsubMyOffers = onSnapshot(myPendingRef, (itemsSnap) => {
     itemsSnap.docs.forEach(itemDoc => {
-      const shipId = itemDoc.id;
-      if (window._myOrdersShipUnsubs[shipId]) return; // כבר יש מאזין להובלה הזו
-      window._myOrdersShipUnsubs[shipId] = onSnapshot(doc(db, 'shipments', shipId), (snap) => {
-        const cleanupPointer = () => deleteDoc(doc(db, 'driverPendingOffers', uid, 'items', shipId)).catch(()=>{});
-        if (!snap.exists()) {
-          delete window._myOrdersMap[shipId];
-          cleanupPointer();
-          renderMyOrders();
-          return;
-        }
-        const d = snap.data();
-        // ההובלה כבר סופית ושייכת לנהג אחר (לא אנחנו) — אין טעם להמשיך לעקוב,
-        // ומנקים גם את מצביע ה"תיקייה הפרטית" שלנו
-        if (d.driverUid && d.driverUid !== uid && ['accepted','delivered','confirmed'].includes(d.status)) {
-          delete window._myOrdersMap[shipId];
-          cleanupPointer();
-          renderMyOrders();
-          return;
-        }
-        window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
-        renderMyOrders();
-      }, err => {
-        console.error('Counter shipment listener error', err);
-        // ניקוי — מאפשר retry בפעם הבאה שה-driverPendingOffers listener יורה
-        delete window._myOrdersShipUnsubs[shipId];
-      });
-      window._myOrdersCounterUnsubs.push(() => { if (window._myOrdersShipUnsubs[shipId]) { window._myOrdersShipUnsubs[shipId](); delete window._myOrdersShipUnsubs[shipId]; } });
+      attachShipListener(itemDoc.id);
     });
   }, err => console.error('My counter offers listener error', err));
   window._myOrdersCounterUnsubs.push(unsubMyOffers);
+
+  // Fallback: אם ה-pointers ב-driverPendingOffers לא נכתבו (שגיאה שקטה), השתמש ב-localStorage
+  // כמקור חלופי — וגם נסה לתקן את ה-pointers החסרים
+  try {
+    const lsKey = 'tg_counter_' + uid;
+    const lsIds = JSON.parse(localStorage.getItem(lsKey) || '[]');
+    lsIds.forEach(shipId => {
+      if (!shipId) return;
+      attachShipListener(shipId);
+      // נסה ליצור pointer חסר ב-driverPendingOffers (אם כבר קיים — setDoc עם merge לא ישנה כלום)
+      setDoc(doc(db, 'driverPendingOffers', uid, 'items', shipId), {
+        shipmentId: shipId, createdAt: serverTimestamp()
+      }, { merge: true }).catch(() => {});
+    });
+  } catch(e) { console.warn('localStorage counter fallback error', e); }
 }
 
 function startBrokerRealtime(uid) {
