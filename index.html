@@ -2913,6 +2913,7 @@ window._fbDoCounter = async function(slotStr) {
       window._myOrdersMap[p.docId].lastCounterAmount     = p.proposedAmt;
       window._myOrdersMap[p.docId].lastCounterDriverName = driverName;
       window._myOrdersMap[p.docId].status                = 'offer_sent';
+      window._myOrdersMap[p.docId].counterSlot           = slotStr;
       if (typeof window.renderMyOrders === 'function') window.renderMyOrders();
     } catch(e2) { /* non-critical */ }
 
@@ -3252,8 +3253,9 @@ function startMyOrdersRealtime(uid) {
           const myNetAmt = Math.round(myGrossAmt * 0.99);
           return `
           <div class="card" id="dpend-${d.id}">
-            <div class="cm" onclick="toggleCard('dpend-${d.id}')">
-              <div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="cm${isCounter ? ' hot' : ''}" onclick="toggleCard('dpend-${d.id}')">
+              ${isCounter ? cardChase() : ''}
+              ${isCounter ? ciTruck() : '<div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>'}
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${esc(d.orderNumber||'')} • ${isCounter ? 'הצעת מחיר ממתינה' : 'ממתינה לאישור עמיל'} • ${esc(d.brokerName)}</div>
@@ -3276,7 +3278,7 @@ function startMyOrdersRealtime(uid) {
                 <div class="dc"><div class="dcl">מוצא</div><div class="dcv">${esc(d.from)}</div></div>
                 <div class="dc"><div class="dcl">יעד</div><div class="dcv">${esc(d.to)}</div></div>
                 <div class="dc"><div class="dcl">תאריך</div><div class="dcv">${esc(d.date)}</div></div>
-                <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(d.slot)}</div></div>
+                <div class="dc"><div class="dcl">טווח זמן</div><div class="dcv">${esc(isCounter ? (d.counterSlot || d.slot) : d.slot)}</div></div>
                 <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight ? Number(d.weight).toLocaleString()+' ק"ג' : '—'}</div></div>
                 ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${esc(d.volume)} מ"ק</div></div>` : ''}
                 ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${esc(d.qty)} יח'</div></div>` : ''}
@@ -3507,7 +3509,15 @@ function startMyOrdersRealtime(uid) {
           ));
           const hasPending = myOffers.docs.some(d => d.data().status !== 'rejected');
           if (hasPending) {
+            const myOffer = myOffers.docs.find(d => d.data().status !== 'rejected');
             attachShipListener(shipDoc.id);
+            // שמור את ה-slot של ההצעה הנגדית ב-_myOrdersMap
+            if (myOffer && myOffer.data().slot) {
+              window._myOrdersMap = window._myOrdersMap || {};
+              if (window._myOrdersMap[shipDoc.id]) {
+                window._myOrdersMap[shipDoc.id].counterSlot = myOffer.data().slot;
+              }
+            }
             // תקן pointer חסר ב-driverPendingOffers
             setDoc(doc(db, 'driverPendingOffers', uid, 'items', shipDoc.id), {
               shipmentId: shipDoc.id, createdAt: serverTimestamp()
