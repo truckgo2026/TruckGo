@@ -3491,6 +3491,38 @@ function startMyOrdersRealtime(uid) {
       }, { merge: true }).catch(() => {});
     });
   } catch(e) { console.warn('localStorage counter fallback error', e); }
+
+  // Fallback 2 (Firestore scan): סורק הובלות פתוחות ומחפש הצעות נגדיות שלנו ישירות ב-subcollection.
+  // זהה למנגנון ה-polling של הברוקר (שורות 3471-3493) — גם אם ה-pointers וה-localStorage ריקים,
+  // ההצעות עצמן קיימות ב-Firestore ותמיד ניתנות לגילוי.
+  (async () => {
+    try {
+      const openSnap = await getDocs(query(collection(db, 'shipments'), where('status', 'in', ['pending', 'offer_sent'])));
+      for (const shipDoc of openSnap.docs) {
+        if (window._myOrdersShipUnsubs[shipDoc.id]) continue; // כבר יש listener מ-pointers/localStorage
+        try {
+          const myOffers = await getDocs(query(
+            collection(db, 'shipments', shipDoc.id, 'counterOffers'),
+            where('driverUid', '==', uid)
+          ));
+          const hasPending = myOffers.docs.some(d => d.data().status !== 'rejected');
+          if (hasPending) {
+            attachShipListener(shipDoc.id);
+            // תקן pointer חסר ב-driverPendingOffers
+            setDoc(doc(db, 'driverPendingOffers', uid, 'items', shipDoc.id), {
+              shipmentId: shipDoc.id, createdAt: serverTimestamp()
+            }, { merge: true }).catch(() => {});
+            // שמור גם ב-localStorage לפעם הבאה
+            try {
+              const key = 'tg_counter_' + uid;
+              const ids = JSON.parse(localStorage.getItem(key) || '[]');
+              if (!ids.includes(shipDoc.id)) { ids.push(shipDoc.id); localStorage.setItem(key, JSON.stringify(ids)); }
+            } catch(e) {}
+          }
+        } catch(e) { /* subcollection read failed — skip */ }
+      }
+    } catch(e) { console.warn('Counter-offer scan error:', e); }
+  })();
 }
 
 function startBrokerRealtime(uid) {
