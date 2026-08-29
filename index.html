@@ -141,6 +141,8 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 @keyframes ciHalo{0%,55%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}10%{box-shadow:0 0 0 8px rgba(29,78,216,0);}65%{box-shadow:0 0 0 0 rgba(29,78,216,0.35);}100%{box-shadow:0 0 0 8px rgba(29,78,216,0);}}
 @keyframes ciHaloGreen{0%,55%{box-shadow:0 0 0 0 rgba(22,163,74,0.35);}10%{box-shadow:0 0 0 8px rgba(22,163,74,0);}65%{box-shadow:0 0 0 0 rgba(22,163,74,0.35);}100%{box-shadow:0 0 0 8px rgba(22,163,74,0);}}
 .ci.pend.green{background:var(--green-bg);animation:ciHaloGreen 3.2s infinite;}
+.ci.pend.amber{background:var(--amber-bg);animation:ciHaloAmber 3.2s infinite;}
+@keyframes ciHaloAmber{0%,55%{box-shadow:0 0 0 0 rgba(217,119,6,0.35);}10%{box-shadow:0 0 0 8px rgba(217,119,6,0);}65%{box-shadow:0 0 0 0 rgba(217,119,6,0.35);}100%{box-shadow:0 0 0 8px rgba(217,119,6,0);}}
 @keyframes ciTruckDrive{0%{transform:scaleX(-1) translateX(-14px);opacity:0;}10%{transform:scaleX(-1) translateX(-14px);opacity:1;}45%{transform:scaleX(-1) translateX(0);opacity:1;}55%{transform:scaleX(-1) translateX(0);opacity:1;}90%{transform:scaleX(-1) translateX(14px);opacity:0;}100%{transform:scaleX(-1) translateX(14px);opacity:0;}}
 @keyframes cmFlash{0%,100%{background:var(--surface);}50%{background:var(--surface2);}}
 @keyframes cmChase{0%{stroke-dashoffset:0;}100%{stroke-dashoffset:-860;}}
@@ -1676,8 +1678,14 @@ function ciTruck() {
 function ciTruckGreen() {
   return '<div class="ci pend green" style="color:#16a34a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>';
 }
+function ciTruckAmber() {
+  return '<div class="ci pend amber" style="color:#d97706"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>';
+}
 function cardChase() {
   return '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 350 84" preserveAspectRatio="none"><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#378ADD" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="60 800" class="cm-chase"/><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#E6F1FB" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="5 855" class="cm-spark"/></svg>';
+}
+function cardChaseAmber() {
+  return '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 350 84" preserveAspectRatio="none"><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="60 800" class="cm-chase"/><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#fef3c7" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="5 855" class="cm-spark"/></svg>';
 }
 function esc(str) {
   if (str == null) return '—';
@@ -3254,8 +3262,8 @@ function startMyOrdersRealtime(uid) {
           return `
           <div class="card" id="dpend-${d.id}">
             <div class="cm${isCounter ? ' hot' : ''}" onclick="toggleCard('dpend-${d.id}')">
-              ${isCounter ? cardChase() : ''}
-              ${isCounter ? ciTruck() : '<div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>'}
+              ${isCounter ? cardChaseAmber() : ''}
+              ${isCounter ? ciTruckAmber() : '<div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>'}
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${esc(d.orderNumber||'')} • ${isCounter ? 'הצעת מחיר ממתינה' : 'ממתינה לאישור עמיל'} • ${esc(d.brokerName)}</div>
@@ -3461,7 +3469,9 @@ function startMyOrdersRealtime(uid) {
         renderMyOrders();
         return;
       }
+      const prevCounterSlot = window._myOrdersMap[shipId]?.counterSlot;
       window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
+      if (prevCounterSlot) window._myOrdersMap[shipId].counterSlot = prevCounterSlot;
       renderMyOrders();
     }, err => {
       console.error('Counter shipment listener error', err);
