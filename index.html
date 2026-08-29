@@ -2844,9 +2844,13 @@ window._fbDoCounter = async function(slotStr) {
     // כך שלעמיל יש הרשאת קריאה בלי להזדקק ל-get() בחוקי ה-Firestore
     // (ש-get() בחוק שמשמש שאילתת collectionGroup גורם ל"Missing permissions" גורף)
     let shipBrokerUid = '';
+    let cachedShipData = null;
     try {
       const shipForBroker = await getDoc(doc(db, 'shipments', p.docId));
-      if (shipForBroker.exists()) shipBrokerUid = shipForBroker.data().brokerUid || '';
+      if (shipForBroker.exists()) {
+        cachedShipData = shipForBroker.data();
+        shipBrokerUid = cachedShipData.brokerUid || '';
+      }
     } catch(eBrk) {}
 
     const newOfferRef = doc(collection(db, 'shipments', p.docId, 'counterOffers'));
@@ -2893,13 +2897,18 @@ window._fbDoCounter = async function(slotStr) {
       const ids = JSON.parse(localStorage.getItem(key) || '[]');
       if (!ids.includes(p.docId)) { ids.push(p.docId); localStorage.setItem(key, JSON.stringify(ids)); }
       window._myOrdersMap = window._myOrdersMap || {};
-      window._myOrdersMap[p.docId] = window._myOrdersMap[p.docId] || { id: p.docId, from: '', to: '', _fromCounter: true };
+      window._myOrdersMap[p.docId] = window._myOrdersMap[p.docId] || { id: p.docId, ...(cachedShipData || { from: '', to: '' }), _fromCounter: true };
       try {
         const shipSnap = await getDoc(shipRef);
         if (shipSnap.exists()) {
           window._myOrdersMap[p.docId] = { id: p.docId, ...shipSnap.data(), _fromCounter: true };
         }
-      } catch(e3) {}
+      } catch(e3) {
+        // קריאה חוזרת נכשלה (הרשאות) — נשתמש בנתונים שנשמרו מקריאה ראשונה
+        if (cachedShipData) {
+          window._myOrdersMap[p.docId] = { id: p.docId, ...cachedShipData, _fromCounter: true };
+        }
+      }
       // ודא שהמחיר המוצג הוא תמיד הצעת הנהג, גם אם עדכון ה-shipment הראשי נכשל בגלל הרשאות
       window._myOrdersMap[p.docId].lastCounterAmount     = p.proposedAmt;
       window._myOrdersMap[p.docId].lastCounterDriverName = driverName;
@@ -3446,7 +3455,11 @@ function startMyOrdersRealtime(uid) {
         }
         window._myOrdersMap[shipId] = { id: shipId, ...d, _fromCounter: true };
         renderMyOrders();
-      }, err => console.error('Counter shipment listener error', err));
+      }, err => {
+        console.error('Counter shipment listener error', err);
+        // ניקוי — מאפשר retry בפעם הבאה שה-driverPendingOffers listener יורה
+        delete window._myOrdersShipUnsubs[shipId];
+      });
       window._myOrdersCounterUnsubs.push(() => { if (window._myOrdersShipUnsubs[shipId]) { window._myOrdersShipUnsubs[shipId](); delete window._myOrdersShipUnsubs[shipId]; } });
     });
   }, err => console.error('My counter offers listener error', err));
