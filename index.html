@@ -143,6 +143,14 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);min-height:100vh;min-he
 .ci.pend.green{background:var(--green-bg);animation:ciHaloGreen 3.2s infinite;}
 .ci.pend.amber{background:var(--amber-bg);animation:ciHaloAmber 3.2s infinite;}
 @keyframes ciHaloAmber{0%,55%{box-shadow:0 0 0 0 rgba(217,119,6,0.35);}10%{box-shadow:0 0 0 8px rgba(217,119,6,0);}65%{box-shadow:0 0 0 0 rgba(217,119,6,0.35);}100%{box-shadow:0 0 0 8px rgba(217,119,6,0);}}
+.ci.hourglass{background:var(--amber-bg);border-radius:50%;animation:ciHaloAmber 3.2s infinite;overflow:visible;position:relative;}
+.hg-wrap{position:relative;display:flex;align-items:center;justify-content:center;animation:hgFlip 6s ease-in-out infinite;}
+.hg-sand1,.hg-sand2,.hg-sand3{position:absolute;width:2px;height:2px;background:#d97706;border-radius:50%;left:50%;transform:translateX(-50%);}
+.hg-sand1{animation:hgSandDrop 1.2s ease-in 0s infinite;}
+.hg-sand2{animation:hgSandDrop 1.2s ease-in 0.4s infinite;}
+.hg-sand3{animation:hgSandDrop 1.2s ease-in 0.8s infinite;}
+@keyframes hgFlip{0%,42%{transform:rotate(0deg);}50%,92%{transform:rotate(180deg);}100%{transform:rotate(360deg);}}
+@keyframes hgSandDrop{0%{top:38%;opacity:0;}15%{opacity:1;}85%{opacity:1;}100%{top:62%;opacity:0;}}
 @keyframes ciTruckDrive{0%{transform:scaleX(-1) translateX(-14px);opacity:0;}10%{transform:scaleX(-1) translateX(-14px);opacity:1;}45%{transform:scaleX(-1) translateX(0);opacity:1;}55%{transform:scaleX(-1) translateX(0);opacity:1;}90%{transform:scaleX(-1) translateX(14px);opacity:0;}100%{transform:scaleX(-1) translateX(14px);opacity:0;}}
 @keyframes cmFlash{0%,100%{background:var(--surface);}50%{background:var(--surface2);}}
 @keyframes cmChase{0%{stroke-dashoffset:0;}100%{stroke-dashoffset:-860;}}
@@ -1680,6 +1688,9 @@ function ciTruckGreen() {
 }
 function ciTruckAmber() {
   return '<div class="ci pend amber" style="color:#d97706"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>';
+}
+function ciHourglass() {
+  return '<div class="ci hourglass"><div class="hg-wrap"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg><div class="hg-sand1"></div><div class="hg-sand2"></div><div class="hg-sand3"></div></div></div>';
 }
 function cardChase() {
   return '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 350 84" preserveAspectRatio="none"><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#378ADD" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="60 800" class="cm-chase"/><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#E6F1FB" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="5 855" class="cm-spark"/></svg>';
@@ -3263,7 +3274,7 @@ function startMyOrdersRealtime(uid) {
           <div class="card" id="dpend-${d.id}">
             <div class="cm${isCounter ? ' hot' : ''}" onclick="toggleCard('dpend-${d.id}')">
               ${isCounter ? cardChaseAmber() : ''}
-              ${isCounter ? ciTruckAmber() : '<div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>'}
+              ${isCounter ? ciHourglass() : '<div class="ci am"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>'}
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${esc(d.orderNumber||'')} • ${isCounter ? 'הצעת מחיר ממתינה' : 'ממתינה לאישור עמיל'} • ${esc(d.brokerName)}</div>
@@ -3520,14 +3531,15 @@ function startMyOrdersRealtime(uid) {
           const hasPending = myOffers.docs.some(d => d.data().status !== 'rejected');
           if (hasPending) {
             const myOffer = myOffers.docs.find(d => d.data().status !== 'rejected');
-            attachShipListener(shipDoc.id);
-            // שמור את ה-slot של ההצעה הנגדית ב-_myOrdersMap
+            // שמור את ה-slot של ההצעה הנגדית ב-_myOrdersMap *לפני* attachShipListener
+            // כדי שה-onSnapshot ישמר אותו (prevCounterSlot)
             if (myOffer && myOffer.data().slot) {
               window._myOrdersMap = window._myOrdersMap || {};
-              if (window._myOrdersMap[shipDoc.id]) {
-                window._myOrdersMap[shipDoc.id].counterSlot = myOffer.data().slot;
-              }
+              window._myOrdersMap[shipDoc.id] = window._myOrdersMap[shipDoc.id] || { id: shipDoc.id };
+              window._myOrdersMap[shipDoc.id].counterSlot = myOffer.data().slot;
             }
+            attachShipListener(shipDoc.id);
+            if (typeof window.renderMyOrders === 'function') window.renderMyOrders();
             // תקן pointer חסר ב-driverPendingOffers
             setDoc(doc(db, 'driverPendingOffers', uid, 'items', shipDoc.id), {
               shipmentId: shipDoc.id, createdAt: serverTimestamp()
@@ -3648,9 +3660,9 @@ function startBrokerRealtime(uid) {
           const qtyLabel     = d.qty    ? d.qty + " יח'" : null;
           return `
           <div class="card" id="bord-${d.id}">
-            <div class="cm ${hasOffer?'':'hot'}" onclick="toggleCard('bord-${d.id}')">
-              ${hasOffer ? '' : cardChase()}
-              ${hasOffer ? '<div class="ci am"></div>' : ciTruck()}
+            <div class="cm ${hasOffer?'hot':hasPendingApproval?'hot':'hot'}" onclick="toggleCard('bord-${d.id}')">
+              ${hasOffer ? cardChaseAmber() : hasPendingApproval ? cardChaseAmber() : cardChase()}
+              ${hasOffer ? ciHourglass() : hasPendingApproval ? ciHourglass() : ciTruck()}
               <div class="cinfo">
                 <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
                 <div class="cm2">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':''} • ${esc(cargoLabel)}</div>
