@@ -3469,18 +3469,21 @@ function startMyOrdersRealtime(uid) {
         return;
       }
       const d = snap.data();
-      // ההובלה הגיעה לסטטוס סופי — Listener 1 (שאילתת driverUid) כבר מטפל בה,
-      // אז מנקים את ה-pointer והכניסה ב-_myOrdersMap כדי למנוע כפילויות
+      // ההובלה הגיעה לסטטוס סופי — מנקים את ה-pointer כדי למנוע כפילויות.
+      // Listener 1 (שאילתת driverUid) כבר מטפל בהובלות שלנו.
       if (['accepted','delivered','confirmed'].includes(d.status)) {
-        delete window._myOrdersMap[shipId];
         cleanupPointer();
-        // ניקוי גם מ-localStorage
         try {
           const key = 'tg_counter_' + uid;
           const ids = JSON.parse(localStorage.getItem(key) || '[]');
           const filtered = ids.filter(id => id !== shipId);
           localStorage.setItem(key, JSON.stringify(filtered));
         } catch(e) {}
+        // מוחקים מ-_myOrdersMap רק אם ההובלה שויכה לנהג *אחר* —
+        // אם שויכה לנו, Listener 1 מטפל ואסור למחוק כי זה יעלים מ"פעילות"
+        if (d.driverUid && d.driverUid !== uid) {
+          delete window._myOrdersMap[shipId];
+        }
         renderMyOrders();
         return;
       }
