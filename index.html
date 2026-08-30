@@ -3234,7 +3234,7 @@ function startMyOrdersRealtime(uid) {
         return tb - ta;
       });
 
-    const pending = all.filter(d => d.status === 'offer_sent' || d.status === 'pending_approval' || d._fromCounter);
+    const pending = all.filter(d => (d.status === 'offer_sent' || d.status === 'pending_approval' || d._fromCounter) && !['accepted','delivered','confirmed'].includes(d.status));
     const active  = all.filter(d => ['accepted','delivered'].includes(d.status));
     const done    = all.filter(d => d.status === 'confirmed');
 
@@ -3469,9 +3469,9 @@ function startMyOrdersRealtime(uid) {
         return;
       }
       const d = snap.data();
-      // ההובלה כבר סופית ושייכת לנהג אחר (לא אנחנו) — אין טעם להמשיך לעקוב,
-      // ומנקים גם את מצביע ה"תיקייה הפרטית" שלנו
-      if (d.driverUid && d.driverUid !== uid && ['accepted','delivered','confirmed'].includes(d.status)) {
+      // ההובלה הגיעה לסטטוס סופי — Listener 1 (שאילתת driverUid) כבר מטפל בה,
+      // אז מנקים את ה-pointer והכניסה ב-_myOrdersMap כדי למנוע כפילויות
+      if (['accepted','delivered','confirmed'].includes(d.status)) {
         delete window._myOrdersMap[shipId];
         cleanupPointer();
         // ניקוי גם מ-localStorage
