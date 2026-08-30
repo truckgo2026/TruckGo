@@ -3924,66 +3924,46 @@ window.selectSavedEmail = function(email) {
   document.getElementById('email-suggestions').style.display = 'none';
   document.getElementById('login-password').focus();
 };
-// סגירת dropdown כשלוחצים בחוץ
 document.addEventListener('click', function(e) {
   const wrap = document.getElementById('email-suggest-wrap');
   if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('email-suggestions').style.display = 'none';
+    const dd = document.getElementById('email-suggestions');
+    if (dd) dd.style.display = 'none';
   }
 });
-// מילוי אוטומטי של המייל האחרון אם השדה ריק
-try {
-  const saved = JSON.parse(localStorage.getItem('tg_saved_emails') || '[]');
-  if (saved.length) {
-    const el = document.getElementById('login-email');
-    if (el && !el.value) el.value = saved[0];
-  }
-} catch(e) {}
 
-// ─── הצגת אות אחרונה בסיסמה למשך 1.5 שניות ───
-window._peekTimeout = null;
-window._realPassword = '';
-window.peekLastChar = function(input) {
-  const cursorPos = input.selectionStart;
-  const displayedVal = input.value;
-
-  // זיהוי מה השתנה: מחיקה או הוספה
-  if (displayedVal.length < window._realPassword.length) {
-    // מחיקה
-    window._realPassword = window._realPassword.slice(0, displayedVal.length);
-    return;
-  }
-  // מצא את התו החדש שנוסף
-  const newChars = displayedVal.slice(window._realPassword.length);
-  if (!newChars) return;
-  window._realPassword += newChars;
-
-  // הצג נקודות + אות אחרונה
-  const masked = '●'.repeat(window._realPassword.length - 1) + window._realPassword.slice(-1);
-  input.value = masked;
-  input.setSelectionRange(cursorPos, cursorPos);
-
-  // אחרי 1.5 שניות — הסתר גם את האות האחרונה
-  clearTimeout(window._peekTimeout);
-  window._peekTimeout = setTimeout(() => {
-    const pw = document.getElementById('login-password');
-    if (pw) {
-      const pos = pw.selectionStart;
-      pw.value = '●'.repeat(window._realPassword.length);
-      pw.setSelectionRange(pos, pos);
+// ─── מילוי אוטומטי: ממתין שהדף יהיה מוכן לגמרי ───
+function fillSavedEmail() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('tg_saved_emails') || '[]');
+    if (saved.length) {
+      const el = document.getElementById('login-email');
+      if (el && !el.value) el.value = saved[0];
     }
+  } catch(e) {}
+}
+// מפעיל מספר פעמים כדי לתפוס כל מצב
+fillSavedEmail();
+setTimeout(fillSavedEmail, 100);
+setTimeout(fillSavedEmail, 500);
+document.addEventListener('DOMContentLoaded', fillSavedEmail);
+
+// ─── הצגת אות אחרונה בסיסמה ───
+window._peekTimeout = null;
+window.peekLastChar = function(input) {
+  clearTimeout(window._peekTimeout);
+  // הצג את הטקסט לרגע
+  input.type = 'text';
+  window._peekTimeout = setTimeout(() => {
+    input.type = 'password';
   }, 1500);
 };
-// דריסת fbLogin כדי להשתמש ב-_realPassword
-window._getLoginPassword = function() { return window._realPassword || document.getElementById('login-password').value; };
-// איפוס כשנכנסים לשדה
-document.getElementById('login-password')?.addEventListener('focus', function() {
-  if (!window._realPassword && this.value) { window._realPassword = this.value; }
-});
 
 window.fbLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
-  const password = window._realPassword || document.getElementById('login-password').value;
+  const passEl = document.getElementById('login-password');
+  if (passEl.type === 'text') passEl.type = 'password'; // וודא שחזר ל-password
+  const password = passEl.value;
   const errEl = document.getElementById('login-error');
 
   // נקה שגיאה קודמת
@@ -4016,7 +3996,6 @@ window.fbLogin = async function() {
       else { savedEmails.splice(savedEmails.indexOf(email), 1); savedEmails.unshift(email); }
       localStorage.setItem('tg_saved_emails', JSON.stringify(savedEmails));
     } catch(e) {}
-    window._realPassword = '';
   } catch(e) {
     const msg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email')
       ? '❌ אימייל או סיסמה שגויים — נסה שנית'
