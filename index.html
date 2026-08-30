@@ -387,9 +387,14 @@ textarea.fi{resize:vertical;}
   </div>
   <div class="a-body">
     <div class="fl">אימייל</div>
-    <input class="fi" id="login-email" type="email" placeholder="user@example.com" autocomplete="email">
+    <div style="position:relative;" id="email-suggest-wrap">
+      <input class="fi" id="login-email" type="email" placeholder="user@example.com" autocomplete="email" onfocus="showEmailSuggestions()" oninput="showEmailSuggestions()">
+      <div id="email-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid #e2e8f0;border-radius:0 0 12px 12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:10;max-height:150px;overflow-y:auto;"></div>
+    </div>
     <div class="fl">סיסמה</div>
-    <input class="fi" id="login-password" type="password" placeholder="סיסמה" autocomplete="current-password">
+    <div style="position:relative;">
+      <input class="fi" id="login-password" type="password" placeholder="סיסמה" autocomplete="current-password" oninput="peekLastChar(this)">
+    </div>
     <div id="login-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;color:#dc2626;margin-bottom:12px;text-align:center;"></div>
     <button class="ab" id="login-btn" onclick="fbLogin()">כניסה לאפליקציה →</button>
     <div class="al">שכחת סיסמה? <a onclick="go('s-forgot')">איפוס סיסמה</a></div>
@@ -3895,9 +3900,90 @@ function stopAllListeners() {
 // ─────────────────────────────────────────────
 
 //  LOGIN (Email + Password) 
+
+// ─── זכירת מיילים: הצגת מיילים שנשמרו כ-dropdown ───
+window.showEmailSuggestions = function() {
+  const input = document.getElementById('login-email');
+  const dropdown = document.getElementById('email-suggestions');
+  const val = input.value.trim().toLowerCase();
+  let emails = [];
+  try { emails = JSON.parse(localStorage.getItem('tg_saved_emails') || '[]'); } catch(e) {}
+  if (!emails.length) { dropdown.style.display = 'none'; return; }
+  const filtered = val ? emails.filter(e => e.toLowerCase().includes(val)) : emails;
+  if (!filtered.length || (filtered.length === 1 && filtered[0].toLowerCase() === val)) { dropdown.style.display = 'none'; return; }
+  dropdown.innerHTML = filtered.map(e =>
+    `<div style="padding:10px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f1f5f9;transition:background 0.15s;" onmousedown="selectSavedEmail('${e}')" ontouchstart="selectSavedEmail('${e}')">
+      <span style="width:28px;height:28px;border-radius:50%;background:#dbeafe;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">${e.charAt(0).toUpperCase()}</span>
+      <span>${e}</span>
+    </div>`
+  ).join('');
+  dropdown.style.display = 'block';
+};
+window.selectSavedEmail = function(email) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('email-suggestions').style.display = 'none';
+  document.getElementById('login-password').focus();
+};
+// סגירת dropdown כשלוחצים בחוץ
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('email-suggest-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('email-suggestions').style.display = 'none';
+  }
+});
+// מילוי אוטומטי של המייל האחרון אם השדה ריק
+try {
+  const saved = JSON.parse(localStorage.getItem('tg_saved_emails') || '[]');
+  if (saved.length) {
+    const el = document.getElementById('login-email');
+    if (el && !el.value) el.value = saved[0];
+  }
+} catch(e) {}
+
+// ─── הצגת אות אחרונה בסיסמה למשך 1.5 שניות ───
+window._peekTimeout = null;
+window._realPassword = '';
+window.peekLastChar = function(input) {
+  const cursorPos = input.selectionStart;
+  const displayedVal = input.value;
+
+  // זיהוי מה השתנה: מחיקה או הוספה
+  if (displayedVal.length < window._realPassword.length) {
+    // מחיקה
+    window._realPassword = window._realPassword.slice(0, displayedVal.length);
+    return;
+  }
+  // מצא את התו החדש שנוסף
+  const newChars = displayedVal.slice(window._realPassword.length);
+  if (!newChars) return;
+  window._realPassword += newChars;
+
+  // הצג נקודות + אות אחרונה
+  const masked = '●'.repeat(window._realPassword.length - 1) + window._realPassword.slice(-1);
+  input.value = masked;
+  input.setSelectionRange(cursorPos, cursorPos);
+
+  // אחרי 1.5 שניות — הסתר גם את האות האחרונה
+  clearTimeout(window._peekTimeout);
+  window._peekTimeout = setTimeout(() => {
+    const pw = document.getElementById('login-password');
+    if (pw) {
+      const pos = pw.selectionStart;
+      pw.value = '●'.repeat(window._realPassword.length);
+      pw.setSelectionRange(pos, pos);
+    }
+  }, 1500);
+};
+// דריסת fbLogin כדי להשתמש ב-_realPassword
+window._getLoginPassword = function() { return window._realPassword || document.getElementById('login-password').value; };
+// איפוס כשנכנסים לשדה
+document.getElementById('login-password')?.addEventListener('focus', function() {
+  if (!window._realPassword && this.value) { window._realPassword = this.value; }
+});
+
 window.fbLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
+  const password = window._realPassword || document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
 
   // נקה שגיאה קודמת
@@ -3923,6 +4009,14 @@ window.fbLogin = async function() {
       go('s-driver');
     }
     toast('כניסה בוצעה בהצלחה!');
+    // שמור מייל ב-localStorage לפעם הבאה
+    try {
+      const savedEmails = JSON.parse(localStorage.getItem('tg_saved_emails') || '[]');
+      if (!savedEmails.includes(email)) { savedEmails.unshift(email); if (savedEmails.length > 5) savedEmails.pop(); }
+      else { savedEmails.splice(savedEmails.indexOf(email), 1); savedEmails.unshift(email); }
+      localStorage.setItem('tg_saved_emails', JSON.stringify(savedEmails));
+    } catch(e) {}
+    window._realPassword = '';
   } catch(e) {
     const msg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email')
       ? '❌ אימייל או סיסמה שגויים — נסה שנית'
