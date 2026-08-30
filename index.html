@@ -393,7 +393,7 @@ textarea.fi{resize:vertical;}
     </div>
     <div class="fl">סיסמה</div>
     <div style="position:relative;">
-      <input class="fi" id="login-password" type="password" placeholder="סיסמה" autocomplete="current-password" oninput="peekLastChar(this)">
+      <input class="fi" id="login-password" type="text" placeholder="סיסמה" autocomplete="off" autocapitalize="off" spellcheck="false" style="-webkit-text-security:none;" oninput="peekLastChar(this)">
     </div>
     <div id="login-error" style="display:none;background:#fee2e2;border:1px solid #fca5a5;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;color:#dc2626;margin-bottom:12px;text-align:center;"></div>
     <button class="ab" id="login-btn" onclick="fbLogin()">כניסה לאפליקציה →</button>
@@ -3949,21 +3949,46 @@ setTimeout(fillSavedEmail, 500);
 document.addEventListener('DOMContentLoaded', fillSavedEmail);
 
 // ─── הצגת אות אחרונה בסיסמה ───
-window._peekTimeout = null;
+window._realPw = '';
+window._peekTimer = null;
 window.peekLastChar = function(input) {
-  clearTimeout(window._peekTimeout);
-  // הצג את הטקסט לרגע
-  input.type = 'text';
-  window._peekTimeout = setTimeout(() => {
-    input.type = 'password';
+  clearTimeout(window._peekTimer);
+  const val = input.value;
+  const oldLen = window._realPw.length;
+  const newLen = val.length;
+
+  // אם השדה ריק
+  if (newLen === 0) { window._realPw = ''; return; }
+
+  // מחיקה
+  if (newLen < oldLen) {
+    window._realPw = window._realPw.slice(0, newLen);
+    input.value = '●'.repeat(window._realPw.length);
+    return;
+  }
+
+  // הוספה — מצא את התווים החדשים (אחרי הנקודות)
+  let dotCount = 0;
+  for (let i = 0; i < val.length; i++) { if (val[i] === '●') dotCount++; else break; }
+  const typed = val.slice(dotCount);
+  if (typed.length > 0) {
+    window._realPw = window._realPw.slice(0, dotCount) + typed;
+  }
+
+  // הצג: נקודות + אות אחרונה גלויה
+  input.value = '●'.repeat(window._realPw.length - 1) + window._realPw.slice(-1);
+
+  // אחרי 1.5 שניות — הסתר הכל
+  window._peekTimer = setTimeout(() => {
+    if (document.getElementById('login-password')) {
+      document.getElementById('login-password').value = '●'.repeat(window._realPw.length);
+    }
   }, 1500);
 };
 
 window.fbLogin = async function() {
   const email = document.getElementById('login-email').value.trim();
-  const passEl = document.getElementById('login-password');
-  if (passEl.type === 'text') passEl.type = 'password'; // וודא שחזר ל-password
-  const password = passEl.value;
+  const password = window._realPw || document.getElementById('login-password').value.replace(/●/g, '');
   const errEl = document.getElementById('login-error');
 
   // נקה שגיאה קודמת
@@ -3996,6 +4021,7 @@ window.fbLogin = async function() {
       else { savedEmails.splice(savedEmails.indexOf(email), 1); savedEmails.unshift(email); }
       localStorage.setItem('tg_saved_emails', JSON.stringify(savedEmails));
     } catch(e) {}
+    window._realPw = '';
   } catch(e) {
     const msg = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email')
       ? '❌ אימייל או סיסמה שגויים — נסה שנית'
