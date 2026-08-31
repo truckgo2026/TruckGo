@@ -844,16 +844,6 @@ textarea.fi{resize:vertical;}
            <span id="drv-license-label">בחר קובץ</span>
         </label>
         <input type="file" id="drv-license" accept="image/*,application/pdf" style="display:none" onchange="setFileLabel(this,'drv-license-label')">
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:18px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:4px;">פרטי חשבון בנק</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">לצורך העברת תשלום לאחר ביצוע הובלה — הפרטים מאובטחים ולא יוצגו לאחרים</div>
-          <div class="fl">שם הבנק</div>
-          <input class="fi" id="drv-bank-name" type="text" placeholder="לדוגמא: בנק הפועלים">
-          <div class="fl">מספר סניף</div>
-          <input class="fi" id="drv-bank-branch" type="text" inputmode="numeric" placeholder="3 ספרות">
-          <div class="fl">מספר חשבון</div>
-          <input class="fi" id="drv-bank-account" type="text" inputmode="numeric" placeholder="מספר חשבון">
-        </div>
       </div>
 
       <!-- חברת הובלה -->
@@ -876,16 +866,6 @@ textarea.fi{resize:vertical;}
            <span id="cmp-biz-label">בחר קובץ</span>
         </label>
         <input type="file" id="cmp-biz" accept="image/*,application/pdf" style="display:none" onchange="setFileLabel(this,'cmp-biz-label')">
-        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:18px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:4px;">פרטי חשבון בנק</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">לצורך העברת תשלום לאחר ביצוע הובלה — הפרטים מאובטחים ולא יוצגו לאחרים</div>
-          <div class="fl">שם הבנק</div>
-          <input class="fi" id="cmp-bank-name" type="text" placeholder="לדוגמא: בנק לאומי">
-          <div class="fl">מספר סניף</div>
-          <input class="fi" id="cmp-bank-branch" type="text" inputmode="numeric" placeholder="3 ספרות">
-          <div class="fl">מספר חשבון</div>
-          <input class="fi" id="cmp-bank-account" type="text" inputmode="numeric" placeholder="מספר חשבון">
-        </div>
       </div>
 
       <!-- עמיל מכס -->
@@ -1603,6 +1583,21 @@ textarea.fi{resize:vertical;}
     <div class="dcard apend"><div class="dic"></div><div class="dinfo"><div class="dn">מסמכים שהועלו</div><div class="ds">ממתינים לאישור</div></div><div class="badge bam">ממתין</div></div>
   </div>
 
+  <div style="margin:14px 16px 0;" id="profile-bank-section">
+    <div class="sec-t">פרטי חשבון בנק</div>
+    <div class="icard" style="padding:14px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">לצורך העברת תשלום לאחר ביצוע הובלה — הפרטים מאובטחים ולא יוצגו לאחרים</div>
+      <div class="fl">שם הבנק</div>
+      <input class="fi" id="prof-bank-name" type="text" placeholder="לדוגמא: בנק הפועלים">
+      <div class="fl">מספר סניף</div>
+      <input class="fi" id="prof-bank-branch" type="text" inputmode="numeric" placeholder="3 ספרות">
+      <div class="fl">מספר חשבון</div>
+      <input class="fi" id="prof-bank-account" type="text" inputmode="numeric" placeholder="מספר חשבון">
+      <button onclick="saveBankDetails()" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;">שמור פרטי בנק</button>
+      <div id="bank-save-status" style="font-size:12px;color:var(--green);text-align:center;margin-top:8px;display:none;">✓ פרטי הבנק נשמרו בהצלחה</div>
+    </div>
+  </div>
+
   <div style="margin:14px 16px 0;">
     <div class="sec-t">הגדרות</div>
     <div class="icard">
@@ -1814,6 +1809,12 @@ function go(id){
     const prNavBrk = document.getElementById('pr-bnav-brk');
     if (prNavDrv) prNavDrv.style.display = (role === 'drv' || role === 'cmp') ? 'flex' : 'none';
     if (prNavBrk) prNavBrk.style.display = (role === 'brk') ? 'flex' : 'none';
+    // הצג/הסתר מקטע בנק לפי תפקיד + טען נתונים
+    const bankSec = document.getElementById('profile-bank-section');
+    if (bankSec) {
+      bankSec.style.display = (role === 'brk') ? 'none' : 'block';
+      if (role !== 'brk' && typeof loadBankDetails === 'function') loadBankDetails();
+    }
   }
   // נקה badge כשנכנסים לדף הנהג
   if (id === 's-driver') {
@@ -3247,13 +3248,16 @@ function startMyOrdersRealtime(uid) {
 
     // עדכן מונים למעלה
     const todayStr = new Date().toISOString().slice(0,10);
-    const todayEarn = done
-      .filter(d => d.createdAt?.toDate ? d.createdAt.toDate().toISOString().slice(0,10) === todayStr : false)
-      .reduce((s, d) => s + (d.finalAmount || d.amount || 0), 0);
+    const todayDone = [...active, ...done]
+      .filter(d => {
+        const dt = d.deliveredAt?.toDate ? d.deliveredAt.toDate() : (d.confirmedAt?.toDate ? d.confirmedAt.toDate() : null);
+        return dt && dt.toISOString().slice(0,10) === todayStr;
+      });
+    const todayEarn = todayDone.reduce((s, d) => s + (d.finalAmount || d.amount || 0), 0);
     const totalTrips = done.length;
     const el = id => document.getElementById(id);
     if (el('drv-cnt-earn'))  el('drv-cnt-earn').textContent  = '₪' + todayEarn.toLocaleString();
-    if (el('drv-cnt-trips')) el('drv-cnt-trips').textContent = active.length + pending.length;
+    if (el('drv-cnt-trips')) el('drv-cnt-trips').textContent = todayDone.length;
     if (el('drv-cnt-total')) el('drv-cnt-total').textContent = totalTrips;
 
     // badge
@@ -4066,11 +4070,7 @@ window.fbRegister = async function() {
     if (!fname || !lname) { toast('הכנס שם פרטי ושם משפחה'); return; }
     if (!id || id.length < 8) { toast('הכנס תעודת זהות תקינה'); return; }
     if (!phone) { toast('הכנס מספר טלפון'); return; }
-    const drvBankName    = document.getElementById('drv-bank-name').value.trim();
-    const drvBankBranch  = document.getElementById('drv-bank-branch').value.trim();
-    const drvBankAccount = document.getElementById('drv-bank-account').value.trim();
-    if (!drvBankName || !drvBankBranch || !drvBankAccount) { toast('הכנס פרטי חשבון בנק מלאים'); return; }
-    profileData = { ...profileData, name: fname + ' ' + lname, firstName: fname, lastName: lname, idNumber: id, phone, bankName: drvBankName, bankBranch: drvBankBranch, bankAccount: drvBankAccount };
+    profileData = { ...profileData, name: fname + ' ' + lname, firstName: fname, lastName: lname, idNumber: id, phone };
   } else if (role === 'cmp') {
     const cname   = document.getElementById('cmp-name').value.trim();
     const hp      = document.getElementById('cmp-hp').value.trim();
@@ -4080,11 +4080,7 @@ window.fbRegister = async function() {
     if (!hp || hp.length < 8) { toast('הכנס מספר ח.פ תקין'); return; }
     if (!contact) { toast('הכנס שם איש קשר'); return; }
     if (!phone) { toast('הכנס מספר טלפון'); return; }
-    const cmpBankName    = document.getElementById('cmp-bank-name').value.trim();
-    const cmpBankBranch  = document.getElementById('cmp-bank-branch').value.trim();
-    const cmpBankAccount = document.getElementById('cmp-bank-account').value.trim();
-    if (!cmpBankName || !cmpBankBranch || !cmpBankAccount) { toast('הכנס פרטי חשבון בנק מלאים'); return; }
-    profileData = { ...profileData, name: cname, companyName: cname, hp, contactPerson: contact, phone, bankName: cmpBankName, bankBranch: cmpBankBranch, bankAccount: cmpBankAccount };
+    profileData = { ...profileData, name: cname, companyName: cname, hp, contactPerson: contact, phone };
   } else if (role === 'brk') {
     const company = document.getElementById('brk-company').value.trim();
     const lic     = document.getElementById('brk-license').value.trim();
@@ -6316,10 +6312,54 @@ window.driverConfirmDelivery = async function(shipId) {
       deliveredAt: serverTimestamp(),
     });
     toast('מסירה אושרה! ממתין לאישור עמיל לשחרור תשלום');
+    // בדוק אם לנהג יש פרטי בנק — אם לא, הצג בקשה להוסיף
+    try {
+      const userSnap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      if (!userData.bankName || !userData.bankBranch || !userData.bankAccount) {
+        setTimeout(() => {
+          if (confirm('כדי לקבל תשלום על ההובלה, יש להוסיף פרטי חשבון בנק.\n\nלהוסיף עכשיו?')) {
+            go('s-profile');
+            setTimeout(() => {
+              const bankSection = document.getElementById('profile-bank-section');
+              if (bankSection) bankSection.scrollIntoView({ behavior: 'smooth' });
+            }, 400);
+          }
+        }, 500);
+      }
+    } catch(e) {}
   } catch(e) { toast('שגיאה: ' + e.message); }
 };
 
 // ── נהג: אשר מסירה ────────────────────────────────
+// ── שמירת/טעינת פרטי בנק בפרופיל ──────────────────
+window.saveBankDetails = async function() {
+  const bankName = document.getElementById('prof-bank-name').value.trim();
+  const bankBranch = document.getElementById('prof-bank-branch').value.trim();
+  const bankAccount = document.getElementById('prof-bank-account').value.trim();
+  if (!bankName || !bankBranch || !bankAccount) { toast('הכנס את כל פרטי הבנק'); return; }
+  try {
+    await updateDoc(doc(db, 'users', auth.currentUser.uid), { bankName, bankBranch, bankAccount });
+    const status = document.getElementById('bank-save-status');
+    if (status) { status.style.display = 'block'; setTimeout(() => status.style.display = 'none', 3000); }
+    toast('פרטי בנק נשמרו בהצלחה');
+  } catch(e) { toast('שגיאה: ' + e.message); }
+};
+window.loadBankDetails = async function() {
+  try {
+    const snap = await getDoc(doc(db, 'users', auth.currentUser.uid));
+    if (snap.exists()) {
+      const d = snap.data();
+      const bn = document.getElementById('prof-bank-name');
+      const bb = document.getElementById('prof-bank-branch');
+      const ba = document.getElementById('prof-bank-account');
+      if (bn) bn.value = d.bankName || '';
+      if (bb) bb.value = d.bankBranch || '';
+      if (ba) ba.value = d.bankAccount || '';
+    }
+  } catch(e) {}
+};
+
 // ── עמיל: אשר נהג שביקש הובלה רגילה (pending_approval) ──
 window.brokerApproveDriver = async function(shipId, driverUid, driverName, driverPhone, amt, slot) {
   if(!confirm('לאשר את ' + driverName + ' על ₪' + Number(amt).toLocaleString() + '?')) return;
