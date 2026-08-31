@@ -3070,6 +3070,7 @@ function clearNotifBadge() {
   _notifCount = 0;
   document.querySelectorAll('.notif-badge').forEach(b => b.style.display = 'none');
 }
+window.clearNotifBadge = clearNotifBadge;
 
 // ────── START REAL-TIME LISTENER FOR DRIVERS ──────
 function startDriverRealtime(uid) {
