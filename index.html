@@ -2774,6 +2774,12 @@ async function fillDriverRatings(root) {
         el.style.gap = '8px';
         el.innerHTML = `<span style="font-size:12px;color:#92400e;">★ ${avg.toFixed(1)} <span style="color:var(--muted);">(${stars.length} ביקורות)</span></span>
           <button onclick="viewDriverReviews('${jsArg(uid)}','${jsArg(name)}')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;font-family:'Heebo',sans-serif;">צפה בכל הביקורות</button>`;
+      } else if (stars.length > 0) {
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.gap = '8px';
+        el.innerHTML = `<span style="font-size:12px;color:var(--muted);">${stars.length === 1 ? 'ביקורת אחת' : stars.length + ' ביקורות'} (מעט מדי לממוצע)</span>
+          <button onclick="viewDriverReviews('${jsArg(uid)}','${jsArg(name)}')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;font-family:'Heebo',sans-serif;">צפה בביקורות</button>`;
       } else {
         el.textContent = fallback;
       }
@@ -6345,6 +6351,7 @@ window.openCounterOffers = async function(shipmentId) {
             <div style="font-weight:700;font-size:15px;">${esc(o.driverName)}</div>
             ${o.driverPhone?`<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(o.driverPhone)}</div>`:''}
             ${o.slot?`<div style="font-size:12px;color:var(--muted);">טווח: ${esc(o.slot)}</div>`:''}
+            <div class="drv-rating-slot" data-uid="${esc(o.driverUid || o.authorUid || '')}" data-name="${esc(o.driverName || '')}" style="margin-top:6px;font-size:12px;color:var(--muted);">טוען דירוג...</div>
           </div>
           <div style="text-align:left;">
             <div style="font-size:22px;font-weight:900;color:var(--accent);">₪${Math.round((o.proposedAmount||0)*1.01).toLocaleString()}</div><div style="font-size:11px;color:var(--muted);">כולל עמלה</div>
@@ -6358,6 +6365,7 @@ window.openCounterOffers = async function(shipmentId) {
         </div>` : statusBadge}
       </div>`;
     }).join('');
+    fillDriverRatings(document.getElementById('com-list'));
   } catch(e) {
     console.error('openCounterOffers:', e);
     document.getElementById('com-list').innerHTML = `<div style="color:var(--red);padding:10px;">שגיאה: ${e.message}</div>`;
