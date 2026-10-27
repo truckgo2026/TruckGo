@@ -2168,12 +2168,19 @@ window.submitRating = async function() {
   try {
     await window._fbSubmitRating({ shipId, targetUid, stars, reason, revRole });
     document.getElementById('rating-modal').classList.remove('on');
+    document.querySelectorAll('.rate-slot').forEach(el => { if (el.dataset.ship === shipId) el.innerHTML = ''; });
     toast('הדירוג נשלח, תודה!');
   } catch(e) {
     console.error('RATING ERROR:', e);
-    if (window.Sentry) { try { Sentry.captureException(e); } catch(_) {} }
     // ההודעה מוצגת בתוך חלון הדירוג (הודעת toast רגילה מוסתרת מאחורי החלון)
     const errEl = document.getElementById('rating-error');
+    if (e && e.message === 'already_rated') {
+      document.querySelectorAll('.rate-slot').forEach(el => { if (el.dataset.ship === shipId) el.innerHTML = ''; });
+      if (errEl) { errEl.textContent = 'כבר דירגת את ההובלה הזו'; errEl.style.display = 'block'; }
+      btn.textContent = 'שלח דירוג'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+      return;
+    }
+    if (window.Sentry) { try { Sentry.captureException(e); } catch(_) {} }
     if (errEl) { errEl.textContent = 'הדירוג לא נשלח: ' + (e && e.message ? e.message : 'שגיאה, נסה שוב'); errEl.style.display = 'block'; }
     toast('שגיאה, נסה שוב');
     btn.textContent = 'שלח דירוג'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
@@ -2795,6 +2802,24 @@ async function fillDriverRatings(root) {
       el.textContent = fallback;
     }
   }
+}
+
+// ── כפתור "דרג" בכרטיסי התשלום — רק להובלות שהסתיימו ועוד לא דירגתי ──
+async function fillRateButtons(root) {
+  if (!root || !auth.currentUser) return;
+  const slots = root.querySelectorAll('.rate-slot');
+  if (!slots.length) return;
+  let rated = new Set();
+  try {
+    const snap = await getDocs(query(collection(db, 'reviews'), where('reviewerUid', '==', auth.currentUser.uid)));
+    snap.docs.forEach(r => { if (r.data().shipmentId) rated.add(r.data().shipmentId); });
+  } catch (e) { console.error('fillRateButtons:', e); return; }
+  slots.forEach(el => {
+    const ship = el.dataset.ship, target = el.dataset.target;
+    if (!ship || !target || rated.has(ship)) { el.innerHTML = ''; return; }
+    const label = el.dataset.rev === 'brk' ? 'דרג את הנהג' : 'דרג את עמיל המכס';
+    el.innerHTML = `<div class="brow" style="margin-top:10px;"><button class="btn bp" onclick="openRatingModal('${jsArg(ship)}','${jsArg(target)}','${jsArg(el.dataset.name)}','${jsArg(el.dataset.trole)}','${jsArg(el.dataset.rev)}')">${label}</button></div>`;
+  });
 }
 
 // ── טעינת ביקורות לפרופיל ───────────────────────────────
@@ -6082,6 +6107,7 @@ window.loadPaymentsScreen = async function() {
     }
 
     list.innerHTML = docs.map(d => renderPaymentCard(d, role)).join('');
+    fillRateButtons(list);
   } catch(e) {
     console.error(e);
     // אם אין נתונים — הצג דמו
@@ -6152,6 +6178,11 @@ function renderPaymentCard(d, role) {
         <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${st.txt}</div></div>
       </div>
       ${actions}
+      ${isConfirmed ? `<div class="rate-slot" data-ship="${esc(d.id)}"
+        data-target="${esc(role === 'brk' ? (d.driverUid || '') : (d.brokerUid || ''))}"
+        data-name="${esc(role === 'brk' ? (d.driverName || '') : (d.brokerName || ''))}"
+        data-trole="${role === 'brk' ? (d.companyName ? 'חברת הובלה' : 'נהג') : 'עמיל מכס'}"
+        data-rev="${role === 'brk' ? 'brk' : 'drv'}"></div>` : ''}
       ${(role === 'brk' && d.invoiceSent) ? `
       <div class="brow" style="margin-top:10px;">
         <button class="btn" onclick="openInvoiceById('${d.id}')" style="width:100%;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;">
@@ -6177,6 +6208,7 @@ window.filterPayments = function(status) {
     list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:32px 0;font-size:14px;">אין הובלות בסטטוס זה</div>';
   } else {
     list.innerHTML = filtered.map(d => renderPaymentCard(d, role)).join('');
+    fillRateButtons(list);
   }
 };
 
