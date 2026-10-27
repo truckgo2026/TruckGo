@@ -470,6 +470,7 @@ textarea.fi{resize:vertical;}
         <textarea id="rating-reason" rows="3" placeholder="תאר מה הלך לא טוב..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:'Heebo',sans-serif;resize:none;outline:none;"></textarea>
       </div>
       <button id="rating-submit-btn" onclick="submitRating()" style="width:100%;margin-top:14px;padding:14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif;opacity:.4;pointer-events:none;">שלח דירוג</button>
+      <div id="rating-error" style="display:none;margin-top:10px;font-size:13px;font-weight:700;color:var(--red);text-align:center;line-height:1.5;"></div>
       <input type="hidden" id="rating-shipment-id">
       <input type="hidden" id="rating-target-uid">
       <input type="hidden" id="rating-reviewer-role">
@@ -2118,6 +2119,8 @@ window.openRatingModal = function(shipId, targetUid, targetName, targetRole, rev
   });
   const btn = document.getElementById('rating-submit-btn');
   btn.style.opacity = '.4'; btn.style.pointerEvents = 'none';
+  const errEl = document.getElementById('rating-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
   document.getElementById('rating-modal').classList.add('on');
 };
 
@@ -2168,6 +2171,10 @@ window.submitRating = async function() {
     toast('הדירוג נשלח, תודה!');
   } catch(e) {
     console.error('RATING ERROR:', e);
+    if (window.Sentry) { try { Sentry.captureException(e); } catch(_) {} }
+    // ההודעה מוצגת בתוך חלון הדירוג (הודעת toast רגילה מוסתרת מאחורי החלון)
+    const errEl = document.getElementById('rating-error');
+    if (errEl) { errEl.textContent = 'הדירוג לא נשלח: ' + (e && e.message ? e.message : 'שגיאה, נסה שוב'); errEl.style.display = 'block'; }
     toast('שגיאה, נסה שוב');
     btn.textContent = 'שלח דירוג'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
   }
