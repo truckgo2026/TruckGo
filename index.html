@@ -1702,6 +1702,18 @@ function cardChaseAmber() {
 function cardChaseGreen() {
   return '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 350 84" preserveAspectRatio="none"><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="60 800" class="cm-chase"/><rect x="1" y="1" width="348" height="82" rx="16" fill="none" stroke="#dcfce7" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="5 855" class="cm-spark"/></svg>';
 }
+// מנקה טקסט שמועבר כפרמטר לפונקציה בתוך כפתור — מונע השתלת קוד דרך שם/טלפון
+function jsArg(str) {
+  return String(str == null ? '' : str)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, '\\n')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function esc(str) {
   if (str == null) return '—';
   return String(str)
@@ -2309,7 +2321,7 @@ window.runSearch = async function() {
               ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
               <div class="dc"><div class="dcl">מחיר</div><div class="dcv">₪${role==='brk'?Math.round(amt*1.01).toLocaleString():Math.round(amt*0.99).toLocaleString()}</div></div>
               <div class="dc"><div class="dcl">סטטוס</div><div class="dcv">${stTxt}</div></div>
-              <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${d.cargoType==='cont'?('מכולה'+(d.contSize?' '+d.contSize:'')):'חלקי'}</div></div>
+              <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${esc(d.cargoType==='cont'?('מכולה'+(d.contSize?' '+d.contSize:'')):'חלקי')}</div></div>
               ${d.desc ? `<div class="dc"><div class="dcl">תיאור</div><div class="dcv">${esc(d.desc)}</div></div>` : ''}
             </div>
             ${buildTimeline(d)}
@@ -2362,7 +2374,7 @@ function renderDriverList(q) {
   const filtered = term
     ? window._allDriversList.filter(d => {
         const name    = (d.name    || d.fullName || '').toLowerCase();
-        const company = (d.company || d.firmName || '').toLowerCase();
+        const company = (d.companyName || d.company || d.firmName || '').toLowerCase();
         return name.includes(term) || company.includes(term);
       })
     : window._allDriversList;
@@ -2374,10 +2386,10 @@ function renderDriverList(q) {
   list.innerHTML = filtered.map(d => {
     const uid      = d.uid;
     const name     = esc(d.name || d.fullName || 'ללא שם');
-    const company  = esc(d.company || d.firmName || '');
+    const company  = esc(d.companyName || d.company || d.firmName || '');
     const checked  = window._selectedDrivers[uid] ? true : false;
     return `
-      <div onclick="toggleDriverSelect('${uid}','${(d.name||d.fullName||'').replace(/'/g,'')}','${(d.company||d.firmName||'').replace(/'/g,'')}')"
+      <div onclick="toggleDriverSelect('${jsArg(uid)}','${jsArg(d.name||d.fullName||'')}','${jsArg(d.companyName||d.company||d.firmName||'')}')"
            style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;${checked?'background:var(--accent-bg,#eef2ff);':''}"
            id="drow-${uid}">
         <div style="width:20px;height:20px;border-radius:6px;border:2px solid ${checked?'var(--accent)':'var(--border)'};background:${checked?'var(--accent)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;">
@@ -2672,9 +2684,43 @@ window._auth = auth; // חשוף auth לפונקציות חיצוניות
 
 // חשוף Firestore utils לפונקציות חיצוניות (פילטר נהגים)
 window._fbGetDrivers = async function() {
-  const snap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['drv', 'company']), where('status', '==', 'approved')));
+  // "ספר נהגים" — מכיל רק שם, שם חברה ותפקיד של נהגים/חברות מאושרים. האדמין בלבד כותב בו.
+  const snap = await getDocs(collection(db, 'driverDirectory'));
   return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
 };
+
+// ── סנכרון ספר הנהגים (אדמין בלבד) ──────────────────────
+function _dirEntryFor(u) {
+  const ok = (u.role === 'drv' || u.role === 'cmp') && u.status === 'approved' && u.blocked !== true;
+  return ok ? { name: u.name || '', companyName: u.companyName || '', role: u.role } : null;
+}
+async function syncDirectoryEntry(uid) {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
+  const snap = await getDoc(doc(db, 'users', uid));
+  const entry = snap.exists() ? _dirEntryFor(snap.data()) : null;
+  if (entry) await setDoc(doc(db, 'driverDirectory', uid), entry);
+  else       await deleteDoc(doc(db, 'driverDirectory', uid));
+}
+async function syncAllDriverDirectory() {
+  if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
+  const [usersSnap, dirSnap] = await Promise.all([
+    getDocs(collection(db, 'users')),
+    getDocs(collection(db, 'driverDirectory'))
+  ]);
+  const existing = {};
+  dirSnap.docs.forEach(d => { existing[d.id] = d.data(); });
+  const wanted = {};
+  usersSnap.docs.forEach(d => { const e = _dirEntryFor(d.data()); if (e) wanted[d.id] = e; });
+  for (const uid of Object.keys(wanted)) {
+    const e = wanted[uid], x = existing[uid];
+    if (!x || x.name !== e.name || x.companyName !== e.companyName || x.role !== e.role) {
+      await setDoc(doc(db, 'driverDirectory', uid), e);
+    }
+  }
+  for (const uid of Object.keys(existing)) {
+    if (!wanted[uid]) await deleteDoc(doc(db, 'driverDirectory', uid));
+  }
+}
 
 // ── חיפוש הובלות לפי משתמש ──────────────────────────────
 window._fbSearchShipments = async function(uid, field) {
@@ -2703,6 +2749,40 @@ window._fbSubmitRating = async function({ shipId, targetUid, stars, reason, revR
     throw new Error(errData.error || 'שגיאה בשליחת הדירוג');
   }
 };
+
+// ── דירוג נהג בכרטיס העמיל — מחושב מטבלת הביקורות (רק השרת כותב בה, אי אפשר לזייף) ──
+const _ratingCache = {};
+async function fillDriverRatings(root) {
+  if (!root) return;
+  const slots = root.querySelectorAll('.drv-rating-slot');
+  for (const el of slots) {
+    const uid  = el.dataset.uid;
+    const name = el.dataset.name || '';
+    const fallback = 'נהג חדש — אין ביקורות עדיין';
+    if (!uid) { el.textContent = fallback; continue; }
+    try {
+      const c = _ratingCache[uid];
+      if (!c || Date.now() - c.t > 10 * 60 * 1000) {
+        _ratingCache[uid] = { t: Date.now(), p: window._fbLoadReviews(uid) };
+      }
+      const revs  = await _ratingCache[uid].p;
+      const stars = revs.map(r => Number(r.stars) || 0).filter(s => s > 0);
+      if (stars.length >= 3) {
+        const avg = stars.reduce((a, b) => a + b, 0) / stars.length;
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.gap = '8px';
+        el.innerHTML = `<span style="font-size:12px;color:#92400e;">★ ${avg.toFixed(1)} <span style="color:var(--muted);">(${stars.length} ביקורות)</span></span>
+          <button onclick="viewDriverReviews('${jsArg(uid)}','${jsArg(name)}')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;font-family:'Heebo',sans-serif;">צפה בכל הביקורות</button>`;
+      } else {
+        el.textContent = fallback;
+      }
+    } catch (e) {
+      delete _ratingCache[uid];
+      el.textContent = fallback;
+    }
+  }
+}
 
 // ── טעינת ביקורות לפרופיל ───────────────────────────────
 window._fbLoadReviews = async function(uid) {
@@ -2755,16 +2835,6 @@ window._fbDoAccept = async function(slotStr) {
   try {
     const driverName = document.getElementById('p-name-v')?.textContent || '';
 
-    // דירוג עצמי — נהג מותר לו לקרוא את הפרופיל שלו
-    let driverRatingAvg = 0, driverRatingCount = 0;
-    try {
-      const selfSnap = await getDoc(doc(db, 'users', currentUser.uid));
-      if (selfSnap.exists()) {
-        driverRatingAvg   = selfSnap.data().ratingAvg   || 0;
-        driverRatingCount = selfSnap.data().ratingCount || 0;
-      }
-    } catch(e) {}
-
     await updateDoc(doc(db, 'shipments', p.docId), {
       status:      'pending_approval',
       driverUid:   currentUser.uid,
@@ -2773,8 +2843,6 @@ window._fbDoAccept = async function(slotStr) {
       proposedAmount: p.amt,
       slot:        slotStr,
       requestedAt: serverTimestamp(),
-      driverRatingAvg,
-      driverRatingCount,
     });
     if(waitEl) waitEl.classList.remove('on');
     showOv('drv-succ', 'נשלח לעמיל!',
@@ -3138,7 +3206,7 @@ function startDriverRealtime(uid) {
             ${ciTruck()}
             <div class="cinfo">
               <div class="ct">${from} ← ${to}</div>
-              <div class="cm2">${summary} • ${cargoLabel}</div>
+              <div class="cm2">${summary} • ${esc(cargoLabel)}</div>
               ${d.createdAt ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">פורסם: ${fmtTS(d.createdAt)}</div>` : ''}
             </div>
             <div class="cr"><div><div class="cp">₪${Math.round(amt*0.99).toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">לאחר עמלה</div></div><div class="chev">▼</div></div>
@@ -3152,7 +3220,7 @@ function startDriverRealtime(uid) {
               <div class="dc"><div class="dcl">משקל</div><div class="dcv">${weight}</div></div>
               ${volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${volume}</div></div>` : ''}
               ${qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qty}</div></div>` : ''}
-              <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
+              <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${esc(cargoLabel)}</div></div>
               <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${desc}</div></div>
               ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
               <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${hazLabel}${hazCode ? ' — ' + hazCode : ''}</div></div>
@@ -3654,12 +3722,7 @@ function startBrokerRealtime(uid) {
               ${d.driverPhone ? `<div style="font-size:12px;color:var(--muted);">טל׳: ${esc(d.driverPhone)}</div>` : ''}
               ${d.slot ? `<div style="font-size:12px;color:var(--muted);">טווח: ${esc(d.slot)}</div>` : ''}
               <div style="font-size:14px;font-weight:700;margin-top:4px;">₪${Math.round((d.proposedAmount||d.amount||0)*1.01).toLocaleString()} <span style="font-size:10px;color:#92400e;">כולל עמלה</span></div>
-              ${d.driverRatingAvg && d.driverRatingCount >= 3
-                ? `<div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
-                     <span style="font-size:12px;color:#92400e;">★ ${d.driverRatingAvg.toFixed(1)} <span style="color:var(--muted);">(${d.driverRatingCount} ביקורות)</span></span>
-                     <button onclick="viewDriverReviews('${d.driverUid}','${esc(d.driverName)}')" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;font-family:'Heebo',sans-serif;">צפה בכל הביקורות</button>
-                   </div>`
-                : `<div style="margin-top:6px;font-size:12px;color:var(--muted);">נהג חדש — אין ביקורות עדיין</div>`}
+              <div class="drv-rating-slot" data-uid="${esc(d.driverUid || '')}" data-name="${esc(d.driverName || '')}" style="margin-top:6px;font-size:12px;color:var(--muted);">טוען דירוג...</div>
             </div>` : '';
           const offerBox = hasOffer ? `
             <div style="background:var(--amber-bg);border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
@@ -3697,7 +3760,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?Number(d.weight).toLocaleString()+' ק"ג':'—'}</div></div>
                 ${volLabel ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${volLabel}</div></div>` : ''}
                 ${qtyLabel ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${qtyLabel}</div></div>` : ''}
-                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel}</div></div>
+                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${esc(cargoLabel)}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
                 ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
                 <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${esc(hazLabel)}${hazCode ? ' — ' + esc(hazCode) : ''}</div></div>
@@ -3709,13 +3772,14 @@ function startBrokerRealtime(uid) {
               ${offerBox}
               <div class="brow">
                 ${hasPendingApproval ? `
-                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${d.driverUid||''}','${esc(d.driverName)}','${esc(d.driverPhone)}',${d.proposedAmount||d.amount||0},'${esc(d.slot)}')">אשר נהג</button>
+                  <button class="btn bgr" onclick="brokerApproveDriver('${d.id}','${jsArg(d.driverUid)}','${jsArg(d.driverName)}','${jsArg(d.driverPhone)}',${Number(d.proposedAmount||d.amount||0)},'${jsArg(d.slot)}')">אשר נהג</button>
                   <button class="btn bred" onclick="brokerRejectDriver('${d.id}')">דחה נהג</button>
                 ` : hasOffer ? `<button class="btn bp" onclick="openCounterOffers('${d.id}')">צפה בהצעות (${d.counterOffersCount||1})</button>` : ''}
                 ${!hasPendingApproval ? `<button class="btn bred" onclick="cancelOrder('${d.id}')">בטל הזמנה</button>` : ''}
               </div>
             </div>
           </div>`;        }).join('');
+        fillDriverRatings(pendList);
       }
     }
 
@@ -3772,7 +3836,7 @@ function startBrokerRealtime(uid) {
                 <div class="dc"><div class="dcl">משקל</div><div class="dcv">${d.weight?d.weight.toLocaleString()+' ק"ג':'—'}</div></div>
                 ${d.volume ? `<div class="dc"><div class="dcl">נפח</div><div class="dcv">${d.volume} מ"ק</div></div>` : ''}
                 ${d.qty    ? `<div class="dc"><div class="dcl">כמות</div><div class="dcv">${d.qty} יח'</div></div>` : ''}
-                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${cargoLabel2}</div></div>
+                <div class="dc"><div class="dcl">סוג מטען</div><div class="dcv">${esc(cargoLabel2)}</div></div>
                 <div class="dc"><div class="dcl">תיאור טובין</div><div class="dcv">${esc(d.desc)}</div></div>
                 ${d.notes ? `<div class="dc"><div class="dcl" style="color:var(--amber);">הערות לנהג</div><div class="dcv" style="white-space:pre-wrap;">${esc(d.notes)}</div></div>` : ''}
                 <div class="dc"><div class="dcl" style="color:#dc2626;">חומר מסוכן</div><div class="dcv" style="color:#dc2626;font-weight:700;">${hazLabel2}${hazCode2 ? ' — ' + hazCode2 : ''}</div></div>
@@ -4488,6 +4552,7 @@ async function routeByStatus(d, user) {
   // אדמין — בחירת מסך
   if (user.uid === ADMIN_UID) {
     go('s-admin-select');
+    syncAllDriverDirectory().catch(e => console.error('driverDirectory full sync:', e));
     return;
   }
   // בדיקת חסימה — לפני הכל
@@ -4599,6 +4664,7 @@ window.adminApprove = async function(uid) {
     const userData = userSnap.data();
     if (userData.status === 'approved') { toast('המשתמש כבר אושר'); return; } // מגן גם מפני מרוץ בין כמה טאבים/לחיצות
     await updateDoc(doc(db, 'users', uid), { status: 'approved' });
+    try { await syncDirectoryEntry(uid); } catch (dirErr) { console.error('driverDirectory sync:', dirErr); }
 
     // שלח מייל אישור
     try {
@@ -4621,6 +4687,7 @@ window.adminReject = async function(uid) {
   if (!confirm('לדחות משתמש זה?')) return;
   try {
     await updateDoc(doc(db, 'users', uid), { status: 'rejected' });
+    try { await syncDirectoryEntry(uid); } catch (dirErr) { console.error('driverDirectory sync:', dirErr); }
     toast('המשתמש נדחה');
     loadAdminList();
   } catch(e) { toast('שגיאה: ' + e.message); }
@@ -4680,6 +4747,7 @@ window.adminToggleBlock = async function(uid, isCurrentlyBlocked) {
   if (!confirm(`${action} את המשתמש?`)) return;
   try {
     await updateDoc(doc(db, 'users', uid), { blocked: !isCurrentlyBlocked });
+    try { await syncDirectoryEntry(uid); } catch (dirErr) { console.error('driverDirectory sync:', dirErr); }
     toast(isCurrentlyBlocked ? 'המשתמש שוחרר' : 'המשתמש נחסם');
     loadAdminUsers();
   } catch(e) { toast('שגיאה: ' + e.message); }
@@ -4838,15 +4906,15 @@ async function renderBrokerPayments() {
         <div style="font-size:12px;font-weight:700;color:#64748b;">#${orderNum}</div>
         <div class="badge ${isPaid ? 'bg' : 'bam'}" style="font-size:12px;">${isPaid ? '✓ התקבל תשלום' : 'ממתין לתשלום'}</div>
       </div>
-      <div style="font-size:15px;font-weight:800;margin-bottom:2px;">${d.from || '—'} ← ${d.to || '—'}</div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">עמיל: ${d.brokerName || '—'}</div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:2px;">${esc(d.from || '—')} ← ${esc(d.to || '—')}</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">עמיל: ${esc(d.brokerName || '—')}</div>
 
       <!-- פרטי הובלה -->
       <div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:10px;">
         <div style="font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:8px;">פרטי ההובלה</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-          <div style="font-size:11px;color:#64748b;">נהג</div><div style="font-size:11px;font-weight:600;">${d.driverName||'—'}</div>
-          <div style="font-size:11px;color:#64748b;">מטען</div><div style="font-size:11px;font-weight:600;">${cargoLabel}</div>
+          <div style="font-size:11px;color:#64748b;">נהג</div><div style="font-size:11px;font-weight:600;">${esc(d.driverName||'—')}</div>
+          <div style="font-size:11px;color:#64748b;">מטען</div><div style="font-size:11px;font-weight:600;">${esc(cargoLabel)}</div>
           ${d.weight ? `<div style="font-size:11px;color:#64748b;">משקל</div><div style="font-size:11px;font-weight:600;">${Number(d.weight).toLocaleString()} ק"ג</div>` : ''}
           ${d.date ? `<div style="font-size:11px;color:#64748b;">תאריך</div><div style="font-size:11px;font-weight:600;">${d.date}</div>` : ''}
         </div>
@@ -4880,7 +4948,7 @@ async function renderBrokerPayments() {
 
       <!-- כפתור -->
       ${!isPaid ? `
-      <button onclick="confirmBrokerPayment('${d.id}','${(d.brokerName||'').replace(/'/g,"\'")}','${d.brokerEmail||''}',${brokerPays})"
+      <button onclick="confirmBrokerPayment('${d.id}','${jsArg(d.brokerName)}','${jsArg(d.brokerEmail)}',${brokerPays})"
         style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">
         ✓ אישרתי קבלת ₪${brokerPays.toLocaleString()} מהעמיל
       </button>` : `
@@ -4917,7 +4985,7 @@ window.confirmBrokerPayment = async function(shipId, brokerName, brokerEmail, am
       <div style="background:#fff;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
         <div style="font-size:32px;margin-bottom:12px;">💰</div>
         <div style="font-size:17px;font-weight:800;color:#1e293b;margin-bottom:8px;">אישור קבלת תשלום</div>
-        <div style="font-size:14px;color:#64748b;margin-bottom:6px;">קיבלת ₪${Number(amount).toLocaleString()} מ${brokerName}?</div>
+        <div style="font-size:14px;color:#64748b;margin-bottom:6px;">קיבלת ₪${Number(amount).toLocaleString()} מ${esc(brokerName)}?</div>
         <div style="font-size:12px;color:#64748b;margin-bottom:20px;">חשבונית תישלח אוטומטית לעמיל</div>
         <div style="display:flex;gap:10px;">
           <button id="confirm-no" style="flex:1;padding:12px;background:#f1f5f9;color:#334155;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;">ביטול</button>
@@ -5188,7 +5256,7 @@ window._renderAdminTransfers = function() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         הועבר${transferredDate ? ' ב-' + transferredDate : ''}
       </div>` : `
-      <button class="btn bgr" onclick="markTransferred('${d.id}','${esc(recipientName)}',${driverGets})" style="width:100%;font-size:15px;padding:14px;">
+      <button class="btn bgr" onclick="markTransferred('${d.id}','${jsArg(recipientName)}',${driverGets})" style="width:100%;font-size:15px;padding:14px;">
         סמן כהועבר — ₪${net.toLocaleString()} לנהג
       </button>`}
     </div>`;
@@ -5197,7 +5265,7 @@ window._renderAdminTransfers = function() {
 
 window.markTransferred = async function(shipId, recipientName, netAmount) {
   if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { toast('אין הרשאה'); return; }
-  if (!confirm(`לסמן שהעברת ₪${Number(netAmount).toLocaleString()} ל${recipientName}?`)) return;
+  if (!confirm(`לסמן שהעברת ₪${Number(netAmount).toLocaleString()} ל${esc(recipientName)}?`)) return;
   try {
     await updateDoc(doc(db, 'shipments', shipId), {
       transferStatus: 'done',
@@ -5307,7 +5375,7 @@ td:last-child{font-weight:600;text-align:left;}
   <div class="divider"></div>
   <div class="to-section">
     <div class="to-label">לכבוד:</div>
-    <div class="to-name">${d.brokerName || '—'}</div>
+    <div class="to-name">${esc(d.brokerName || '—')}</div>
     ${brokerCompany ? `<div class="to-sub">${brokerCompany}</div>` : ''}
     ${brokerIdNumber ? `<div class="to-sub">${brokerCompany ? 'ח.פ' : 'ת"ז'}: ${brokerIdNumber}</div>` : ''}
   </div>
@@ -5315,13 +5383,13 @@ td:last-child{font-weight:600;text-align:left;}
     <div class="section-title">פרטי ההובלה</div>
     <table>
       <tr><td>מספר הזמנה</td><td>${orderNum}</td></tr>
-      <tr><td>מוצא</td><td>${d.from || '—'}</td></tr>
-      <tr><td>יעד</td><td>${d.to || '—'}</td></tr>
+      <tr><td>מוצא</td><td>${esc(d.from || '—')}</td></tr>
+      <tr><td>יעד</td><td>${esc(d.to || '—')}</td></tr>
       ${d.date ? `<tr><td>תאריך הובלה</td><td>${d.date}</td></tr>` : ''}
-      <tr><td>נהג / מוביל</td><td>${d.driverName || '—'}</td></tr>
-      <tr><td>סוג מטען</td><td>${cargoLabel}</td></tr>
+      <tr><td>נהג / מוביל</td><td>${esc(d.driverName || '—')}</td></tr>
+      <tr><td>סוג מטען</td><td>${esc(cargoLabel)}</td></tr>
       ${d.weight ? `<tr><td>משקל</td><td>${Number(d.weight).toLocaleString()} ק"ג</td></tr>` : ''}
-      ${d.desc ? `<tr><td>תיאור טובין</td><td>${d.desc}</td></tr>` : ''}
+      ${d.desc ? `<tr><td>תיאור טובין</td><td>${esc(d.desc)}</td></tr>` : ''}
     </table>
   </div>
   <div class="section">
@@ -5610,7 +5678,7 @@ window.openInvoiceModal = async function(d) {
       <!-- לכבוד -->
       <div style="margin-bottom:16px;">
         <div style="font-size:11px;color:#64748b;margin-bottom:4px;">לכבוד:</div>
-        <div style="font-size:15px;font-weight:800;">${d.brokerName || '—'}</div>
+        <div style="font-size:15px;font-weight:800;">${esc(d.brokerName || '—')}</div>
         ${brokerCompany ? `<div style="font-size:12px;color:#475569;">${brokerCompany}</div>` : ''}
         ${brokerIdNumber ? `<div style="font-size:12px;color:#475569;">${brokerCompany ? 'ח.פ' : 'ת"ז'}: ${brokerIdNumber}</div>` : ''}
       </div>
@@ -5620,16 +5688,16 @@ window.openInvoiceModal = async function(d) {
         <div style="font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;">פרטי ההובלה</div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <tr><td style="color:#64748b;padding:3px 0;">מספר הזמנה</td><td style="font-weight:700;text-align:left;">${orderNum}</td></tr>
-          <tr><td style="color:#64748b;padding:3px 0;">מוצא</td><td style="font-weight:600;text-align:left;">${d.from || '—'}</td></tr>
-          <tr><td style="color:#64748b;padding:3px 0;">יעד</td><td style="font-weight:600;text-align:left;">${d.to || '—'}</td></tr>
+          <tr><td style="color:#64748b;padding:3px 0;">מוצא</td><td style="font-weight:600;text-align:left;">${esc(d.from || '—')}</td></tr>
+          <tr><td style="color:#64748b;padding:3px 0;">יעד</td><td style="font-weight:600;text-align:left;">${esc(d.to || '—')}</td></tr>
           ${d.date ? `<tr><td style="color:#64748b;padding:3px 0;">תאריך הובלה</td><td style="font-weight:600;text-align:left;">${d.date}</td></tr>` : ''}
-          ${d.slot ? `<tr><td style="color:#64748b;padding:3px 0;">טווח זמן</td><td style="font-weight:600;text-align:left;">${d.slot}</td></tr>` : ''}
-          <tr><td style="color:#64748b;padding:3px 0;">נהג / מוביל</td><td style="font-weight:600;text-align:left;">${d.driverName || '—'}</td></tr>
-          <tr><td style="color:#64748b;padding:3px 0;">סוג מטען</td><td style="font-weight:600;text-align:left;">${cargoLabel}</td></tr>
+          ${d.slot ? `<tr><td style="color:#64748b;padding:3px 0;">טווח זמן</td><td style="font-weight:600;text-align:left;">${esc(d.slot)}</td></tr>` : ''}
+          <tr><td style="color:#64748b;padding:3px 0;">נהג / מוביל</td><td style="font-weight:600;text-align:left;">${esc(d.driverName || '—')}</td></tr>
+          <tr><td style="color:#64748b;padding:3px 0;">סוג מטען</td><td style="font-weight:600;text-align:left;">${esc(cargoLabel)}</td></tr>
           ${d.weight ? `<tr><td style="color:#64748b;padding:3px 0;">משקל</td><td style="font-weight:600;text-align:left;">${Number(d.weight).toLocaleString()} ק"ג</td></tr>` : ''}
           ${d.volume ? `<tr><td style="color:#64748b;padding:3px 0;">נפח</td><td style="font-weight:600;text-align:left;">${d.volume} מ"ק</td></tr>` : ''}
           ${d.qty    ? `<tr><td style="color:#64748b;padding:3px 0;">כמות</td><td style="font-weight:600;text-align:left;">${d.qty} יח'</td></tr>` : ''}
-          ${d.desc   ? `<tr><td style="color:#64748b;padding:3px 0;">תיאור טובין</td><td style="font-weight:600;text-align:left;">${d.desc}</td></tr>` : ''}
+          ${d.desc   ? `<tr><td style="color:#64748b;padding:3px 0;">תיאור טובין</td><td style="font-weight:600;text-align:left;">${esc(d.desc)}</td></tr>` : ''}
           ${d.isHazardous ? `<tr><td style="color:#dc2626;padding:3px 0;">חומר מסוכן</td><td style="font-weight:700;color:#dc2626;text-align:left;">כן${d.hazCode?' — '+d.hazCode:''}</td></tr>` : ''}
           ${d.needPorters ? `<tr><td style="color:#64748b;padding:3px 0;">סבלים</td><td style="font-weight:600;text-align:left;">נדרש</td></tr>` : ''}
           ${d.needRamp    ? `<tr><td style="color:#64748b;padding:3px 0;">רמפית</td><td style="font-weight:600;text-align:left;">נדרש</td></tr>` : ''}
@@ -5730,7 +5798,7 @@ td:last-child{font-weight:600;text-align:left;}
   <div class="divider"></div>
   <div class="to-section">
     <div class="to-label">לכבוד:</div>
-    <div class="to-name">${d.brokerName || '—'}</div>
+    <div class="to-name">${esc(d.brokerName || '—')}</div>
     ${data.brokerCompany ? `<div class="to-sub">${data.brokerCompany}</div>` : ''}
     ${data.brokerIdNumber ? `<div class="to-sub">${data.brokerCompany ? 'ח.פ' : 'ת"ז'}: ${data.brokerIdNumber}</div>` : ''}
   </div>
@@ -5738,13 +5806,13 @@ td:last-child{font-weight:600;text-align:left;}
     <div class="section-title">פרטי ההובלה</div>
     <table>
       <tr><td>מספר הזמנה</td><td>${d.orderNumber || '—'}</td></tr>
-      <tr><td>מוצא</td><td>${d.from || '—'}</td></tr>
-      <tr><td>יעד</td><td>${d.to || '—'}</td></tr>
+      <tr><td>מוצא</td><td>${esc(d.from || '—')}</td></tr>
+      <tr><td>יעד</td><td>${esc(d.to || '—')}</td></tr>
       ${d.date ? `<tr><td>תאריך הובלה</td><td>${d.date}</td></tr>` : ''}
-      <tr><td>נהג / מוביל</td><td>${d.driverName || '—'}</td></tr>
-      <tr><td>סוג מטען</td><td>${cargoLabel}</td></tr>
+      <tr><td>נהג / מוביל</td><td>${esc(d.driverName || '—')}</td></tr>
+      <tr><td>סוג מטען</td><td>${esc(cargoLabel)}</td></tr>
       ${d.weight ? `<tr><td>משקל</td><td>${Number(d.weight).toLocaleString()} ק"ג</td></tr>` : ''}
-      ${d.desc ? `<tr><td>תיאור טובין</td><td>${d.desc}</td></tr>` : ''}
+      ${d.desc ? `<tr><td>תיאור טובין</td><td>${esc(d.desc)}</td></tr>` : ''}
     </table>
   </div>
   <div class="section">
@@ -5878,7 +5946,7 @@ td:last-child{font-weight:600;text-align:left;}
   <div class="divider"></div>
   <div class="to-section">
     <div class="to-label">לכבוד:</div>
-    <div class="to-name">${d.brokerName || '—'}</div>
+    <div class="to-name">${esc(d.brokerName || '—')}</div>
     ${data.brokerCompany ? `<div class="to-sub">${data.brokerCompany}</div>` : ''}
     ${data.brokerIdNumber ? `<div class="to-sub">${data.brokerCompany ? 'ח.פ' : 'ת"ז'}: ${data.brokerIdNumber}</div>` : ''}
   </div>
@@ -5964,8 +6032,8 @@ window.loadPaymentsScreen = async function() {
     docs.forEach(d => {
       if (d.status !== 'confirmed') return;
       const amt = d.finalAmount || d.amount || 0;
-      const fee = Math.round(amt * 0.01);
-      const net = amt - fee;
+      const net = Math.round(amt * 0.99);
+      const fee = amt - net;
       totalFee += fee;
       totalNet += net;
       const dt = d.confirmedAt?.toDate ? d.confirmedAt.toDate() : (d.createdAt?.toDate ? d.createdAt.toDate() : null);
@@ -6014,8 +6082,8 @@ function renderPaymentCard(d, role) {
   const st = ESCROW_LABEL[d.status] || ESCROW_LABEL.pending;
   const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
   const amt = d.finalAmount || d.amount || 0;
-  const fee = Math.round(amt * 0.01);
-  const net = amt - fee;
+  const net = Math.round(amt * 0.99);
+  const fee = amt - net;
   const isDelivered = d.status === 'delivered';
   const isConfirmed = d.status === 'confirmed';
 
@@ -6038,7 +6106,7 @@ function renderPaymentCard(d, role) {
       <div class="ci ${isConfirmed ? 'g' : 'am'}">${st.icon}</div>
       <div class="cinfo">
         <div class="ct">${esc(d.from)} ← ${esc(d.to)}</div>
-        <div class="cm2">${date} • ${role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג')}</div>
+        <div class="cm2">${date} • ${esc(role === 'drv' ? (d.brokerName || 'עמיל') : (d.driverName || 'נהג'))}</div>
       </div>
       <div class="cr">
         <div class="cp" style="color:${isConfirmed ? 'var(--green)' : d.status === 'cancelled' ? 'var(--red)' : 'var(--amber)'}">₪${role==='drv'?Math.round(amt*0.99).toLocaleString():Math.round(amt*1.01).toLocaleString()}</div>
@@ -6114,21 +6182,21 @@ window.exportPaymentsPDF = function() {
     if (d.status === 'confirmed') {
       const amt = d.finalAmount || d.amount || 0;
       totalGross += amt;
-      totalFee += Math.round(amt * 0.01);
-      totalNet += amt - Math.round(amt * 0.01);
+      totalFee += amt - Math.round(amt * 0.99);
+      totalNet += Math.round(amt * 0.99);
     }
   });
 
   const rows = docs.map((d, i) => {
     const amt = d.finalAmount || d.amount || 0;
-    const fee = Math.round(amt * 0.01);
-    const net = amt - fee;
+    const net = Math.round(amt * 0.99);
+    const fee = amt - net;
     const date = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString('he-IL') : '—';
     const other = role === 'drv' ? (d.brokerName||'—') : (d.driverName||'—');
     const st = statusMap[d.status] || d.status;
     const stColor = d.status==='confirmed' ? '#16a34a' : d.status==='cancelled' ? '#dc2626' : '#d97706';
     return `<tr style="background:${i%2===0?'#f9fafb':'#fff'}">
-      <td>${date}</td><td>${d.from||'—'} ← ${d.to||'—'}</td><td>${other}</td>
+      <td>${date}</td><td>${esc(d.from||'—')} ← ${esc(d.to||'—')}</td><td>${esc(other)}</td>
       <td style="text-align:left">₪${amt.toLocaleString()}</td>
       <td style="text-align:left;color:#dc2626">-₪${fee.toLocaleString()}</td>
       <td style="text-align:left;color:#16a34a;font-weight:700">₪${net.toLocaleString()}</td>
