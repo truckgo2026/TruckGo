@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "co.il.truckgo.app",
+      "sha256_cert_fingerprints": [
+        "A6:A7:DA:B5:30:46:66:76:B9:C8:AA:87:D3:A9:D6:B8:44:D8:7D:B1:91:4A:57:99:48:82:17:81:24:31:BE:B4"
+      ]
+    }
+  }
+]
